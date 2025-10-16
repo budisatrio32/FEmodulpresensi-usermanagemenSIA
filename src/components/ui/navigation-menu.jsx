@@ -35,7 +35,6 @@ const NavbarMenu = React.forwardRef(({ className, ...props }, ref) => (
     <NavbarMenuItem href="/jadwal">Jadwal</NavbarMenuItem>
     <NavbarMenuItem href="/presensi">Presensi</NavbarMenuItem>
     <NavbarMenuItem href="/akademik">Akademik</NavbarMenuItem>
-    <NavbarMenuItem href="/adminpage">Admin</NavbarMenuItem>
   </div>
 ))
 
