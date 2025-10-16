@@ -146,11 +146,13 @@ icon: <ClassIcon />,
 ]
 
 return (
-<div className="min-h-screen">
+<div className="min-h-screen flex flex-col">
 {/* Admin Navbar */}
 <AdminNavbar title="Dashboard Admin" />
 
-<div className="p-6 bg-brand-light-sage">
+{/* Main Content */}
+<main className="flex-1 bg-brand-light-sage">
+<div className="p-6">
 <div className="max-w-7xl mx-auto">
 {/* Header */}
 <div className="mb-8">
@@ -225,6 +227,9 @@ return (
 </div>
 </div>
 </div>
+</main>
+
+{/* Footer */}
 <Footer />
 </div>
 )
