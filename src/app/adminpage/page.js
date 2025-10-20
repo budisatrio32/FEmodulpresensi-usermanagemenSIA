@@ -1,10 +1,12 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { DashboardCard, StatCard } from '@/components/ui/dashboard-card'
 import { PrimaryButton, SecondaryButton } from '@/components/ui/button'
 import AdminNavbar from '@/components/ui/admin-navbar'
 import Footer from '@/components/ui/footer'
+import { getDashboardStatistics } from '@/lib/adminApi'
 
 // Icons - using icons from /public/icon folder
 const PlusIcon = () => (
@@ -70,9 +72,44 @@ style={{ filter: 'brightness(0) invert(1)' }}
 
 
 export default function AdminDashboard() {
+// State untuk menyimpan data statistik dari API
+const [statistics, setStatistics] = useState({
+  total_subjects: 0,
+  total_students: 0,
+  total_lecturers: 0,
+  total_classes: 0,
+});
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState(null);
+
+// Fetch data statistik saat component mount
+useEffect(() => {
+  fetchStatistics();
+}, []);
+
+const fetchStatistics = async () => {
+  try {
+    setLoading(true);
+    setError(null);
+    
+    const response = await getDashboardStatistics();
+    
+    if (response.success) {
+      setStatistics(response.data);
+    } else {
+      setError('Gagal mengambil data statistik');
+    }
+  } catch (err) {
+    console.error('Error fetching statistics:', err);
+    setError(err.response?.data?.message || 'Terjadi kesalahan saat mengambil data');
+  } finally {
+    setLoading(false);
+  }
+};
+
 const handleCardClick = (actionType) => {
-console.log(`Clicked: ${actionType}`)
-// Here you can add navigation or modal opening logic
+  console.log(`Clicked: ${actionType}`)
+  // Here you can add navigation or modal opening logic
 }
 
 const managementCards = [
@@ -113,36 +150,36 @@ action: () => handleCardClick('add-teacher')
 }
 ]
 
+// Data statistik sekarang menggunakan data dari state (API)
 const statisticsData = [
-{
-id: 'total-courses',
-title: 'Total Mata Kuliah',
-value: '156',
-subtitle: 'Mata kuliah aktif',
-icon: <BookIcon />,
-},
-{
-id: 'total-students',
-title: 'Total Mahasiswa',
-value: '2,845',
-subtitle: 'Mahasiswa aktif',
-icon: <StudentIcon />,
-
-},
-{
-id: 'total-teachers',
-title: 'Total Dosen',
-value: '89',
-subtitle: 'Dosen aktif',
-icon: <TeacherIcon />,
-},
-{
-id: 'total-classes',
-title: 'Total Kelas',
-value: '234',
-subtitle: 'Kelas aktif semester ini',
-icon: <ClassIcon />,
-}
+  {
+    id: 'total-courses',
+    title: 'Total Mata Kuliah',
+    value: loading ? '...' : statistics.total_subjects.toLocaleString('id-ID'),
+    subtitle: 'Mata kuliah aktif',
+    icon: <BookIcon />,
+  },
+  {
+    id: 'total-students',
+    title: 'Total Mahasiswa',
+    value: loading ? '...' : statistics.total_students.toLocaleString('id-ID'),
+    subtitle: 'Mahasiswa aktif',
+    icon: <StudentIcon />,
+  },
+  {
+    id: 'total-teachers',
+    title: 'Total Dosen',
+    value: loading ? '...' : statistics.total_lecturers.toLocaleString('id-ID'),
+    subtitle: 'Dosen aktif',
+    icon: <TeacherIcon />,
+  },
+  {
+    id: 'total-classes',
+    title: 'Total Kelas',
+    value: loading ? '...' : statistics.total_classes.toLocaleString('id-ID'),
+    subtitle: 'Kelas aktif semester ini',
+    icon: <ClassIcon />,
+  }
 ]
 
 return (
@@ -184,6 +221,22 @@ return (
     >
     Statistik Sistem
     </h2>
+    
+    {/* Error Message */}
+    {error && (
+      <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+        <p className="font-semibold">Error:</p>
+        <p>{error}</p>
+        <button 
+          onClick={fetchStatistics}
+          className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+        >
+          Coba Lagi
+        </button>
+      </div>
+    )}
+    
+    {/* Statistics Grid */}
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
     {statisticsData.map((stat) => (
         <StatCard
