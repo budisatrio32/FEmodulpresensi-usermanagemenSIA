@@ -5,16 +5,39 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { SecondaryButton } from './button';
+import api from '@/lib/axios';
 
 export default function LoginForm() {
 const [showPassword, setShowPassword] = useState(false);
 const [email, setEmail] = useState('');
 const [password, setPassword] = useState('');
 
-const handleSubmit = (e) => {
+const handleSubmit = async (e) => {
 e.preventDefault();
-// Handle login logic here
-console.log('Login:', { email, password });
+try {
+    // Kirim API
+    const response = await api.post('/auth/login', {
+      email,
+      password,
+    });
+
+    // Simpan token ke localStorage
+    const token = response.data.data.access_token;
+    localStorage.setItem('token', token);
+
+    // redirect sesuai role
+    const roles = response.data.data.user.roles;
+    if (roles == 'admin' || roles == 'manager') {
+      window.location.href = '/adminpage';
+    } else if (roles == 'mahasiswa' || roles == 'dosen' ) { 
+      window.location.href = '/landingpage';
+    }
+
+  } catch (error) {
+    console.error(error);
+    alert(error.response?.data?.message || 'Login gagal, periksa kembali email dan password.'); //debuging error
+  }
+console.log('Login:', { email, password }); // untuk debugging
 };
 
 return (
