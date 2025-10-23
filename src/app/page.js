@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Navbar from "@/components/ui/navigation-menu";
 import { Button } from "@/components/ui/button";
-import avatar from "@/components/ui/avatar";
 import Footer from "@/components/ui/footer";
 import LoginForm from "@/components/ui/loginform";
 
@@ -25,4 +24,3 @@ export default function Home() {
     </div>
   );
 }
-  
