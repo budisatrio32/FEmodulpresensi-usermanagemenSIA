@@ -5,10 +5,10 @@ import { cn } from "@/lib/utils"
 const AdminNavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
 <div 
 ref={ref}
-className={cn("flex items-center gap-3", className)}
+className={cn("flex items-center gap-2 sm:gap-3", className)}
 {...props}
 >
-<div className="w-16 h-16 rounded-full flex items-center justify-center p-1">
+<div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center p-1 flex-shrink-0">
     <Image 
     src="/Logo.png"
     alt="UGN Logo"
@@ -17,7 +17,7 @@ className={cn("flex items-center gap-3", className)}
     className="rounded-full"
     />
 </div>
-<span className="text-brand-yellow font-semibold text-lg tracking-wide" style={{color: '#DABC4E', fontFamily: 'Urbanist, sans-serif'}}>
+<span className="text-brand-yellow font-semibold text-sm sm:text-base md:text-lg tracking-wide hidden sm:inline" style={{color: '#DABC4E', fontFamily: 'Urbanist, sans-serif'}}>
     Universitas Global Nusantara
 </span>
 </div>
@@ -30,7 +30,7 @@ className={cn("text-right", className)}
 {...props}
 >
 <span 
-    className="font-semibold text-lg tracking-wide" 
+    className="font-semibold text-sm sm:text-base md:text-lg tracking-wide" 
     style={{
     color: '#FFFFFF',
     fontFamily: 'Urbanist, sans-serif'
@@ -48,8 +48,8 @@ className={cn("bg-brand-green shadow-md rounded-b-[18px]", className)}
 style={{backgroundColor: '#015023'}}
 {...props}
 >
-<div className="container mx-auto px-6">
-    <div className="flex justify-between items-center h-20">
+<div className="container mx-auto px-4 sm:px-6">
+    <div className="flex justify-between items-center h-16 sm:h-20">
     <AdminNavbarBrand />
     <AdminNavbarTitle title={title} />
     </div>

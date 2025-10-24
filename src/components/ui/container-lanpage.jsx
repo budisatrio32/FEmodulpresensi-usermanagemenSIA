@@ -14,10 +14,10 @@ import { Calendar } from 'lucide-react';
 
 export function CardHeader({ date, onCalendarClick, className = '' }) {
 return (
-<header className={`text-white px-6 py-4 flex items-center justify-between ${className}`} style={{ backgroundColor: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+<header className={`text-white px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between ${className}`} style={{ backgroundColor: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
     <div className="flex items-center gap-2">
-    <Calendar className="w-5 h-5" />
-    <h2 className="font-semibold">{date}</h2>
+    <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+    <h2 className="font-semibold text-sm sm:text-base">{date}</h2>
     </div>
     {onCalendarClick && (
     <button 
@@ -26,7 +26,7 @@ return (
         style={{ color: '#DABC4E' }}
         aria-label="Open calendar"
     >
-        <Calendar className="w-5 h-5" />
+        <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
     </button>
     )}
 </header>
@@ -90,29 +90,29 @@ kode,
 className = '' 
 }) {
 return (
-<div className={`p-6 bg-gray-50 hover:bg-gray-100 transition-colors ${className}`} style={{ fontFamily: 'Urbanist, sans-serif' }}>
-    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+<div className={`p-4 sm:p-6 bg-gray-50 hover:bg-gray-100 transition-colors ${className}`} style={{ fontFamily: 'Urbanist, sans-serif' }}>
+    <div className="flex flex-col sm:flex-row sm:items-start lg:items-center justify-between gap-3 sm:gap-4">
     {/* Left Side - Info */}
     <div className="flex-1">
-        <h3 className="text-lg font-bold mb-3" style={{ color: '#015023' }}>
+        <h3 className="text-base sm:text-lg font-bold mb-2 sm:mb-3 leading-tight" style={{ color: '#015023' }}>
         {matakuliah}
         </h3>
         
-        <div className="space-y-1 text-sm text-gray-700">
+        <div className="space-y-1 text-xs sm:text-sm text-gray-700">
         <p>{waktu}</p>
         <p>{kelas}</p>
         <p>{dosen}</p>
         <div className="flex items-center gap-2 mt-2">
-            <MapPin className="w-4 h-4" style={{ color: '#015023' }} />
+            <MapPin className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" style={{ color: '#015023' }} />
             <p className="font-medium">{ruang}</p>
         </div>
         </div>
     </div>
 
     {/* Right Side - Badges */}
-    <div className="flex flex-wrap gap-3 items-center">
-        <Badge variant="primary">{sks}</Badge>
-        <Badge variant="primary">{kode}</Badge>
+    <div className="flex flex-wrap gap-2 sm:gap-3 items-center sm:items-start">
+        <Badge variant="primary" size="sm">{sks}</Badge>
+        <Badge variant="primary" size="sm">{kode}</Badge>
     </div>
     </div>
 </div>
@@ -129,21 +129,21 @@ content,
 className = '' 
 }) {
 return (
-<div className={`p-6 bg-gray-50 ${className}`} style={{ fontFamily: 'Urbanist, sans-serif' }}>
+<div className={`p-4 sm:p-6 bg-gray-50 ${className}`} style={{ fontFamily: 'Urbanist, sans-serif' }}>
     {/* Tag Badge */}
-    <div className="flex justify-end mb-4">
+    <div className="flex justify-end mb-3 sm:mb-4">
     <Badge variant="primary" size="sm">
         {tag}
     </Badge>
     </div>
 
     {/* Content */}
-    <div className="space-y-4">
-    <h4 className="font-bold text-lg" style={{ color: '#015023' }}>
+    <div className="space-y-3 sm:space-y-4">
+    <h4 className="font-bold text-base sm:text-lg leading-tight" style={{ color: '#015023' }}>
         {title}
     </h4>
     
-    <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+    <div className="text-xs sm:text-sm text-gray-700 leading-relaxed whitespace-pre-line">
         {content}
     </div>
     </div>
@@ -155,7 +155,7 @@ return (
 // src/components/ui/SectionTitle.jsx
 export function SectionTitle({ children, className = '' }) {
 return (
-<h1 className={`text-3xl font-bold mb-6 ${className}`} style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+<h1 className={`text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 ${className}`} style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
     {children}
 </h1>
 );
@@ -165,7 +165,7 @@ return (
 // src/components/ui/Container.jsx
 export function Container({ children, className = '' }) {
 return (
-<div className={`container mx-auto px-6 py-8 ${className}`} style={{ fontFamily: 'Urbanist, sans-serif' }}>
+<div className={`container mx-auto px-4 sm:px-6 py-6 sm:py-8 ${className}`} style={{ fontFamily: 'Urbanist, sans-serif' }}>
     {children}
 </div>
 );

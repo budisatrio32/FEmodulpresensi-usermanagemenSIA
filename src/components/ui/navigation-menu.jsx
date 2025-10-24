@@ -8,10 +8,10 @@ const NavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
   <Link 
     href="/" 
     ref={ref}
-    className={cn("flex items-center gap-3", className)}
+    className={cn("flex items-center gap-2 sm:gap-3", className)}
     {...props}
   >
-    <div className="w-16 h-16 rounded-full flex items-center justify-center p-1">
+    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center p-1 flex-shrink-0">
       <Image 
         src="/Logo.png"
         alt="UGN Logo"
@@ -20,7 +20,7 @@ const NavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
         className="rounded-full"
       />
     </div>
-    <span className="text-brand-yellow font-semibold text-lg tracking-wide" style={{color: '#DABC4E'}}>
+    <span className="text-brand-yellow font-semibold text-sm sm:text-base md:text-lg tracking-wide hidden sm:inline" style={{color: '#DABC4E'}}>
       Universitas Global Nusantara
     </span>
   </Link>
@@ -29,7 +29,7 @@ const NavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
 const NavbarMenu = React.forwardRef(({ className, ...props }, ref) => (
   <div 
     ref={ref}
-    className={cn("flex items-center gap-17", className)}
+    className={cn("hidden md:flex items-center gap-4 lg:gap-6", className)}
     {...props}
   >
     <NavbarMenuItem href="/jadwal">Jadwal</NavbarMenuItem>
@@ -43,7 +43,7 @@ const NavbarMenuItem = React.forwardRef(({ className, href, children, ...props }
     href={href}
     ref={ref}
     className={cn(
-      "text-white hover:text-brand-yellow transition-colors duration-200 font-medium",
+      "text-white hover:text-brand-yellow transition-colors duration-200 font-medium text-sm lg:text-base",
       className
     )}
     style={{'--hover-color': '#DABC4E'}}
@@ -56,7 +56,7 @@ const NavbarMenuItem = React.forwardRef(({ className, href, children, ...props }
 const NavbarActions = React.forwardRef(({ className, ...props }, ref) => (
   <div 
     ref={ref}
-    className={cn("flex items-center gap-10", className)}
+    className={cn("flex items-center gap-4 sm:gap-6 lg:gap-10", className)}
     {...props}
   >
     <NavbarNotification />
@@ -75,7 +75,7 @@ const NavbarNotification = React.forwardRef(({ className, ...props }, ref) => (
     style={{color: '#DABC4E'}}
     {...props}
   >
-    <Bell className="w-6 h-6" fill="currentColor" />
+    <Bell className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" />
     {/* Notification Badge - uncomment jika ada notif */}
     {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-semibold">
       3
@@ -88,27 +88,27 @@ const NavbarProfile = React.forwardRef(({ className, ...props }, ref) => (
     href="/profile"
     ref={ref}
     className={cn(
-      "bg-brand-yellow hover:opacity-90 text-brand-green p-2.5 rounded-full transition-all duration-200 hover:scale-105",
+      "bg-brand-yellow hover:opacity-90 text-brand-green p-2 sm:p-2.5 rounded-full transition-all duration-200 hover:scale-105",
       className
     )}
     style={{backgroundColor: '#DABC4E', color: '#015023'}}
     {...props}
   >
-    <User className="w-5 h-5" strokeWidth={2.5} />
+    <User className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2.5} />
   </Link>
 ))
 
 const Navbar = React.forwardRef(({ className, ...props }, ref) => (
   <nav 
     ref={ref}
-    className={cn("bg-brand-green shadow-md rounded-b-[18px]", className)} 
+    className={cn("bg-brand-green shadow-md rounded-b-[12px] sm:rounded-b-[18px]", className)} 
     style={{backgroundColor: '#015023'}}
     {...props}
   >
-    <div className="container mx-auto px-6">
-      <div className="flex justify-between items-center h-20">
+    <div className="container mx-auto px-4 sm:px-6">
+      <div className="flex justify-between items-center h-16 sm:h-20">
         <NavbarBrand />
-        <div className="flex items-center gap-13">
+        <div className="flex items-center gap-6 sm:gap-10 lg:gap-13">
           <NavbarMenu />
           <NavbarActions />
         </div>
