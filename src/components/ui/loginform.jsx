@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
@@ -8,12 +9,15 @@ import { SecondaryButton } from './button';
 import api from '@/lib/axios';
 
 export default function LoginForm() {
+const router = useRouter();
 const [showPassword, setShowPassword] = useState(false);
 const [email, setEmail] = useState('');
 const [password, setPassword] = useState('');
+const [isLoading, setIsLoading] = useState(false);
 
 const handleSubmit = async (e) => {
 e.preventDefault();
+setIsLoading(true);
 try {
     // Kirim API
     const response = await api.post('/auth/login', {
@@ -28,14 +32,16 @@ try {
     // redirect sesuai role
     const roles = response.data.data.user.roles;
     if (roles == 'admin' || roles == 'manager') {
-      window.location.href = '/adminpage';
+      router.push('/adminpage');
     } else if (roles == 'mahasiswa' || roles == 'dosen' ) { 
-      window.location.href = '/landingpage';
+      router.push('/landingpage');
     }
 
   } catch (error) {
     console.error(error);
     alert(error.response?.data?.message || 'Login gagal, periksa kembali email dan password.'); //debuging error
+  } finally {
+    setIsLoading(false);
   }
 console.log('Login:', { email, password }); // untuk debugging
 };
@@ -164,9 +170,10 @@ return (
         {/* Sign In Button */}
         <SecondaryButton
           type="submit"
+          disabled={isLoading}
           className="text-lg w-full py-3 px-4 shadow-md font-urbanist"
         >
-          Sign In
+          {isLoading ? 'Signing in...' : 'Sign In'}
         </SecondaryButton>
 </form>
 </div>

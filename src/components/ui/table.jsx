@@ -3,7 +3,6 @@ import { Trash2, Edit } from 'lucide-react';
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -75,44 +74,6 @@ export default function DataTable({
         )}
       </div>
     );
-  };
-
-  // Generate page numbers for pagination
-  const getPageNumbers = () => {
-    const pages = [];
-    const maxVisiblePages = 5;
-    
-    if (totalPages <= maxVisiblePages) {
-      // Show all pages if total is less than max
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      // Show first page, current page neighbors, and last page
-      if (currentPage <= 3) {
-        for (let i = 1; i <= 4; i++) {
-          pages.push(i);
-        }
-        pages.push('ellipsis');
-        pages.push(totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1);
-        pages.push('ellipsis');
-        for (let i = totalPages - 3; i <= totalPages; i++) {
-          pages.push(i);
-        }
-      } else {
-        pages.push(1);
-        pages.push('ellipsis');
-        pages.push(currentPage - 1);
-        pages.push(currentPage);
-        pages.push(currentPage + 1);
-        pages.push('ellipsis');
-        pages.push(totalPages);
-      }
-    }
-    
-    return pages;
   };
 
   return (
@@ -198,11 +159,12 @@ export default function DataTable({
         </tbody>
       </table>
 
-      {/* Pagination using custom component */}
+      {/* Simple Pagination using component */}
       {pagination && data.length > 0 && (
         <div className="border-t border-gray-200 p-4">
           <Pagination>
             <PaginationContent>
+              {/* Previous Button */}
               <PaginationItem>
                 <PaginationPrevious 
                   href="#"
@@ -214,25 +176,19 @@ export default function DataTable({
                 />
               </PaginationItem>
               
-              {getPageNumbers().map((page, index) => (
-                <PaginationItem key={`page-${index}`}>
-                  {page === 'ellipsis' ? (
-                    <PaginationEllipsis />
-                  ) : (
-                    <PaginationLink
-                      href="#"
-                      isActive={currentPage === page}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setCurrentPage(page);
-                      }}
-                    >
-                      {page}
-                    </PaginationLink>
-                  )}
-                </PaginationItem>
-              ))}
-              
+              {/* Page Info */}
+              <PaginationItem>
+                <span className="flex items-center gap-2 px-2 text-sm" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                  <span className="font-medium" style={{ color: '#015023' }}>Page</span>
+                  <PaginationLink href="#" isActive>
+                    {currentPage}
+                  </PaginationLink>
+                  <span className="font-medium text-gray-500">of</span>
+                  <span className="font-medium" style={{ color: '#015023' }}>{totalPages}</span>
+                </span>
+              </PaginationItem>
+
+              {/* Next Button */}
               <PaginationItem>
                 <PaginationNext 
                   href="#"
