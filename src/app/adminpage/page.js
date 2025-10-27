@@ -8,6 +8,7 @@ import AdminNavbar from '@/components/ui/admin-navbar'
 import Footer from '@/components/ui/footer'
 import { getDashboardStatistics } from '@/lib/adminApi'
 import Cookies from 'js-cookie'
+import { useRouter } from 'next/navigation'
 
 // Icons - using icons from /public/icon folder
 const PlusIcon = () => (
@@ -114,10 +115,21 @@ const fetchStatistics = async () => {
 };
 
 const handleCardClick = (actionType) => {
-  console.log(`Clicked: ${actionType}`)
-  // Here you can add navigation or modal opening logic
-}
+  const router = useRouter();
+  if (actionType === 'add-course') {
+    router.push('/adminpage/tambahmataKuliah');
+  } else if (actionType === 'add-class') {
+    router.push('/adminpage/tambahkelas');
+  } else if (actionType === 'add-student') {
+    router.push('/adminpage/tambahmahasiswa');
+  } else if (actionType === 'add-manager') {
+    router.push('/adminpage/tambahmanager');
+  } else if (actionType === 'add-teacher') {
+    router.push('/adminpage/tambahdosen');
+  }
+};
 
+// Data untuk kartu manajemen
 const managementCards = [
   {
     id: 'add-course',
