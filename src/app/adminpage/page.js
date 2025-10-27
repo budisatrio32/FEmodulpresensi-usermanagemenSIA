@@ -88,21 +88,27 @@ useEffect(() => {
 }, []);
 
 const fetchStatistics = async () => {
+  setLoading(true);
   try {
-    setLoading(true);
     setError(null);
-    
+
+    // Panggil API untuk mendapatkan statistik
     const response = await getDashboardStatistics();
     
+    // Periksa response dan set data statistik
     if (response.success) {
       setStatistics(response.data);
     } else {
       setError('Gagal mengambil data statistik');
     }
+    
   } catch (err) {
+    // Tangani error
     console.error('Error fetching statistics:', err);
     setError(err.response?.data?.message || 'Terjadi kesalahan saat mengambil data');
+
   } finally {
+    // Hentikan loading
     setLoading(false);
   }
 };

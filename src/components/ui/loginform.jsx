@@ -2,11 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import Image from 'next/image';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { SecondaryButton } from './button';
-import api from '@/lib/axios';
+import sessionApi from '@/lib/sessionApi';
 
 export default function LoginForm() {
 const router = useRouter();
@@ -14,36 +13,35 @@ const [showPassword, setShowPassword] = useState(false);
 const [email, setEmail] = useState('');
 const [password, setPassword] = useState('');
 const [isLoading, setIsLoading] = useState(false);
+const [error, setError] = useState(null);
 
 const handleSubmit = async (e) => {
-e.preventDefault();
-setIsLoading(true);
-try {
-    // Kirim API
-    const response = await api.post('/auth/login', {
-      email,
-      password,
-    });
+  e.preventDefault();
+  setIsLoading(true);
+  try {
+    setError(null);
+    // Panggil sessionApi.login
+    const response = await sessionApi.login(email, password);
 
     // Simpan token ke localStorage
-    const token = response.data.data.access_token;
+    const token = response.data.access_token;
     localStorage.setItem('token', token);
 
     // redirect sesuai role
-    const roles = response.data.data.user.roles;
+    const roles = response.data.user.roles;
     if (roles == 'admin' || roles == 'manager') {
       router.push('/adminpage');
-    } else if (roles == 'mahasiswa' || roles == 'dosen' ) { 
+    } else if (roles == 'mahasiswa' || roles == 'dosen') {
       router.push('/landingpage');
     }
-
   } catch (error) {
+    // Tangani error
+    setError(error.response?.data?.message || 'Mohon maaf, terjadi kesalahan saat login.');
     console.error(error);
-    alert(error.response?.data?.message || 'Login gagal, periksa kembali email dan password.'); //debuging error
   } finally {
+    // Hentikan loading
     setIsLoading(false);
   }
-console.log('Login:', { email, password }); // untuk debugging
 };
 
 return (
@@ -176,6 +174,12 @@ return (
           {isLoading ? 'Signing in...' : 'Sign In'}
         </SecondaryButton>
 </form>
+    {/* Error Message */}
+    {error && (
+      <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+        <p>{error}</p>
+      </div>
+    )}
 </div>
 </section>
 </article>
