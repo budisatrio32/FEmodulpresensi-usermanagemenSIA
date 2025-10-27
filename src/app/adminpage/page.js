@@ -6,8 +6,8 @@ import { DashboardCard, StatCard } from '@/components/ui/dashboard-card'
 import { PrimaryButton, SecondaryButton } from '@/components/ui/button'
 import AdminNavbar from '@/components/ui/admin-navbar'
 import Footer from '@/components/ui/footer'
-import { hasPermission } from '@/lib/sessionApi'
 import { getDashboardStatistics } from '@/lib/adminApi'
+import Cookies from 'js-cookie'
 
 // Icons - using icons from /public/icon folder
 const PlusIcon = () => (
@@ -85,9 +85,6 @@ const [error, setError] = useState(null);
 
 // Fetch data statistik saat component mount
 useEffect(() => {
-  if (!hasPermission(['admin', 'manager'])) {
-    router.push('/unauthorized');
-  }
   fetchStatistics();
 }, []);
 
@@ -144,7 +141,7 @@ const managementCards = [
     action: () => handleCardClick('add-student')
   },
   // Card Tambah Akun Manajer hanya untuk admin
-  ...(localStorage.getItem('roles') === 'admin' ? [{
+  ...(Cookies.get('roles') === 'admin' ? [{
     id: 'add-manager',
     title: 'Tambah Akun Manajer',
     description: 'Buat akun manajer untuk administrasi',

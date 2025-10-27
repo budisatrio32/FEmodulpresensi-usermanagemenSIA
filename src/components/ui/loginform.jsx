@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { SecondaryButton } from './button';
 import sessionApi from '@/lib/sessionApi';
+import Cookies from 'js-cookie';
 
 export default function LoginForm() {
 const router = useRouter();
@@ -23,13 +24,13 @@ const handleSubmit = async (e) => {
     // Panggil sessionApi.login
     const response = await sessionApi.login(email, password);
 
-    // Simpan token ke localStorage
-    const token = response.data.access_token;
-    localStorage.setItem('token', token);
-    localStorage.setItem('roles', response.data.user.roles);
+  // Simpan token dan roles ke cookies
+  const token = response.data.access_token;
+  const roles = response.data.user.roles;
+  Cookies.set('token', token, { expires: 7 }); // expires in 7 days
+  Cookies.set('roles', roles, { expires: 7 });
 
     // redirect sesuai role
-    const roles = response.data.user.roles;
     if (roles == 'admin' || roles == 'manager') {
       router.push('/adminpage');
     } else if (roles == 'mahasiswa' || roles == 'dosen') {
