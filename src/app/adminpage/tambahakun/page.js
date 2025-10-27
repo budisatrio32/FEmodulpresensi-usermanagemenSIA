@@ -2,59 +2,46 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, Search, X, ArrowLeft } from 'lucide-react';
+import { UserCog, Search, X, ArrowLeft } from 'lucide-react';
 import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
 
-export default function KelasDashboard() {
+export default function AkunManagerDashboard() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [kelas, setKelas] = useState([
-    { id: 1, kode_kelas: 'A-CS101', maks_mahasiswa: 40, jadwal: 'Senin - 08.00 - 10.00', is_active: true, created_at: '2024-01-15' },
-    { id: 2, kode_kelas: 'B-CS101', maks_mahasiswa: 40, jadwal: 'Selasa - 10.00 - 12.00', is_active: true, created_at: '2024-01-16' },
-    { id: 3, kode_kelas: 'A-CS102', maks_mahasiswa: 35, jadwal: 'Rabu - 13.00 - 15.00', is_active: true, created_at: '2024-01-17' },
-    { id: 4, kode_kelas: 'B-CS102', maks_mahasiswa: 35, jadwal: 'Kamis - 09.00 - 11.00', is_active: false, created_at: '2024-01-18' },
-    { id: 5, kode_kelas: 'A-CS201', maks_mahasiswa: 30, jadwal: 'Jumat - 08.00 - 10.00', is_active: true, created_at: '2024-01-19' },
-    { id: 6, kode_kelas: 'B-CS201', maks_mahasiswa: 30, jadwal: 'Senin - 13.00 - 15.00', is_active: true, created_at: '2024-01-20' },
-    { id: 7, kode_kelas: 'A-CS301', maks_mahasiswa: 25, jadwal: 'Selasa - 15.00 - 17.00', is_active: false, created_at: '2024-01-21' },
-    { id: 8, kode_kelas: 'B-CS301', maks_mahasiswa: 25, jadwal: 'Rabu - 08.00 - 10.00', is_active: true, created_at: '2024-01-22' },
+  const [managers, setManagers] = useState([
+    { id: 1, username: 'manager_john', email: 'john.manager@example.com', password: '********', is_active: true, created_at: '2024-01-15' },
+    { id: 2, username: 'manager_sarah', email: 'sarah.manager@example.com', password: '********', is_active: true, created_at: '2024-01-16' },
+    { id: 3, username: 'manager_david', email: 'david.manager@example.com', password: '********', is_active: true, created_at: '2024-01-17' },
+    { id: 4, username: 'manager_lisa', email: 'lisa.manager@example.com', password: '********', is_active: false, created_at: '2024-01-18' },
+    { id: 5, username: 'manager_michael', email: 'michael.manager@example.com', password: '********', is_active: true, created_at: '2024-01-19' },
+    { id: 6, username: 'manager_emma', email: 'emma.manager@example.com', password: '********', is_active: true, created_at: '2024-01-20' },
+    { id: 7, username: 'manager_robert', email: 'robert.manager@example.com', password: '********', is_active: false, created_at: '2024-01-21' },
+    { id: 8, username: 'manager_sophia', email: 'sophia.manager@example.com', password: '********', is_active: true, created_at: '2024-01-22' },
   ]);
 
-  // Filter kelas berdasarkan search query
-  const filteredKelas = kelas.filter(kelasItem => {
+  // Filter managers berdasarkan search query
+  const filteredManagers = managers.filter(manager => {
     const query = searchQuery.toLowerCase();
     return (
-      kelasItem.kode_kelas.toLowerCase().includes(query) ||
-      kelasItem.maks_mahasiswa.toString().includes(query) ||
-      kelasItem.jadwal.toLowerCase().includes(query) ||
-      kelasItem.created_at.includes(query) ||
-      (kelasItem.is_active ? 'active' : 'inactive').includes(query)
+      manager.username.toLowerCase().includes(query) ||
+      manager.email.toLowerCase().includes(query) ||
+      manager.created_at.includes(query) ||
+      (manager.is_active ? 'active' : 'inactive').includes(query)
     );
   });
 
   // Define columns untuk table
   const columns = [
-    { key: 'kode_kelas', label: 'Kode Kelas', className: '' },
-    { key: 'maks_mahasiswa', label: 'Maks Mahasiswa', className: 'text-center', cellClassName: 'text-center' },
-    { key: 'jadwal', label: 'Jadwal', className: '' },
+    { key: 'username', label: 'Username', className: '' },
+    { key: 'email', label: 'Email', className: '' },
+    { key: 'password', label: 'Password', className: '' },
     { key: 'is_active', label: 'Status', className: 'text-center', cellClassName: 'text-center' },
     { key: 'created_at', label: 'Created At', className: '' },
   ];
 
-  // Custom render untuk maks_mahasiswa dan is_active status
+  // Custom render untuk is_active status
   const customRender = {
-    maks_mahasiswa: (value) => (
-      <span 
-        className="px-3 py-1 rounded font-semibold text-sm"
-        style={{
-          backgroundColor: '#DABC4E',
-          color: '#015023',
-          borderRadius: '12px'
-        }}
-      >
-        {value} Mhs
-      </span>
-    ),
     is_active: (value) => (
       <span 
         className="px-2 py-1 rounded text-xs font-semibold"
@@ -69,9 +56,9 @@ export default function KelasDashboard() {
     ),
   };
 
-  // Handle add new kelas
-  const handleAddKelas = () => {
-    router.push('/adminpage/tambahkelas/addform');
+  // Handle add new manager
+  const handleAddManager = () => {
+    router.push('/adminpage/tambahakun/addform');
   };
 
   // Handle search input change
@@ -85,17 +72,17 @@ export default function KelasDashboard() {
   };
 
   // Handle edit action
-  const handleEdit = (kelasItem, index) => {
-    console.log('Edit kelas:', kelasItem, 'at index:', index);
-    router.push(`/adminpage/tambahkelas/editform?id=${kelasItem.id}`);
+  const handleEdit = (manager, index) => {
+    console.log('Edit manager:', manager, 'at index:', index);
+    router.push(`/adminpage/tambahakun/editform?id=${manager.id}`);
   };
 
   // Handle delete action
-  const handleDelete = async (kelasItem, index) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus kelas "${kelasItem.kode_kelas}"?`)) {
+  const handleDelete = async (manager, index) => {
+    if (window.confirm(`Apakah Anda yakin ingin menghapus akun manager "${manager.username}"?`)) {
       try {
         // TODO: Replace with actual API call
-        // const response = await fetch(`/api/kelas/${kelasItem.id}`, {
+        // const response = await fetch(`/api/manager/${manager.id}`, {
         //   method: 'DELETE',
         //   headers: {
         //     'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -107,10 +94,10 @@ export default function KelasDashboard() {
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Remove kelas from state
-        setKelas(prevKelas => prevKelas.filter((_, i) => i !== index));
+        // Remove manager from state
+        setManagers(prevManagers => prevManagers.filter((_, i) => i !== index));
         
-        alert(`Kelas "${kelasItem.kode_kelas}" berhasil dihapus!`);
+        alert(`Akun manager "${manager.username}" berhasil dihapus!`);
       } catch (error) {
         alert("Gagal menghapus data: " + error.message);
       }
@@ -120,7 +107,7 @@ export default function KelasDashboard() {
   return (
     <div className="min-h-screen bg-brand-light-sage" style={{ fontFamily: 'Urbanist, sans-serif' }}>
       {/* Admin Navbar */}
-      <AdminNavbar title="Dashboard Admin - Kelas" />
+      <AdminNavbar title="Dashboard Admin - Akun Manager" />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-6">
@@ -140,10 +127,10 @@ export default function KelasDashboard() {
         <div className="mb-4 sm:mb-6">
           <div className="flex items-center justify-between mb-4 gap-2">
             <h2 className="text-xl sm:text-2xl md:text-3xl font-bold" style={{ color: '#015023' }}>
-              Statistik Kelas
+              Statistik Akun Manager
             </h2>
             <button 
-              onClick={handleAddKelas}
+              onClick={handleAddManager}
               className="text-white px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition shadow-md hover:opacity-90" 
               style={{ backgroundColor: '#015023', borderRadius: '12px' }}
             >
@@ -156,14 +143,14 @@ export default function KelasDashboard() {
         <div className="rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-xl" style={{ background: 'linear-gradient(to bottom right, #015023, #013d1c)' }}>
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-white text-base sm:text-lg font-semibold mb-2">Total Kelas</h3>
-              <p className="text-white text-3xl sm:text-4xl font-bold mb-1">{filteredKelas.length}</p>
+              <h3 className="text-white text-base sm:text-lg font-semibold mb-2">Total Manager</h3>
+              <p className="text-white text-3xl sm:text-4xl font-bold mb-1">{filteredManagers.length}</p>
               <p className="text-sm" style={{ color: '#DABC4E' }}>
-                {searchQuery ? 'Hasil pencarian' : 'Kelas terdaftar'}
+                {searchQuery ? 'Hasil pencarian' : 'Manager terdaftar'}
               </p>
             </div>
             <div className="p-3 sm:p-4 rounded-2xl shadow-lg" style={{ backgroundColor: '#DABC4E' }}>
-              <Calendar className="w-8 h-8 sm:w-10 sm:h-10" style={{ color: '#015023' }} />
+              <UserCog className="w-8 h-8 sm:w-10 sm:h-10" style={{ color: '#015023' }} />
             </div>
           </div>
         </div>
@@ -173,7 +160,7 @@ export default function KelasDashboard() {
           <Search className="w-5 h-5" style={{ color: '#015023' }} />
           <input
             type="text"
-            placeholder="Cari kelas..."
+            placeholder="Cari akun manager..."
             value={searchQuery}
             onChange={handleSearchChange}
             className="bg-transparent flex-1 outline-none text-sm text-gray-700"
@@ -193,7 +180,7 @@ export default function KelasDashboard() {
         {/* Table using DataTable component */}
         <DataTable
           columns={columns}
-          data={filteredKelas}
+          data={filteredManagers}
           actions={['delete', 'edit']}
           pagination={true}
           onEdit={handleEdit}
