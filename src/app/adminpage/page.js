@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { DashboardCard, StatCard } from '@/components/ui/dashboard-card'
 import { PrimaryButton, SecondaryButton } from '@/components/ui/button'
 import AdminNavbar from '@/components/ui/admin-navbar'
@@ -72,6 +73,8 @@ style={{ filter: 'brightness(0) invert(1)' }}
 
 
 export default function AdminDashboard() {
+const router = useRouter();
+
 // State untuk menyimpan data statistik dari API
 const [statistics, setStatistics] = useState({
   total_subjects: 0,
@@ -109,7 +112,26 @@ const fetchStatistics = async () => {
 
 const handleCardClick = (actionType) => {
   console.log(`Clicked: ${actionType}`)
-  // Here you can add navigation or modal opening logic
+  // Navigate to respective CRUD pages
+  switch(actionType) {
+    case 'add-course':
+      router.push('/adminpage/tambahmatkul');
+      break;
+    case 'add-class':
+      router.push('/adminpage/tambahkelas');
+      break;
+    case 'add-student':
+      router.push('/adminpage/tambahmahasiswa');
+      break;
+    case 'add-manager':
+      router.push('/adminpage/tambahakun');
+      break;
+    case 'add-teacher':
+      router.push('/adminpage/tambahdosen');
+      break;
+    default:
+      console.log('Unknown action type');
+  }
 }
 
 const managementCards = [
