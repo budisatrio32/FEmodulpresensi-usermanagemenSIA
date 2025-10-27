@@ -6,6 +6,7 @@ import { DashboardCard, StatCard } from '@/components/ui/dashboard-card'
 import { PrimaryButton, SecondaryButton } from '@/components/ui/button'
 import AdminNavbar from '@/components/ui/admin-navbar'
 import Footer from '@/components/ui/footer'
+import { hasPermission } from '@/lib/sessionApi'
 import { getDashboardStatistics } from '@/lib/adminApi'
 
 // Icons - using icons from /public/icon folder
@@ -84,6 +85,9 @@ const [error, setError] = useState(null);
 
 // Fetch data statistik saat component mount
 useEffect(() => {
+  if (!hasPermission(['admin', 'manager'])) {
+    router.push('/unauthorized');
+  }
   fetchStatistics();
 }, []);
 
@@ -101,7 +105,6 @@ const fetchStatistics = async () => {
     } else {
       setError('Gagal mengambil data statistik');
     }
-    
   } catch (err) {
     // Tangani error
     console.error('Error fetching statistics:', err);
@@ -119,42 +122,43 @@ const handleCardClick = (actionType) => {
 }
 
 const managementCards = [
-{
-id: 'add-course',
-title: 'Tambah Mata Kuliah Baru',
-description: 'Tambahkan mata kuliah baru ke dalam sistem',
-icon: <BookIcon />,
-action: () => handleCardClick('add-course')
-},
-{
-id: 'add-class',
-title: 'Tambah Kelas Baru',
-description: 'Buat kelas baru untuk semester ini',
-icon: <ClassIcon />,
-action: () => handleCardClick('add-class')
-},
-{
-id: 'add-student',
-title: 'Tambah Mahasiswa Baru',
-description: 'Daftarkan mahasiswa baru ke sistem',
-icon: <StudentIcon />,
-action: () => handleCardClick('add-student')
-},
-{
-id: 'add-manager',
-title: 'Tambah Akun Manajer',
-description: 'Buat akun manajer untuk administrasi',
-icon: <ManagerIcon />,
-action: () => handleCardClick('add-manager')
-},
-{
-id: 'add-teacher',
-title: 'Tambah Dosen Baru',
-description: 'Tambahkan dosen baru ke dalam sistem',
-icon: <TeacherIcon />,
-action: () => handleCardClick('add-teacher')
-}
-]
+  {
+    id: 'add-course',
+    title: 'Tambah Mata Kuliah Baru',
+    description: 'Tambahkan mata kuliah baru ke dalam sistem',
+    icon: <BookIcon />,
+    action: () => handleCardClick('add-course')
+  },
+  {
+    id: 'add-class',
+    title: 'Tambah Kelas Baru',
+    description: 'Buat kelas baru untuk semester ini',
+    icon: <ClassIcon />,
+    action: () => handleCardClick('add-class')
+  },
+  {
+    id: 'add-student',
+    title: 'Tambah Mahasiswa Baru',
+    description: 'Daftarkan mahasiswa baru ke sistem',
+    icon: <StudentIcon />,
+    action: () => handleCardClick('add-student')
+  },
+  // Card Tambah Akun Manajer hanya untuk admin
+  ...(localStorage.getItem('roles') === 'admin' ? [{
+    id: 'add-manager',
+    title: 'Tambah Akun Manajer',
+    description: 'Buat akun manajer untuk administrasi',
+    icon: <ManagerIcon />,
+    action: () => handleCardClick('add-manager')
+  }] : []),
+  {
+    id: 'add-teacher',
+    title: 'Tambah Dosen Baru',
+    description: 'Tambahkan dosen baru ke dalam sistem',
+    icon: <TeacherIcon />,
+    action: () => handleCardClick('add-teacher')
+  }
+];
 
 // Data statistik sekarang menggunakan data dari state (API)
 const statisticsData = [

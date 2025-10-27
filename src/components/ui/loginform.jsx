@@ -26,6 +26,7 @@ const handleSubmit = async (e) => {
     // Simpan token ke localStorage
     const token = response.data.access_token;
     localStorage.setItem('token', token);
+    localStorage.setItem('roles', response.data.user.roles);
 
     // redirect sesuai role
     const roles = response.data.user.roles;

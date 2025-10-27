@@ -11,7 +11,7 @@ import api from './axios';
  */
 export const getDashboardStatistics = async () => {
   try {
-    const response = await api.get('/admin/statistics');
+    const response = await api.get('/manager/statistics');
     return response.data;
   } catch (error) {
     console.error('Error fetching dashboard statistics:', error);
@@ -25,7 +25,7 @@ export const getDashboardStatistics = async () => {
  */
 export const getDetailedStatistics = async () => {
   try {
-    const response = await api.get('/admin/statistics/detailed');
+    const response = await api.get('/manager/statistics/detailed');
     return response.data;
   } catch (error) {
     console.error('Error fetching detailed statistics:', error);

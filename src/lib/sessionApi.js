@@ -2,6 +2,15 @@
 import api from './axios';
 
 /**
+ * authorization: Bearer <token>
+ * @returns {Promise} Response dengan data statistik
+ */
+export const hasPermission = (roles) => {
+  const userRole = localStorage.getItem('roles');
+  return roles.includes(userRole);
+};
+
+/**
  * Login user
  * @param {string} email
  * @param {string} password
@@ -18,5 +27,6 @@ export const login = async (email, password) => {
 };
 
 export default {
+    hasPermission,
 	login,
 };
