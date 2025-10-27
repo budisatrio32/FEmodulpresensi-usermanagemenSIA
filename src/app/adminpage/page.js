@@ -114,10 +114,10 @@ const fetchStatistics = async () => {
   }
 };
 
+const router = useRouter();
 const handleCardClick = (actionType) => {
-  const router = useRouter();
   if (actionType === 'add-course') {
-    router.push('/adminpage/tambahmataKuliah');
+    router.push('/adminpage/tambahmatkul');
   } else if (actionType === 'add-class') {
     router.push('/adminpage/tambahkelas');
   } else if (actionType === 'add-student') {
