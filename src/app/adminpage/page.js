@@ -9,6 +9,7 @@ import AdminNavbar from '@/components/ui/admin-navbar'
 import Footer from '@/components/ui/footer'
 import { getDashboardStatistics } from '@/lib/adminApi'
 import Cookies from 'js-cookie'
+import { ErrorMessageBoxWithButton } from '@/components/ui/message-box'
 
 // Icons - using icons from /public/icon folder
 const PlusIcon = () => (
@@ -253,16 +254,7 @@ return (
     
     {/* Error Message */}
     {error && (
-      <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-        <p className="font-semibold">Error:</p>
-        <p>{error}</p>
-        <button 
-          onClick={fetchStatistics}
-          className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-        >
-          Coba Lagi
-        </button>
-      </div>
+      <ErrorMessageBoxWithButton message={error} action={fetchStatistics} />
     )}
     
     {/* Statistics Grid */}

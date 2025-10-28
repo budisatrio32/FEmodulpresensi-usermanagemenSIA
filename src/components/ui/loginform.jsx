@@ -7,6 +7,7 @@ import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { SecondaryButton } from './button';
 import sessionApi from '@/lib/sessionApi';
 import Cookies from 'js-cookie';
+import { ErrorMessageBox } from './message-box';
 
 export default function LoginForm() {
 const router = useRouter();
@@ -178,9 +179,7 @@ return (
 </form>
     {/* Error Message */}
     {error && (
-      <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-        <p>{error}</p>
-      </div>
+      <ErrorMessageBox message={error} />
     )}
 </div>
 </section>

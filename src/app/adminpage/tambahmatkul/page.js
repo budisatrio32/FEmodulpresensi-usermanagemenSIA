@@ -6,6 +6,7 @@ import { BookOpen, Search, X, ArrowLeft } from 'lucide-react';
 import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
 import { getSubjects } from '@/lib/adminApi';
+import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 
 export default function MatkulDashboard() {
   const router = useRouter();
@@ -76,7 +77,7 @@ export default function MatkulDashboard() {
 
   // Handle add new matkul
   const handleAddMatkul = () => {
-    router.push('/adminpage/tambahkelas/addform');
+    router.push('/adminpage/tambahmatkul/addform');
   };
 
   // Handle search input change
@@ -92,7 +93,7 @@ export default function MatkulDashboard() {
   // Handle edit action
   const handleEdit = (matkul, index) => {
     console.log('Edit matkul:', matkul, 'at index:', index);
-    router.push(`/adminpage/tambahkelas/editform?id=${matkul.id}`);
+    router.push(`/adminpage/tambahmatkul/editform?id=${matkul.id}`);
   };
 
   // Handle delete action
@@ -159,16 +160,7 @@ export default function MatkulDashboard() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-            <p className="font-semibold">Error:</p>
-            <p>{error}</p>
-            <button 
-              onClick={indexMatkuls}
-              className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-            >
-              Coba Lagi
-            </button>
-          </div>
+          <ErrorMessageBoxWithButton message={error} action={indexMatkuls} />
         )}
 
         {/* Stats Card */}

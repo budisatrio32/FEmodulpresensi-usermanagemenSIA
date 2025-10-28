@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { storeSubject } from '@/lib/adminApi';
 import { useRouter } from "next/navigation";
 import { 
   Field, 
@@ -12,11 +13,13 @@ import {
 import { Button } from "@/components/ui/button";
 import AdminNavbar from "@/components/ui/admin-navbar";
 import { ArrowLeft, Save, X, Info } from "lucide-react";
+import { ErrorMessageBox, SuccessMessageBoxWithButton } from "@/components/ui/message-box";
 
 export default function AddMatkulForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [success, setSuccess] = useState('');
   
   const [formData, setFormData] = useState({
     name_subject: "",
@@ -34,6 +37,17 @@ export default function AddMatkulForm() {
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
+    }
+    if (errors.form) {
+      setErrors(prev => ({ ...prev, form: null }));
+    }
+    if (success) {
+      setSuccess('');
+      setFormData({
+        name_subject: "",
+        code_subject: "",
+        sks: ""
+      });
     }
   };
 
@@ -70,40 +84,37 @@ export default function AddMatkulForm() {
     }
     
     setIsLoading(true);
-    
+
+    const newErrors = {};
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/matkul', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-      //   },
-      //   body: JSON.stringify({
-      //     name_subject: formData.name_subject,
-      //     code_subject: formData.code_subject.toUpperCase(),
-      //     sks: parseInt(formData.sks)
-      //   })
-      // });
-      
-      // if (!response.ok) throw new Error('Gagal menambahkan data');
-      
-      alert("Data mata kuliah berhasil ditambahkan!");
-      router.push("/adminpage/tambahkelas");
+      // Panggil API storeSubject
+      const response = await storeSubject({
+        name_subject: formData.name_subject,
+        code_subject: formData.code_subject.toUpperCase(),
+        sks: parseInt(formData.sks)
+      });
+      if (response.status === 'success' || response.success === true) {
+        setSuccess('Mata kuliah berhasil ditambahkan');
+      } else if (response.status === 'failed') {
+        newErrors.code_subject = response.message;
+      } else {
+        newErrors.form = response.message || 'Gagal menambahkan data';
+      }
     } catch (error) {
-      alert("Gagal menambahkan data: " + error.message);
+      newErrors.form = "Gagal menambahkan data: " + (error.message || 'Unknown error');
     } finally {
       setIsLoading(false);
+      setErrors(newErrors);
     }
   };
 
   const handleCancel = () => {
     if (window.confirm("Apakah Anda yakin ingin membatalkan? Data yang diisi akan hilang.")) {
-      router.push("/adminpage/tambahkelas");
+      router.push("/adminpage/tambahmatkul");
     }
+  };
+  const handleFinish = () => {
+    router.push("/adminpage/tambahmatkul");
   };
 
   return (
@@ -115,7 +126,7 @@ export default function AddMatkulForm() {
         <div className="mb-10">
           <Button
             variant="ghost"
-            onClick={() => router.push("/adminpage/tambahkelas")}
+            onClick={() => router.push("/adminpage/tambahmatkul")}
             className="mb-6 -ml-4"
             style={{ fontFamily: 'Urbanist, sans-serif' }}
           >
@@ -240,7 +251,7 @@ export default function AddMatkulForm() {
                     placeholder="Contoh: CS101"
                     disabled={isLoading}
                   />
-                  {formData.code_subject && !errors.code_subject && formData.code_subject.length >= 2 && (
+                  {formData.code_subject && !errors.code_subject && formData.code_subject.length >= 2 && formData.code_subject.length <= 10 && (
                     <div 
                       className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
                       style={{ backgroundColor: '#16874B' }}
@@ -305,6 +316,15 @@ export default function AddMatkulForm() {
                 <FieldError>{errors.sks}</FieldError>
               )}
             </Field>
+
+            {/* Form Error */}
+            {errors.form && (
+              <ErrorMessageBox message={errors.form} />
+            )}
+
+            {success && (
+              <SuccessMessageBoxWithButton message={success + 'Lihat Data atau tambahkan mata kuliah lain'} action={handleFinish} btntext="Lihat Data" />
+            )}
 
             {/* Action Buttons */}
             <div className="pt-8">

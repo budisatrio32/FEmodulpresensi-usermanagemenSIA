@@ -46,6 +46,20 @@ export const getSubjects = async () => {
     throw error;
   }
 };
+/**
+ * Store new subject
+ * @param {Object} subjectData - Data mata kuliah baru
+ * @returns {Promise} Response hasil create
+ */
+export const storeSubject = async (subjectData) => {
+  try {
+    const response = await api.post('/manager/subjects', subjectData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating subject:', error);
+    throw error;
+  }
+};
 
 /**
  * Get all managers
@@ -97,4 +111,6 @@ export default {
   getManagers,
   createManager,
   deleteManager,
+  getSubjects,
+  storeSubject,
 };
