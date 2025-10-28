@@ -9,7 +9,6 @@ import AdminNavbar from '@/components/ui/admin-navbar'
 import Footer from '@/components/ui/footer'
 import { getDashboardStatistics } from '@/lib/adminApi'
 import Cookies from 'js-cookie'
-import { useRouter } from 'next/navigation'
 
 // Icons - using icons from /public/icon folder
 const PlusIcon = () => (
@@ -101,7 +100,7 @@ const fetchStatistics = async () => {
     const response = await getDashboardStatistics();
     
     // Periksa response dan set data statistik
-    if (response.success) {
+    if (response.status === 'success') {
       setStatistics(response.data);
     } else {
       setError('Gagal mengambil data statistik');
@@ -117,7 +116,6 @@ const fetchStatistics = async () => {
   }
 };
 
-const router = useRouter();
 const handleCardClick = (actionType) => {
   console.log(`Clicked: ${actionType}`)
   // Navigate to respective CRUD pages

@@ -24,11 +24,11 @@ const handleSubmit = async (e) => {
     // Panggil sessionApi.login
     const response = await sessionApi.login(email, password);
 
-  // Simpan token dan roles ke cookies
-  const token = response.data.access_token;
-  const roles = response.data.user.roles;
-  Cookies.set('token', token, { expires: 7 }); // expires in 7 days
-  Cookies.set('roles', roles, { expires: 7 });
+    // Simpan token dan roles ke cookies
+    const token = response.data.access_token;
+    const roles = response.data.user.roles;
+    Cookies.set('token', token, { expires: 7 }); // expires in 7 days
+    Cookies.set('roles', roles, { expires: 7 });
 
     // redirect sesuai role
     if (roles == 'admin' || roles == 'manager') {

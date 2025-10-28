@@ -34,6 +34,20 @@ export const getDetailedStatistics = async () => {
 };
 
 /**
+ * Get all subjects
+ * @returns {Promise} Response dengan data subjects
+ */
+export const getSubjects = async () => {
+  try {
+    const response = await api.get('/manager/subjects');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching subjects:', error);
+    throw error;
+  }
+};
+
+/**
  * Get all managers
  * @returns {Promise} Response dengan data managers
  */

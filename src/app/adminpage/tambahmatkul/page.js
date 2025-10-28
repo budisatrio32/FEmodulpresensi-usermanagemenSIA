@@ -1,24 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BookOpen, Search, X, ArrowLeft } from 'lucide-react';
 import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
+import { getSubjects } from '@/lib/adminApi';
 
 export default function MatkulDashboard() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [matkuls, setMatkuls] = useState([
-    { id: 1, name_subject: 'Algoritma dan Pemrograman', code_subject: 'CS101', sks: 3, created_at: '2024-01-15' },
-    { id: 2, name_subject: 'Struktur Data', code_subject: 'CS102', sks: 3, created_at: '2024-01-16' },
-    { id: 3, name_subject: 'Basis Data', code_subject: 'CS201', sks: 4, created_at: '2024-01-17' },
-    { id: 4, name_subject: 'Jaringan Komputer', code_subject: 'CS202', sks: 3, created_at: '2024-01-18' },
-    { id: 5, name_subject: 'Sistem Operasi', code_subject: 'CS203', sks: 3, created_at: '2024-01-19' },
-    { id: 6, name_subject: 'Pemrograman Web', code_subject: 'CS301', sks: 4, created_at: '2024-01-20' },
-    { id: 7, name_subject: 'Machine Learning', code_subject: 'CS401', sks: 3, created_at: '2024-01-21' },
-    { id: 8, name_subject: 'Keamanan Sistem', code_subject: 'CS402', sks: 3, created_at: '2024-01-22' },
-  ]);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(null);
+  const [matkuls, setMatkuls] = useState([]);
+
+  // Fetch subjects from API
+  const indexMatkuls = async () => {
+    setLoading(true);
+    try {
+      setError(null);
+      const response = await getSubjects();
+      if (response.status === 'success') {
+        setMatkuls(response.data);
+      } else {
+        setError('Gagal mengambil data mata kuliah');
+      }
+      setSuccess(true);
+    } catch (error) {
+      setSuccess(false);
+      setError('Terjadi kesalahan saat mengambil data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    indexMatkuls();
+  }, []);
 
   // Filter matkul berdasarkan search query
   const filteredMatkuls = matkuls.filter(matkul => {
@@ -33,7 +52,6 @@ export default function MatkulDashboard() {
 
   // Define columns untuk table
   const columns = [
-    { key: 'no', label: 'No', className: 'text-center', cellClassName: 'text-center' },
     { key: 'name_subject', label: 'Nama Mata Kuliah', className: '' },
     { key: 'code_subject', label: 'Kode MK', className: '' },
     { key: 'sks', label: 'SKS', className: 'text-center', cellClassName: 'text-center' },
@@ -42,11 +60,6 @@ export default function MatkulDashboard() {
 
   // Custom render untuk nomor urut dan SKS
   const customRender = {
-    no: (value, item, index) => (
-      <span style={{ fontFamily: 'Urbanist, sans-serif', color: '#015023' }}>
-        {index + 1}
-      </span>
-    ),
     sks: (value) => (
       <span 
         className="px-3 py-1 rounded font-semibold text-sm"
@@ -144,14 +157,28 @@ export default function MatkulDashboard() {
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            <p className="font-semibold">Error:</p>
+            <p>{error}</p>
+            <button 
+              onClick={indexMatkuls}
+              className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Coba Lagi
+            </button>
+          </div>
+        )}
+
         {/* Stats Card */}
         <div className="rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-xl" style={{ background: 'linear-gradient(to bottom right, #015023, #013d1c)' }}>
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-white text-base sm:text-lg font-semibold mb-2">Total Mata Kuliah</h3>
-              <p className="text-white text-3xl sm:text-4xl font-bold mb-1">{filteredMatkuls.length}</p>
+              <p className="text-white text-3xl sm:text-4xl font-bold mb-1">{loading ? '...' : filteredMatkuls.length}</p>
               <p className="text-sm" style={{ color: '#DABC4E' }}>
-                {searchQuery ? 'Hasil pencarian' : 'Mata kuliah terdaftar'}
+                {loading ? 'Loading...' : searchQuery ? 'Hasil pencarian' : error ? error : 'Mata kuliah terdaftar'}
               </p>
             </div>
             <div className="p-3 sm:p-4 rounded-2xl shadow-lg" style={{ backgroundColor: '#DABC4E' }}>
@@ -183,15 +210,17 @@ export default function MatkulDashboard() {
         </div>
 
         {/* Table using DataTable component */}
-        <DataTable
-          columns={columns}
-          data={filteredMatkuls}
-          actions={['delete', 'edit']}
-          pagination={true}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          customRender={customRender}
-        />
+        {success === true && (
+          <DataTable
+            columns={columns}
+            data={filteredMatkuls}
+            actions={['delete', 'edit']}
+            pagination={true}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            customRender={customRender}
+          />
+        )}
       </div>
     </div>
   );
