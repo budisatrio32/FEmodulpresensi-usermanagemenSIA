@@ -19,7 +19,7 @@ export default function AddMatkulForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [success, setSuccess] = useState('');
+  const [success, setSuccess] = useState(null);
   
   const [formData, setFormData] = useState({
     name_subject: "",
@@ -42,7 +42,7 @@ export default function AddMatkulForm() {
       setErrors(prev => ({ ...prev, form: null }));
     }
     if (success) {
-      setSuccess('');
+      setSuccess(null);
       setFormData({
         name_subject: "",
         code_subject: "",
@@ -93,7 +93,7 @@ export default function AddMatkulForm() {
         code_subject: formData.code_subject.toUpperCase(),
         sks: parseInt(formData.sks)
       });
-      if (response.status === 'success' || response.success === true) {
+      if (response.status === 'success') {
         setSuccess('Mata kuliah berhasil ditambahkan');
       } else if (response.status === 'failed') {
         newErrors.code_subject = response.message;

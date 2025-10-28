@@ -62,6 +62,20 @@ export const storeSubject = async (subjectData) => {
 };
 
 /**
+ * Get all classes
+ * @returns {Promise} Response dengan data kelas
+ */
+export const getClasses = async () => {
+  try {
+    const response = await api.get('/manager/classes');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching classes:', error);
+    throw error;
+  }
+};
+
+/**
  * Get all managers
  * @returns {Promise} Response dengan data managers
  */
@@ -80,7 +94,7 @@ export const getManagers = async () => {
  * @param {Object} managerData - Data manager baru
  * @returns {Promise} Response hasil create
  */
-export const createManager = async (managerData) => {
+export const storeManager = async (managerData) => {
   try {
     const response = await api.post('/admin/managers', managerData);
     return response.data;
@@ -109,7 +123,7 @@ export default {
   getDashboardStatistics,
   getDetailedStatistics,
   getManagers,
-  createManager,
+  storeManager,
   deleteManager,
   getSubjects,
   storeSubject,

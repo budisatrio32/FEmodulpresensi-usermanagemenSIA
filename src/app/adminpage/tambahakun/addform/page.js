@@ -12,13 +12,17 @@ import {
 import { Button } from "@/components/ui/button";
 import AdminNavbar from "@/components/ui/admin-navbar";
 import { ArrowLeft, Save, X, Info } from "lucide-react";
+import { storeManager } from "@/lib/adminApi";
+import { SuccessMessageBoxWithButton, ErrorMessageBox } from "@/components/ui/message-box";
 
 export default function AddManagerForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [success, setSuccess] = useState(null);
   
   const [formData, setFormData] = useState({
+    name: "",
     username: "",
     email: "",
     password: "",
@@ -37,6 +41,20 @@ export default function AddManagerForm() {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
+    if (errors.form) {
+      setErrors(prev => ({ ...prev, form: null }));
+    }
+    if (success) {
+      setSuccess(null);
+      setFormData({
+        name: "",
+        username: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        is_active: true
+      });
+    }
   };
 
   const validateForm = () => {
@@ -47,7 +65,13 @@ export default function AddManagerForm() {
     } else if (formData.username.length < 3) {
       newErrors.username = "Username minimal 3 karakter";
     }
-    
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Name harus diisi";
+    } else if (formData.name.length < 3) {
+      newErrors.name = "Name minimal 3 karakter";
+    }
+
     if (!formData.email.trim()) {
       newErrors.email = "Email harus diisi";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -77,34 +101,29 @@ export default function AddManagerForm() {
     
     setIsLoading(true);
     
+    const newErrors = {};
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/manager', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-      //   },
-      //   body: JSON.stringify({
-      //     username: formData.username,
-      //     email: formData.email,
-      //     password: formData.password,
-      //     role: 'manager',
-      //     is_active: formData.is_active
-      //   })
-      // });
-      
-      // if (!response.ok) throw new Error('Gagal menambahkan data');
-      
-      alert("Akun manager berhasil ditambahkan!");
-      router.push("/adminpage/tambahakun");
+      // Panggil API storeManager
+      const response = await storeManager({
+        name: formData.name,
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        password_confirmation: formData.confirmPassword,
+        is_active: formData.is_active
+      });
+      if (response.status === 'success') {
+        setSuccess('Manager berhasil ditambahkan');
+      } else if (response.status === 'failed') {
+        newErrors.username = response.message;
+      } else {
+        newErrors.form = response.message || 'Gagal menambahkan data';
+      }
     } catch (error) {
-      alert("Gagal menambahkan data: " + error.message);
+      newErrors.form = "Gagal menambahkan data: " + (error.message || 'Unknown error');
     } finally {
       setIsLoading(false);
+      setErrors(newErrors);
     }
   };
 
@@ -112,6 +131,9 @@ export default function AddManagerForm() {
     if (window.confirm("Apakah Anda yakin ingin membatalkan? Data yang diisi akan hilang.")) {
       router.push("/adminpage/tambahakun");
     }
+  };
+  const handleFinish = () => {
+    router.push("/adminpage/tambahakun");
   };
 
   return (
@@ -222,6 +244,47 @@ export default function AddManagerForm() {
               )}
             </Field>
 
+            {/* name Field */}
+            <Field>
+              <FieldLabel htmlFor="name">
+                Name <span className="text-red-500">*</span>
+              </FieldLabel>
+              <FieldDescription>
+                Nama lengkap manager
+              </FieldDescription>
+              <FieldContent>
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100"
+                    style={{
+                      fontFamily: 'Urbanist, sans-serif',
+                      borderColor: errors.username ? '#BE0414' : '#015023',
+                      borderRadius: '12px',
+                      opacity: errors.username ? 1 : 0.7
+                    }}
+                    placeholder="Masukkan username"
+                    disabled={isLoading}
+                  />
+                  {formData.name && !errors.name && formData.name.length >= 3 && (
+                    <div 
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                      style={{ backgroundColor: '#16874B' }}
+                    >
+                      ✓
+                    </div>
+                  )}
+                </div>
+              </FieldContent>
+              {errors.name && (
+                <FieldError>{errors.name}</FieldError>
+              )}
+            </Field>
+
             {/* Email Field */}
             <Field>
               <FieldLabel htmlFor="email">
@@ -277,7 +340,7 @@ export default function AddManagerForm() {
                 Password <span className="text-red-500">*</span>
               </FieldLabel>
               <FieldDescription>
-                Password minimal 6 karakter untuk keamanan akun
+                Password minimal 6 karakter untuk password sementara
               </FieldDescription>
               <FieldContent>
                 <div className="relative">
@@ -397,6 +460,15 @@ export default function AddManagerForm() {
                 )}
               </div>
             </Field>
+
+            {/* Form Error */}
+            {errors.form && (
+              <ErrorMessageBox message={errors.form} />
+            )}
+
+            {success && (
+              <SuccessMessageBoxWithButton message={success + 'Lihat Data atau tambahkan akun manager lain'} action={handleFinish} btntext="Lihat Data" />
+            )}
 
             {/* Action Buttons */}
             <div className="pt-8">

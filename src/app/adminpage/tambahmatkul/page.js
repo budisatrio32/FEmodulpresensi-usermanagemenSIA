@@ -12,7 +12,7 @@ export default function MatkulDashboard() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(null);
   const [matkuls, setMatkuls] = useState([]);
 
@@ -30,7 +30,7 @@ export default function MatkulDashboard() {
       setSuccess(true);
     } catch (error) {
       setSuccess(false);
-      setError('Terjadi kesalahan saat mengambil data');
+      setError('Terjadi kesalahan saat mengambil data: ' + error.message);
     } finally {
       setLoading(false);
     }

@@ -1,24 +1,45 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserCog, Search, X, ArrowLeft } from 'lucide-react';
 import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
+import { getManagers } from '@/lib/adminApi';
+import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 
 export default function AkunManagerDashboard() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [managers, setManagers] = useState([
-    { id: 1, username: 'manager_john', email: 'john.manager@example.com', password: '********', is_active: true, created_at: '2024-01-15' },
-    { id: 2, username: 'manager_sarah', email: 'sarah.manager@example.com', password: '********', is_active: true, created_at: '2024-01-16' },
-    { id: 3, username: 'manager_david', email: 'david.manager@example.com', password: '********', is_active: true, created_at: '2024-01-17' },
-    { id: 4, username: 'manager_lisa', email: 'lisa.manager@example.com', password: '********', is_active: false, created_at: '2024-01-18' },
-    { id: 5, username: 'manager_michael', email: 'michael.manager@example.com', password: '********', is_active: true, created_at: '2024-01-19' },
-    { id: 6, username: 'manager_emma', email: 'emma.manager@example.com', password: '********', is_active: true, created_at: '2024-01-20' },
-    { id: 7, username: 'manager_robert', email: 'robert.manager@example.com', password: '********', is_active: false, created_at: '2024-01-21' },
-    { id: 8, username: 'manager_sophia', email: 'sophia.manager@example.com', password: '********', is_active: true, created_at: '2024-01-22' },
-  ]);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [success, setSuccess] = useState(null);
+  const [managers, setManagers] = useState([]);
+
+  //ambil data dari getManagers API
+
+  const indexManagers = async () => {
+    setLoading(true);
+    try {
+      setError(null);
+      const response = await getManagers();
+      if (response.status === 'success') {
+        setSuccess(true);
+        setManagers(response.data);
+      } else {
+        setError('Gagal mengambil data manager');
+      }
+      setSuccess(true);
+    } catch (error) {
+      setError('Terjadi kesalahan saat mengambil data: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    indexManagers();
+  }, []);
 
   // Filter managers berdasarkan search query
   const filteredManagers = managers.filter(manager => {
@@ -35,7 +56,7 @@ export default function AkunManagerDashboard() {
   const columns = [
     { key: 'username', label: 'Username', className: '' },
     { key: 'email', label: 'Email', className: '' },
-    { key: 'password', label: 'Password', className: '' },
+    { key: 'name', label: 'Nama', className: '' },
     { key: 'is_active', label: 'Status', className: 'text-center', cellClassName: 'text-center' },
     { key: 'created_at', label: 'Created At', className: '' },
   ];
@@ -139,14 +160,18 @@ export default function AkunManagerDashboard() {
           </div>
         </div>
 
+        {error && (
+          <ErrorMessageBoxWithButton message={error} action={indexManagers} />
+        )}
+
         {/* Stats Card */}
         <div className="rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-xl" style={{ background: 'linear-gradient(to bottom right, #015023, #013d1c)' }}>
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-white text-base sm:text-lg font-semibold mb-2">Total Manager</h3>
-              <p className="text-white text-3xl sm:text-4xl font-bold mb-1">{filteredManagers.length}</p>
+              <p className="text-white text-3xl sm:text-4xl font-bold mb-1">{loading ? '...' : filteredManagers.length}</p>
               <p className="text-sm" style={{ color: '#DABC4E' }}>
-                {searchQuery ? 'Hasil pencarian' : 'Manager terdaftar'}
+                {loading ? 'Loading...' : searchQuery ? 'Hasil pencarian' : error ? error : 'Manager terdaftar'}
               </p>
             </div>
             <div className="p-3 sm:p-4 rounded-2xl shadow-lg" style={{ backgroundColor: '#DABC4E' }}>
@@ -178,15 +203,17 @@ export default function AkunManagerDashboard() {
         </div>
 
         {/* Table using DataTable component */}
-        <DataTable
-          columns={columns}
-          data={filteredManagers}
-          actions={['delete', 'edit']}
-          pagination={true}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          customRender={customRender}
-        />
+        {success === true && (
+          <DataTable
+            columns={columns}
+            data={filteredManagers}
+            actions={['delete', 'edit']}
+            pagination={true}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            customRender={customRender}
+          />
+        )}
       </div>
     </div>
   );
