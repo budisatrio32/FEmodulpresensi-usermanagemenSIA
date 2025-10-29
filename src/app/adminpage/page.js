@@ -289,9 +289,8 @@ return (
         title={card.title}
         description={card.description}
         icon={card.icon}
-        onClick={card.action}
         >
-        <PrimaryButton className="w-full mt-4">
+        <PrimaryButton className="w-full mt-4" onClick={card.action}>
             <PlusIcon />
             Tambah
         </PrimaryButton>

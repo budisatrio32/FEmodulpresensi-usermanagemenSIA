@@ -10,14 +10,14 @@ export default function KelasDashboard() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [kelas, setKelas] = useState([
-    { id: 1, kode_kelas: 'A-CS101', maks_mahasiswa: 40, jadwal: 'Senin - 08.00 - 10.00', is_active: true, created_at: '2024-01-15' },
-    { id: 2, kode_kelas: 'B-CS101', maks_mahasiswa: 40, jadwal: 'Selasa - 10.00 - 12.00', is_active: true, created_at: '2024-01-16' },
-    { id: 3, kode_kelas: 'A-CS102', maks_mahasiswa: 35, jadwal: 'Rabu - 13.00 - 15.00', is_active: true, created_at: '2024-01-17' },
-    { id: 4, kode_kelas: 'B-CS102', maks_mahasiswa: 35, jadwal: 'Kamis - 09.00 - 11.00', is_active: false, created_at: '2024-01-18' },
-    { id: 5, kode_kelas: 'A-CS201', maks_mahasiswa: 30, jadwal: 'Jumat - 08.00 - 10.00', is_active: true, created_at: '2024-01-19' },
-    { id: 6, kode_kelas: 'B-CS201', maks_mahasiswa: 30, jadwal: 'Senin - 13.00 - 15.00', is_active: true, created_at: '2024-01-20' },
-    { id: 7, kode_kelas: 'A-CS301', maks_mahasiswa: 25, jadwal: 'Selasa - 15.00 - 17.00', is_active: false, created_at: '2024-01-21' },
-    { id: 8, kode_kelas: 'B-CS301', maks_mahasiswa: 25, jadwal: 'Rabu - 08.00 - 10.00', is_active: true, created_at: '2024-01-22' },
+    { id: 1, kode_kelas: 'A-CS101', jumlah_mahasiswa: 35, maks_mahasiswa: 40, jadwal: 'Senin, 08.00 - 10.00', tanggal: '2024-11-04', is_active: true, created_at: '2024-01-15' },
+    { id: 2, kode_kelas: 'B-CS101', jumlah_mahasiswa: 38, maks_mahasiswa: 40, jadwal: 'Selasa, 10.00 - 12.00', tanggal: '2024-11-05', is_active: true, created_at: '2024-01-16' },
+    { id: 3, kode_kelas: 'A-CS102', jumlah_mahasiswa: 30, maks_mahasiswa: 35, jadwal: 'Rabu, 13.00 - 15.00', tanggal: '2024-11-06', is_active: true, created_at: '2024-01-17' },
+    { id: 4, kode_kelas: 'B-CS102', jumlah_mahasiswa: 20, maks_mahasiswa: 35, jadwal: 'Kamis, 09.00 - 11.00', tanggal: '2024-11-07', is_active: false, created_at: '2024-01-18' },
+    { id: 5, kode_kelas: 'A-CS201', jumlah_mahasiswa: 28, maks_mahasiswa: 30, jadwal: 'Jumat, 08.00 - 10.00', tanggal: '2024-11-08', is_active: true, created_at: '2024-01-19' },
+    { id: 6, kode_kelas: 'B-CS201', jumlah_mahasiswa: 15, maks_mahasiswa: 30, jadwal: 'Senin, 13.00 - 15.00', tanggal: '2024-11-11', is_active: true, created_at: '2024-01-20' },
+    { id: 7, kode_kelas: 'A-CS301', jumlah_mahasiswa: 10, maks_mahasiswa: 25, jadwal: 'Selasa, 15.00 - 17.00', tanggal: '2024-11-12', is_active: false, created_at: '2024-01-21' },
+    { id: 8, kode_kelas: 'B-CS301', jumlah_mahasiswa: 22, maks_mahasiswa: 25, jadwal: 'Rabu, 08.00 - 10.00', tanggal: '2024-11-13', is_active: true, created_at: '2024-01-22' },
   ]);
 
   // Filter kelas berdasarkan search query
@@ -25,8 +25,10 @@ export default function KelasDashboard() {
     const query = searchQuery.toLowerCase();
     return (
       kelasItem.kode_kelas.toLowerCase().includes(query) ||
+      kelasItem.jumlah_mahasiswa.toString().includes(query) ||
       kelasItem.maks_mahasiswa.toString().includes(query) ||
       kelasItem.jadwal.toLowerCase().includes(query) ||
+      kelasItem.tanggal.includes(query) ||
       kelasItem.created_at.includes(query) ||
       (kelasItem.is_active ? 'active' : 'inactive').includes(query)
     );
@@ -34,27 +36,33 @@ export default function KelasDashboard() {
 
   // Define columns untuk table
   const columns = [
-    { key: 'kode_kelas', label: 'Kode Kelas', className: '' },
-    { key: 'maks_mahasiswa', label: 'Maks Mahasiswa', className: 'text-center', cellClassName: 'text-center' },
-    { key: 'jadwal', label: 'Jadwal', className: '' },
-    { key: 'is_active', label: 'Status', className: 'text-center', cellClassName: 'text-center' },
-    { key: 'created_at', label: 'Created At', className: '' },
+    { key: 'kode_kelas', label: 'Kode Kelas' },
+    { key: 'jumlah_mahasiswa', label: 'Jumlah/Maks Mahasiswa' },
+    { key: 'jadwal', label: 'Jadwal' },
+    { key: 'is_active', label: 'Status' },
+    { key: 'created_at', label: 'Created At' },
   ];
 
-  // Custom render untuk maks_mahasiswa dan is_active status
+  // Custom render untuk jumlah_mahasiswa dan is_active status
   const customRender = {
-    maks_mahasiswa: (value) => (
-      <span 
-        className="px-3 py-1 rounded font-semibold text-sm"
-        style={{
-          backgroundColor: '#DABC4E',
-          color: '#015023',
-          borderRadius: '12px'
-        }}
-      >
-        {value} Mhs
-      </span>
-    ),
+    jumlah_mahasiswa: (value, rowData) => {
+      const percentage = (value / rowData.maks_mahasiswa) * 100;
+      const isAlmostFull = percentage >= 80;
+      const isFull = percentage >= 100;
+      
+      return (
+        <span 
+          className="px-3 py-1 rounded font-semibold text-sm"
+          style={{
+            backgroundColor: isFull ? '#BE0414' : isAlmostFull ? '#DABC4E' : '#16874B',
+            color: '#FFFFFF',
+            borderRadius: '12px'
+          }}
+        >
+          {value} / {rowData.maks_mahasiswa} Mhs
+        </span>
+      );
+    },
     is_active: (value) => (
       <span 
         className="px-2 py-1 rounded text-xs font-semibold"
@@ -84,10 +92,10 @@ export default function KelasDashboard() {
     setSearchQuery('');
   };
 
-  // Handle edit action
-  const handleEdit = (kelasItem, index) => {
-    console.log('Edit kelas:', kelasItem, 'at index:', index);
-    router.push(`/adminpage/tambahkelas/editform?id=${kelasItem.id}`);
+  // Handle detail action - redirect to detail page
+  const handleDetail = (kelasItem, index) => {
+    console.log('Detail kelas:', kelasItem, 'at index:', index);
+    router.push(`/adminpage/tambahkelas/detail?id=${kelasItem.id}`);
   };
 
   // Handle delete action
@@ -194,9 +202,9 @@ export default function KelasDashboard() {
         <DataTable
           columns={columns}
           data={filteredKelas}
-          actions={['delete', 'edit']}
+          actions={['detail', 'delete']}
           pagination={true}
-          onEdit={handleEdit}
+          onDetail={handleDetail}
           onDelete={handleDelete}
           customRender={customRender}
         />

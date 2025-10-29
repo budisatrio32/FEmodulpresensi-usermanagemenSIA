@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, Edit } from 'lucide-react';
+import { Trash2, Edit, Eye } from 'lucide-react';
 import {
   Pagination,
   PaginationContent,
@@ -16,6 +16,7 @@ export default function DataTable({
   pagination = true,
   onEdit,
   onDelete,
+  onDetail,
   customRender = {},
   headerClassName = "text-white"
 }) {
@@ -44,18 +45,19 @@ export default function DataTable({
   const renderActions = (item, index) => {
     return (
       <div className="flex items-center justify-center gap-2">
-        {actions.includes('delete') && (
+        {actions.includes('detail') && (
           <button
-            onClick={() => onDelete && onDelete(item, index)}
+            onClick={() => onDetail && onDetail(item, index)}
             className="text-white p-2 transition shadow-sm hover:opacity-90"
             style={{ 
-              backgroundColor: '#BE0414',
+              backgroundColor: '#0066CC',
               borderRadius: '12px',
               fontFamily: 'Urbanist, sans-serif'
             }}
-            aria-label="Delete"
+            aria-label="Detail"
+            title="Lihat Detail"
           >
-            <Trash2 className="w-4 h-4" />
+            <Eye className="w-4 h-4" />
           </button>
         )}
         {actions.includes('edit') && (
@@ -68,8 +70,24 @@ export default function DataTable({
               fontFamily: 'Urbanist, sans-serif'
             }}
             aria-label="Edit"
+            title="Edit"
           >
             <Edit className="w-4 h-4" />
+          </button>
+        )}
+        {actions.includes('delete') && (
+          <button
+            onClick={() => onDelete && onDelete(item, index)}
+            className="text-white p-2 transition shadow-sm hover:opacity-90"
+            style={{ 
+              backgroundColor: '#BE0414',
+              borderRadius: '12px',
+              fontFamily: 'Urbanist, sans-serif'
+            }}
+            aria-label="Delete"
+            title="Hapus"
+          >
+            <Trash2 className="w-4 h-4" />
           </button>
         )}
       </div>
@@ -93,7 +111,7 @@ export default function DataTable({
             {columns.map((column) => (
               <th 
                 key={column.key} 
-                className={`font-semibold p-4 text-left ${column.className || ''}`}
+                className={`font-semibold p-4 text-center ${column.className || ''}`}
                 style={{ 
                   width: column.width,
                   color: '#015023',
@@ -128,7 +146,7 @@ export default function DataTable({
               {columns.map((column) => (
                 <td 
                   key={column.key}
-                  className={`p-4 ${column.cellClassName || 'text-gray-700'}`}
+                  className={`p-4 text-center ${column.cellClassName || 'text-gray-700'}`}
                   style={{ fontFamily: 'Urbanist, sans-serif' }}
                 >
                   {renderCell(item, column)}
@@ -137,7 +155,7 @@ export default function DataTable({
               
               {/* Actions cell */}
               {actions.length > 0 && (
-                <td className="p-4">
+                <td className="p-4 text-center">
                   {renderActions(item, startIndex + index)}
                 </td>
               )}
