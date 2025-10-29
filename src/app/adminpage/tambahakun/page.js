@@ -54,11 +54,11 @@ export default function AkunManagerDashboard() {
 
   // Define columns untuk table
   const columns = [
-    { key: 'username', label: 'Username', className: '' },
-    { key: 'email', label: 'Email', className: '' },
-    { key: 'name', label: 'Nama', className: '' },
-    { key: 'is_active', label: 'Status', className: 'text-center', cellClassName: 'text-center' },
-    { key: 'created_at', label: 'Created At', className: '' },
+    { key: 'username', label: 'Username' },
+    { key: 'email', label: 'Email' },
+    { key: 'name', label: 'Nama' },
+    { key: 'is_active', label: 'Status' },
+    { key: 'created_at', label: 'Created At' },
   ];
 
   // Custom render untuk is_active status

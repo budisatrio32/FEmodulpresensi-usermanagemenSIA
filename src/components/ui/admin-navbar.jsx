@@ -1,5 +1,7 @@
 import * as React from "react"
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
+import { LogOut } from 'lucide-react'
 import { cn } from "@/lib/utils"
 
 const AdminNavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
@@ -41,21 +43,50 @@ className={cn("text-right", className)}
 </div>
 ))
 
-const AdminNavbar = React.forwardRef(({ className, title, ...props }, ref) => (
-<nav 
-ref={ref}
-className={cn("bg-brand-green shadow-md rounded-b-[18px]", className)} 
-style={{backgroundColor: '#015023'}}
-{...props}
->
-<div className="container mx-auto px-4 sm:px-6">
-    <div className="flex justify-between items-center h-16 sm:h-20">
-    <AdminNavbarBrand />
-    <AdminNavbarTitle title={title} />
-    </div>
-</div>  
-</nav>
-))
+const AdminNavbar = React.forwardRef(({ className, title, ...props }, ref) => {
+const router = useRouter()
+
+const handleLogout = () => {
+  // Tambahkan logika logout di sini (clear session, token, etc)
+  // Untuk sementara langsung redirect ke home
+  if (confirm('Apakah Anda yakin ingin logout?')) {
+    // Clear any session/token if needed
+    // localStorage.removeItem('token')
+    // sessionStorage.clear()
+    router.push('/')
+  }
+}
+
+return (
+  <nav 
+    ref={ref}
+    className={cn("bg-brand-green shadow-md rounded-b-[18px]", className)} 
+    style={{backgroundColor: '#015023'}}
+    {...props}
+  >
+    <div className="container mx-auto px-4 sm:px-6">
+      <div className="flex justify-between items-center h-16 sm:h-20">
+        <AdminNavbarBrand />
+        <div className="flex items-center gap-4">
+          <AdminNavbarTitle title={title} />
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all hover:opacity-80 cursor-pointer"
+            style={{
+              backgroundColor: '#BE0414',
+              color: '#FFFFFF',
+              fontFamily: 'Urbanist, sans-serif'
+            }}
+          >
+            <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline text-sm sm:text-base">Logout</span>
+          </button>
+        </div>
+      </div>
+    </div>  
+  </nav>
+)
+})
 
 AdminNavbarBrand.displayName = "AdminNavbarBrand"
 AdminNavbarTitle.displayName = "AdminNavbarTitle"

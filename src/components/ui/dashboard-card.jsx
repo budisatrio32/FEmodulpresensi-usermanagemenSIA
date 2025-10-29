@@ -13,11 +13,10 @@ onClick,
 <div
 ref={ref}
 className={cn(
-    "bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer p-4 sm:p-6 flex flex-col items-center text-center",
+    "bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-shadow duration-300 p-4 sm:p-6 flex flex-col items-center text-center",
     className
 )}
-style={{ borderRadius: '12px' }}
-onClick={onClick}
+style={{ borderRadius: '12px', cursor: 'default' }}
 {...props}
 >
 {icon && (

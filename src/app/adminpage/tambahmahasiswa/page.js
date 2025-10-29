@@ -34,12 +34,12 @@ const filteredStudents = students.filter(student => {
 
 // Define columns untuk table
 const columns = [
-{ key: 'role', label: 'Role', className: '' },
-{ key: 'username', label: 'Username', className: '' },
-{ key: 'email', label: 'Email', className: '' },
-{ key: 'password', label: 'Password', className: '' },
-{ key: 'is_active', label: 'Status', className: 'text-center', cellClassName: 'text-center' },
-{ key: 'created_at', label: 'Created At', className: '' },
+{ key: 'role', label: 'Role' },
+{ key: 'username', label: 'Username' },
+{ key: 'email', label: 'Email' },
+{ key: 'password', label: 'Password' },
+{ key: 'is_active', label: 'Status' },
+{ key: 'created_at', label: 'Created At' },
 ];
 
 // Custom render untuk is_active status

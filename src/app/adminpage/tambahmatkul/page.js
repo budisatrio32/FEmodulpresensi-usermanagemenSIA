@@ -53,10 +53,10 @@ export default function MatkulDashboard() {
 
   // Define columns untuk table
   const columns = [
-    { key: 'name_subject', label: 'Nama Mata Kuliah', className: '' },
-    { key: 'code_subject', label: 'Kode MK', className: '' },
-    { key: 'sks', label: 'SKS', className: 'text-center', cellClassName: 'text-center' },
-    { key: 'created_at', label: 'Created At', className: '' },
+    { key: 'name_subject', label: 'Nama Mata Kuliah' },
+    { key: 'code_subject', label: 'Kode MK' },
+    { key: 'sks', label: 'SKS' },
+    { key: 'created_at', label: 'Created At' },
   ];
 
   // Custom render untuk nomor urut dan SKS
