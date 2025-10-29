@@ -1,24 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Users, Search, X, ArrowLeft } from 'lucide-react';
 import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
+import { getDosen } from '@/lib/adminApi';
+import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 
 export default function DosenDashboard() {
 const router = useRouter();
 const [searchQuery, setSearchQuery] = useState('');
-const [dosens, setDosens] = useState([
-{ id: 1, role: 'dosen', username: 'prof_ahmad', email: 'ahmad@example.com', password: '********', is_active: true, created_at: '2024-01-10' },
-{ id: 2, role: 'dosen', username: 'dr_susan', email: 'susan@example.com', password: '********', is_active: true, created_at: '2024-01-11' },
-{ id: 3, role: 'dosen', username: 'prof_budi', email: 'budi@example.com', password: '********', is_active: true, created_at: '2024-01-12' },
-{ id: 4, role: 'dosen', username: 'dr_linda', email: 'linda@example.com', password: '********', is_active: false, created_at: '2024-01-13' },
-{ id: 5, role: 'dosen', username: 'prof_rudi', email: 'rudi@example.com', password: '********', is_active: true, created_at: '2024-01-14' },
-{ id: 6, role: 'dosen', username: 'dr_maya', email: 'maya@example.com', password: '********', is_active: true, created_at: '2024-01-15' },
-{ id: 7, role: 'dosen', username: 'prof_andi', email: 'andi@example.com', password: '********', is_active: false, created_at: '2024-01-16' },
-{ id: 8, role: 'dosen', username: 'dr_siti', email: 'siti@example.com', password: '********', is_active: true, created_at: '2024-01-17' },
-]);
+const [error, setError] = useState(null);
+const [loading, setLoading] = useState(true);
+const [success, setSuccess] = useState(null);
+const [dosens, setDosens] = useState([]);
+
+// Fetch dosens from API
+  const indexDosens = async () => {
+    setLoading(true);
+    try {
+      setError(null);
+      const response = await getDosen();
+      if (response.status === 'success') {
+        setSuccess(true);
+        setDosens(response.data);
+      } else {
+        setError('Gagal mengambil data dosen');
+      }
+    } catch (error) {
+      setError('Terjadi kesalahan saat mengambil data: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+useEffect(() => {
+  indexDosens();
+}, []);
 
 // Filter dosens berdasarkan search query
 const filteredDosens = dosens.filter(dosen => {
@@ -34,10 +53,10 @@ const filteredDosens = dosens.filter(dosen => {
 
 // Define columns untuk table
 const columns = [
-{ key: 'role', label: 'Role', className: '' },
 { key: 'username', label: 'Username', className: '' },
 { key: 'email', label: 'Email', className: '' },
-{ key: 'password', label: 'Password', className: '' },
+{ key: 'name', label: 'Nama', className: '' },
+{ key: 'program_name', label: 'Program', className: '' },
 { key: 'is_active', label: 'Status', className: 'text-center', cellClassName: 'text-center' },
 { key: 'created_at', label: 'Created At', className: '' },
 ];
@@ -141,15 +160,18 @@ return (
         </button>
         </div>
     </div>
+    {error && (
+      <ErrorMessageBoxWithButton message={error} action={indexDosens} />
+    )}
 
     {/* Stats Card */}
     <div className="rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-xl" style={{ background: 'linear-gradient(to bottom right, #015023, #013d1c)' }}>
         <div className="flex items-center justify-between">
         <div>
             <h3 className="text-white text-base sm:text-lg font-semibold mb-2">Total Dosen</h3>
-            <p className="text-white text-3xl sm:text-4xl font-bold mb-1">{filteredDosens.length}</p>
+            <p className="text-white text-3xl sm:text-4xl font-bold mb-1">{loading ? '...' : filteredDosens.length}</p>
             <p className="text-sm" style={{ color: '#DABC4E' }}>
-              {searchQuery ? 'Hasil pencarian' : 'Dosen aktif'}
+              {loading ? 'Loading...' : searchQuery ? 'Hasil pencarian' : error ? error : 'Dosen aktif'}
             </p>
         </div>
         <div className="p-3 sm:p-4 rounded-2xl shadow-lg" style={{ backgroundColor: '#DABC4E' }}>
@@ -181,7 +203,8 @@ return (
     </div>
 
     {/* Table using DataTable component */}
-    <DataTable
+    {success &&
+      <DataTable
         columns={columns}
         data={filteredDosens}
         actions={['delete', 'edit']}
@@ -189,7 +212,8 @@ return (
         onEdit={handleEdit}
         onDelete={handleDelete}
         customRender={customRender}
-    />
+      />
+    }
     </div>
 </div>
 );

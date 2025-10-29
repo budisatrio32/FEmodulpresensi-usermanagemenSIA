@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Field, 
@@ -12,18 +12,27 @@ import {
 import { Button } from "@/components/ui/button";
 import AdminNavbar from "@/components/ui/admin-navbar";
 import { ArrowLeft, Save, X, Info } from "lucide-react";
+import { storeDosen, getPrograms } from "@/lib/adminApi";
+import { SuccessMessageBoxWithButton, 
+  ErrorMessageBox, 
+  ErrorMessageBoxWithButton 
+} from "@/components/ui/message-box";
 
 export default function AddDosenForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  
+  const [success, setSuccess] = useState(null);
+  const [isFetching, setIsFetching] = useState(true);
+  const [programs, setPrograms] = useState([]);
+
   const [formData, setFormData] = useState({
+    name: "",
     username: "",
     email: "",
     password: "",
     confirmPassword: "",
-    role: "dosen",
+    program: "",
     is_active: true
   });
 
@@ -38,6 +47,20 @@ export default function AddDosenForm() {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
+    if (errors.form) {
+      setErrors(prev => ({ ...prev, form: null }));
+    }
+    if (success) {
+      setSuccess(null);
+      setFormData({
+        name: "",
+        username: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        is_active: true
+      })
+    }
   };
 
   const validateForm = () => {
@@ -47,6 +70,12 @@ export default function AddDosenForm() {
       newErrors.username = "Username harus diisi";
     } else if (formData.username.length < 3) {
       newErrors.username = "Username minimal 3 karakter";
+    }
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Nama harus diisi";
+    } else if (formData.name.length < 3) {
+      newErrors.name = "Nama minimal 3 karakter";
     }
     
     if (!formData.email.trim()) {
@@ -66,10 +95,33 @@ export default function AddDosenForm() {
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Password tidak sama";
     }
+    if (!formData.program || formData.program === "") {
+      newErrors.program = "Program harus dipilih";
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  const fetchPrograms = async () => {
+    setIsFetching(true);
+    try {
+      const response = await getPrograms();
+      if (response.status === 'success') {
+        setPrograms(response.data);
+      } else {
+        setErrors(prev => ({ ...prev, fetch: response.message || 'Gagal memuat program' }));
+      }
+    } catch (error) {
+      setErrors(prev => ({ ...prev, fetch: error.message || 'Gagal memuat program' }));
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPrograms();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -80,34 +132,30 @@ export default function AddDosenForm() {
     
     setIsLoading(true);
     
+    const newErrors = {};
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/dosen', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-      //   },
-      //   body: JSON.stringify({
-      //     username: formData.username,
-      //     email: formData.email,
-      //     password: formData.password,
-      //     role: formData.role,
-      //     is_active: formData.is_active
-      //   })
-      // });
-      
-      // if (!response.ok) throw new Error('Gagal menambah data');
-      
-      alert("Data dosen berhasil ditambahkan!");
-      router.push("/adminpage/tambahdosen");
+      // panggil Api storeDosen
+      const response = await storeDosen({
+        name: formData.name,
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        password_confirmation: formData.confirmPassword,
+        program_id: formData.program,
+        is_active: formData.is_active
+      });
+      if (response.status === 'success') {
+        setSuccess('Dosen berhasil ditambahkan');
+      } else if (response.status === 'failed') {
+        newErrors.username = response.message;
+      } else {
+        newErrors.form = response.message || 'Gagal menambahkan data';
+      }
     } catch (error) {
-      alert("Gagal menambah data: " + error.message);
+      newErrors.form = "Gagal menambah data: " + (error.message || 'Unknown error');
     } finally {
       setIsLoading(false);
+      setErrors(newErrors);
     }
   };
 
@@ -116,6 +164,41 @@ export default function AddDosenForm() {
       router.push("/adminpage/tambahdosen");
     }
   };
+
+  const handleFinish = () => {
+    router.push("/adminpage/tambahdosen");
+  };
+
+  if (isFetching) {
+    return (
+      <div className="min-h-screen bg-brand-light-sage">
+        <AdminNavbar title="Dashboard Admin - Edit Akun Manager" />
+        <div className="container mx-auto px-4 py-8 max-w-5xl">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin w-12 h-12 border-4 border-t-transparent rounded-full mx-auto mb-4" 
+                    style={{ borderColor: '#015023', borderTopColor: 'transparent' }}></div>
+              <p style={{ fontFamily: 'Urbanist, sans-serif', color: '#015023' }}>
+                Memuat...
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  } else if (errors.fetch) {
+    return (
+      <div className="min-h-screen bg-brand-light-sage">
+        <AdminNavbar title="Dashboard Admin - Edit Akun Manager" />
+        <div className="container mx-auto px-4 py-8 max-w-5xl">
+          <ErrorMessageBoxWithButton
+            message={errors.fetch}
+            action={fetchPrograms}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-brand-light-sage">
@@ -212,6 +295,46 @@ export default function AddDosenForm() {
                   />
                   {formData.username && !errors.username && (
                     <div 
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                      style={{ backgroundColor: '#16874B' }}
+                    >
+                      ✓
+                    </div>
+                  )}
+                </div>
+              </FieldContent>
+              {errors.username && (
+                <FieldError>{errors.username}</FieldError>
+              )}
+            </Field>
+            {/* Name Field */}
+            <Field>
+              <FieldLabel htmlFor="name">
+                Name <span className="text-red-500">*</span>
+              </FieldLabel>
+              <FieldDescription>
+                Nama lengkap dosen
+              </FieldDescription>
+              <FieldContent>
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100"
+                    style={{
+                      fontFamily: 'Urbanist, sans-serif',
+                      borderColor: errors.name ? '#BE0414' : '#015023',
+                      borderRadius: '12px',
+                      opacity: errors.name ? 1 : 0.7
+                    }}
+                    placeholder="Masukkan nama lengkap"
+                    disabled={isLoading}
+                  />
+                  {formData.name && !errors.name && (
+                    <div
                       className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
                       style={{ backgroundColor: '#16874B' }}
                     >
@@ -351,24 +474,24 @@ export default function AddDosenForm() {
             {/* Role Field */}
             <Field>
               <FieldLabel htmlFor="role">
-                Role <span className="text-red-500">*</span>
+                Program <span className="text-red-500">*</span>
               </FieldLabel>
               <FieldDescription>
-                Pilih role untuk pengguna ini
+                Pilih program untuk pengguna ini
               </FieldDescription>
               <FieldContent>
                 <div className="relative">
                   <select
-                    id="role"
-                    name="role"
-                    value={formData.role}
+                    id="program"
+                    name="program"
+                    value={formData.program}
                     onChange={handleChange}
                     className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100 appearance-none cursor-pointer"
                     style={{
                       fontFamily: 'Urbanist, sans-serif',
-                      borderColor: '#015023',
+                      borderColor: errors.program ? '#BE0414' : '#015023',
                       borderRadius: '12px',
-                      opacity: 0.7,
+                      opacity: errors.program ? 1 : 0.7,
                       backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23015023' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
                       backgroundRepeat: 'no-repeat',
                       backgroundPosition: 'right 1rem center',
@@ -376,13 +499,18 @@ export default function AddDosenForm() {
                     }}
                     disabled={isLoading}
                   >
-                    <option value="dosen">Dosen</option>
-                    <option value="mahasiswa">Mahasiswa</option>
-                    <option value="admin">Admin</option>
-                    <option value="manager">Manager</option>
+                    <option value="" disabled>Pilih program</option>
+                    {programs.map((program) => (
+                      <option key={program.id} value={program.id}>
+                        {program.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </FieldContent>
+              {errors.program && (
+                <FieldError>{errors.program}</FieldError>
+              )}
             </Field>
 
             {/* Is Active Field */}
@@ -417,6 +545,15 @@ export default function AddDosenForm() {
                 </div>
               </div>
             </Field>
+
+            {/* Form Error */}
+            {errors.form && (
+              <ErrorMessageBox message={errors.form} />
+            )}
+            {/* Success Message */}
+            {success && (
+              <SuccessMessageBoxWithButton message={success} action={handleFinish} />
+            )}
 
             {/* Action Buttons */}
             <div className="pt-8">

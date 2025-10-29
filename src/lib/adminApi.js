@@ -34,6 +34,20 @@ export const getDetailedStatistics = async () => {
 };
 
 /**
+ * Get all programs
+ * @returns {Promise} Response dengan data programs
+ */
+export const getPrograms = async () => {
+  try {
+    const response = await api.get('/manager/programs');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching programs:', error);
+    throw error;
+  }
+};
+
+/**
  * Get all subjects
  * @returns {Promise} Response dengan data subjects
  */
@@ -118,13 +132,46 @@ export const deleteManager = async (managerId) => {
     throw error;
   }
 };
+/**
+ * Get all dosen
+ * @returns {Promise} Response dengan data dosen
+ */
+export const getDosen = async () => {
+  try {
+    const response = await api.get('/manager/users-by-role', {
+      params: { role: 'dosen' }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching dosen:', error);
+    throw error;
+  }
+};
+/**
+ * Tambah dosen baru
+ * @param {Object} dosenData - Data dosen baru
+ * @returns {Promise} Response hasil create
+ */
+export const storeDosen = async (dosenData) => {
+  try {
+    const response = await api.post('/manager/lecturers', dosenData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating dosen:', error);
+    throw error;
+  }
+};
 
 export default {
   getDashboardStatistics,
   getDetailedStatistics,
+  getPrograms,
   getManagers,
   storeManager,
   deleteManager,
   getSubjects,
   storeSubject,
+  getClasses,
+  getDosen,
+  storeDosen,
 };

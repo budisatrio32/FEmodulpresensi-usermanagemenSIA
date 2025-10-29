@@ -84,7 +84,9 @@ export default function AddManagerForm() {
       newErrors.password = "Password minimal 6 karakter";
     }
     
-    if (formData.password !== formData.confirmPassword) {
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = "Konfirmasi password harus diisi";
+    } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Password tidak sama";
     }
     
@@ -263,11 +265,11 @@ export default function AddManagerForm() {
                     className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100"
                     style={{
                       fontFamily: 'Urbanist, sans-serif',
-                      borderColor: errors.username ? '#BE0414' : '#015023',
+                      borderColor: errors.name ? '#BE0414' : '#015023',
                       borderRadius: '12px',
-                      opacity: errors.username ? 1 : 0.7
+                      opacity: errors.name ? 1 : 0.7
                     }}
-                    placeholder="Masukkan username"
+                    placeholder="Masukkan nama lengkap"
                     disabled={isLoading}
                   />
                   {formData.name && !errors.name && formData.name.length >= 3 && (
