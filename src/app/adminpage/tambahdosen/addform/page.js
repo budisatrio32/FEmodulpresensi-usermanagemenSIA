@@ -17,6 +17,7 @@ import { SuccessMessageBoxWithButton,
   ErrorMessageBox, 
   ErrorMessageBoxWithButton 
 } from "@/components/ui/message-box";
+import LoadingEffect from "@/components/ui/loading-effect";
 
 export default function AddDosenForm() {
   const router = useRouter();
@@ -171,20 +172,7 @@ export default function AddDosenForm() {
 
   if (isFetching) {
     return (
-      <div className="min-h-screen bg-brand-light-sage">
-        <AdminNavbar title="Dashboard Admin - Edit Akun Manager" />
-        <div className="container mx-auto px-4 py-8 max-w-5xl">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin w-12 h-12 border-4 border-t-transparent rounded-full mx-auto mb-4" 
-                    style={{ borderColor: '#015023', borderTopColor: 'transparent' }}></div>
-              <p style={{ fontFamily: 'Urbanist, sans-serif', color: '#015023' }}>
-                Memuat...
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <LoadingEffect/>
     );
   } else if (errors.fetch) {
     return (
@@ -552,7 +540,7 @@ export default function AddDosenForm() {
             )}
             {/* Success Message */}
             {success && (
-              <SuccessMessageBoxWithButton message={success} action={handleFinish} />
+              <SuccessMessageBoxWithButton message={success + ' Lihat Data atau tambahkan akun dosen lain'} action={handleFinish} btntext="Lihat Data" />
             )}
 
             {/* Action Buttons */}

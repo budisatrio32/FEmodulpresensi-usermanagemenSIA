@@ -15,7 +15,7 @@ export const getDashboardStatistics = async () => {
     return response.data;
   } catch (error) {
     console.error('Error fetching dashboard statistics:', error);
-    throw error;
+    throw (error.response?.data ?? error);
   }
 };
 
@@ -29,7 +29,7 @@ export const getDetailedStatistics = async () => {
     return response.data;
   } catch (error) {
     console.error('Error fetching detailed statistics:', error);
-    throw error;
+    throw (error.response?.data ?? error);
   }
 };
 
@@ -43,7 +43,7 @@ export const getPrograms = async () => {
     return response.data;
   } catch (error) {
     console.error('Error fetching programs:', error);
-    throw error;
+    throw (error.response?.data ?? error);
   }
 };
 
@@ -57,7 +57,7 @@ export const getSubjects = async () => {
     return response.data;
   } catch (error) {
     console.error('Error fetching subjects:', error);
-    throw error;
+    throw (error.response?.data ?? error);
   }
 };
 /**
@@ -101,8 +101,8 @@ export const updateSubject = async (subjectId, subjectData) => {
     const response = await api.put(`/manager/subjects/${subjectId}`, subjectData);
     return response.data;
   } catch (error) {
-    console.error('Error meng-update mata kuliah:', error);
-    throw error;
+    console.error('Error creating subject:', error);
+    throw (error.response?.data ?? error);
   }
 };
 
@@ -116,7 +116,7 @@ export const getClasses = async () => {
     return response.data;
   } catch (error) {
     console.error('Error fetching classes:', error);
-    throw error;
+    throw (error.response?.data ?? error);
   }
 };
 
@@ -130,7 +130,7 @@ export const getManagers = async () => {
     return response.data;
   } catch (error) {
     console.error('Error fetching managers:', error);
-    throw error;
+    throw (error.response?.data ?? error);
   }
 };
 
@@ -145,7 +145,7 @@ export const storeManager = async (managerData) => {
     return response.data;
   } catch (error) {
     console.error('Error creating manager:', error);
-    throw error;
+    throw (error.response?.data ?? error);
   }
 };
 
@@ -160,7 +160,7 @@ export const deleteManager = async (managerId) => {
     return response.data;
   } catch (error) {
     console.error('Error deleting manager:', error);
-    throw error;
+    throw (error.response?.data ?? error);
   }
 };
 /**
@@ -189,7 +189,7 @@ export const storeDosen = async (dosenData) => {
     return response.data;
   } catch (error) {
     console.error('Error creating dosen:', error);
-    throw error;
+    throw (error.response?.data ?? error);
   }
 };
 

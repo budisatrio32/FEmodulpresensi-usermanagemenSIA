@@ -469,7 +469,7 @@ export default function AddManagerForm() {
             )}
 
             {success && (
-              <SuccessMessageBoxWithButton message={success + 'Lihat Data atau tambahkan akun manager lain'} action={handleFinish} btntext="Lihat Data" />
+              <SuccessMessageBoxWithButton message={success + ' Lihat Data atau tambahkan akun manager lain'} action={handleFinish} btntext="Lihat Data" />
             )}
 
             {/* Action Buttons */}
