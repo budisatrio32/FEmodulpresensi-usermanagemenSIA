@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import AdminNavbar from "@/components/ui/admin-navbar";
 import { ArrowLeft, Save, X, Info } from "lucide-react";
+import { getSubjectById, updateSubject } from "@/lib/adminApi";
 
 export default function EditMatkulForm() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function EditMatkulForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [errors, setErrors] = useState({});
+  const [success, setSuccess] = useState(null);
   
   const [formData, setFormData] = useState({
     name_subject: "",
@@ -32,6 +34,9 @@ export default function EditMatkulForm() {
   useEffect(() => {
     if (matkulId) {
       fetchMatkulData();
+    } else {
+      alert("ID mata kuliah tidak ditemukan.");
+      router.push("/adminpage/tambahmatkul");
     }
   }, [matkulId]);
 
@@ -39,28 +44,24 @@ export default function EditMatkulForm() {
     try {
       setIsFetching(true);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Call API untuk GET detail matkul
+      const response = await getSubjectById(matkulId);
       
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/matkul/${matkulId}`, {
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-      //   }
-      // });
-      // const data = await response.json();
-      
-      // Dummy data untuk demo
-      const dummyData = {
-        name_subject: "Algoritma dan Pemrograman",
-        code_subject: "CS101",
-        sks: "3"
-      };
-      
-      setFormData(dummyData);
+      if (response.success) {
+        // Mengambil data dari database dan set ke form
+        setFormData({
+          name_subject: response.data.name_subject,
+          code_subject: response.data.code_subject,
+          sks: response.data.sks.toString()
+        });
+      } else {
+        throw new Error(response.message || 'Gagal mengambil data');
+      }
+
     } catch (error) {
-      alert("Gagal mengambil data mata kuliah: " + error.message);
-      router.push("/adminpage/tambahkelas");
+      console.error('Error fetching subject:', error);
+      alert("Gagal mengambil data mata kuliah: " + (error.response?.data?.message || error.message));
+      router.push("/adminpage/tambahmatkul");
     } finally {
       setIsFetching(false);
     }
@@ -112,31 +113,36 @@ export default function EditMatkulForm() {
     }
     
     setIsLoading(true);
+    setErrors({});
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const payload = {
+        name_subject: formData.name_subject.trim(),
+        code_subject: formData.code_subject.trim().toUpperCase(),
+        sks: parseInt(formData.sks)
+      };
       
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/matkul/${matkulId}`, {
-      //   method: 'PUT',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-      //   },
-      //   body: JSON.stringify({
-      //     name_subject: formData.name_subject,
-      //     code_subject: formData.code_subject.toUpperCase(),
-      //     sks: parseInt(formData.sks)
-      //   })
-      // });
+      // Call API untuk UPDATE
+      const response = await updateSubject(matkulId, payload);
       
-      // if (!response.ok) throw new Error('Gagal mengupdate data');
+      if (response.success) {
+        setSuccess('Mata kuliah berhasil diperbarui');
+      } else {
+        setErrors({ form: response.message || 'Gagal mengupdate data' });
+      }
       
-      alert("Data mata kuliah berhasil diperbarui!");
-      router.push("/adminpage/tambahkelas");
     } catch (error) {
-      alert("Gagal mengupdate data: " + error.message);
+      console.error('Error updating subject:', error);
+      
+      if (error.response?.data?.errors) {
+        // Validasi error (422)
+        setErrors(error.response.data.errors);
+      } else {
+        // Other errors
+        setErrors({ 
+          form: error.response?.data?.message || error.message || 'Gagal mengupdate data' 
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -144,8 +150,12 @@ export default function EditMatkulForm() {
 
   const handleCancel = () => {
     if (window.confirm("Apakah Anda yakin ingin membatalkan? Perubahan tidak akan disimpan.")) {
-      router.push("/adminpage/tambahkelas");
+      router.push("/adminpage/tambahmatkul");
     }
+  };
+
+  const handleFinish = () => {
+    router.push("/adminpage/tambahmatkul");
   };
 
   if (isFetching) {
@@ -171,12 +181,59 @@ export default function EditMatkulForm() {
     <div className="min-h-screen bg-brand-light-sage">
       <AdminNavbar title="Dashboard Admin - Edit Mata Kuliah" />
       
+      {/* Success Modal */}
+      {success && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div 
+            className="bg-white p-8 max-w-md w-full shadow-2xl"
+            style={{ borderRadius: '16px' }}
+          >
+            <div className="text-center">
+              <div 
+                className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
+                style={{ backgroundColor: '#16874B' }}
+              >
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 
+                className="text-2xl font-bold mb-2"
+                style={{ 
+                  fontFamily: 'Urbanist, sans-serif',
+                  color: '#015023'
+                }}
+              >
+                Berhasil!
+              </h3>
+              <p 
+                className="text-gray-600 mb-6"
+                style={{ fontFamily: 'Urbanist, sans-serif' }}
+              >
+                {success}
+              </p>
+              <button
+                onClick={handleFinish}
+                className="w-full text-white py-3 font-semibold hover:opacity-90 transition"
+                style={{ 
+                  backgroundColor: '#015023',
+                  borderRadius: '12px',
+                  fontFamily: 'Urbanist, sans-serif'
+                }}
+              >
+                Kembali ke Daftar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header */}
         <div className="mb-10">
           <Button
             variant="ghost"
-            onClick={() => router.push("/adminpage/tambahkelas")}
+            onClick={() => router.push("/adminpage/tambahmatkul")}
             className="mb-6 -ml-4"
             style={{ fontFamily: 'Urbanist, sans-serif' }}
           >
@@ -232,6 +289,45 @@ export default function EditMatkulForm() {
               style={{ backgroundColor: '#DABC4E' }}
             />
           </div>
+
+          {/* Error Message */}
+          {errors.form && (
+            <div 
+              className="mb-6 p-4 border-2 flex items-start gap-3"
+              style={{
+                backgroundColor: '#FEE2E2',
+                borderColor: '#BE0414',
+                borderRadius: '12px'
+              }}
+            >
+              <div 
+                className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: '#BE0414' }}
+              >
+                <span className="text-white text-sm font-bold">!</span>
+              </div>
+              <div>
+                <p 
+                  className="font-semibold mb-1"
+                  style={{ 
+                    fontFamily: 'Urbanist, sans-serif',
+                    color: '#BE0414'
+                  }}
+                >
+                  Error
+                </p>
+                <p 
+                  className="text-sm"
+                  style={{ 
+                    fontFamily: 'Urbanist, sans-serif',
+                    color: '#BE0414'
+                  }}
+                >
+                  {errors.form}
+                </p>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Name Subject Field */}
