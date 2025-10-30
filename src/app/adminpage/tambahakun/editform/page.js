@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import AdminNavbar from "@/components/ui/admin-navbar";
 import { ArrowLeft, Save, X, Info } from "lucide-react";
+import LoadingEffect from "@/components/ui/loading-effect";
 
 export default function EditManagerForm() {
   const router = useRouter();
@@ -169,20 +170,7 @@ export default function EditManagerForm() {
 
   if (isFetching) {
     return (
-      <div className="min-h-screen bg-brand-light-sage">
-        <AdminNavbar title="Dashboard Admin - Edit Akun Manager" />
-        <div className="container mx-auto px-4 py-8 max-w-5xl">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin w-12 h-12 border-4 border-t-transparent rounded-full mx-auto mb-4" 
-                   style={{ borderColor: '#015023', borderTopColor: 'transparent' }}></div>
-              <p style={{ fontFamily: 'Urbanist, sans-serif', color: '#015023' }}>
-                Memuat data manager...
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <LoadingEffect/>
     );
   }
 

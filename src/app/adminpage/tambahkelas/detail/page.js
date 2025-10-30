@@ -1,22 +1,23 @@
-    "use client";
+"use client";
 
-    import { useState, useEffect } from "react";
-    import { useRouter, useSearchParams } from "next/navigation";
-    import { 
-    ArrowLeft, 
-    Save, 
-    Calendar, 
-    Users, 
-    BookOpen, 
-    UserCheck,
-    X,
-    Plus,
-    Trash2
-    } from "lucide-react";
-    import AdminNavbar from "@/components/ui/admin-navbar";
-    import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { 
+ArrowLeft, 
+Save, 
+Calendar, 
+Users, 
+BookOpen, 
+UserCheck,
+X,
+Plus,
+Trash2
+} from "lucide-react";
+import AdminNavbar from "@/components/ui/admin-navbar";
+import { Button } from "@/components/ui/button";
+import LoadingEffect from "@/components/ui/loading-effect";
 
-    export default function DetailKelas() {
+export default function DetailKelas() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const kelasId = searchParams.get('id');
@@ -119,13 +120,13 @@
         
         // Set jadwal list - pertemuan untuk semester ini
         setJadwalList([
-          { id: 1, pertemuan: 1, tanggal: '2024-11-04', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
-          { id: 2, pertemuan: 2, tanggal: '2024-11-11', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
-          { id: 3, pertemuan: 3, tanggal: '2024-11-18', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
-          { id: 4, pertemuan: 4, tanggal: '2024-11-25', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
-          { id: 5, pertemuan: 5, tanggal: '2024-12-02', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
-          { id: 6, pertemuan: 6, tanggal: '2024-12-09', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
-          { id: 7, pertemuan: 7, tanggal: '2024-12-16', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
+            { id: 1, pertemuan: 1, tanggal: '2024-11-04', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
+            { id: 2, pertemuan: 2, tanggal: '2024-11-11', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
+            { id: 3, pertemuan: 3, tanggal: '2024-11-18', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
+            { id: 4, pertemuan: 4, tanggal: '2024-11-25', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
+            { id: 5, pertemuan: 5, tanggal: '2024-12-02', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
+            { id: 6, pertemuan: 6, tanggal: '2024-12-09', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
+            { id: 7, pertemuan: 7, tanggal: '2024-12-16', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
         ]);
     } catch (error) {
         alert("Gagal mengambil data kelas: " + error.message);
@@ -373,14 +374,7 @@
 
     if (isFetching) {
     return (
-        <div className="min-h-screen bg-brand-light-sage flex items-center justify-center">
-        <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-4 mx-auto mb-4" style={{ borderColor: '#015023' }}></div>
-            <p className="text-lg font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-            Memuat data kelas...
-            </p>
-        </div>
-        </div>
+        <LoadingEffect message="Memuat data kelas..." />
     );
     }
 
@@ -847,71 +841,71 @@
 
             {/* Jadwal Kelas Section */}
             <div className="bg-white border-2 p-6 shadow-lg" style={{ borderColor: '#015023', borderRadius: '12px', cursor: 'default' }}>
-              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                  Daftar Jadwal Kelas
+                    Daftar Jadwal Kelas
                 </h2>
                 <Calendar className="w-6 h-6" style={{ color: '#015023' }} />
-              </div>
+                </div>
 
-              {jadwalList.length === 0 ? (
+                {jadwalList.length === 0 ? (
                 <p className="text-gray-500 text-center py-4" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                  Belum ada jadwal kelas
+                    Belum ada jadwal kelas
                 </p>
-              ) : (
+                ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
+                    <table className="w-full border-collapse">
                     <thead>
-                      <tr style={{ backgroundColor: '#015023' }}>
+                        <tr style={{ backgroundColor: '#015023' }}>
                         <th className="px-4 py-3 text-center text-white font-bold" style={{ fontFamily: 'Urbanist, sans-serif', borderRadius: '12px 0 0 0' }}>
-                          Pertemuan Ke
+                            Pertemuan Ke
                         </th>
                         <th className="px-4 py-3 text-center text-white font-bold" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                          Tanggal
+                            Tanggal
                         </th>
                         <th className="px-4 py-3 text-center text-white font-bold" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                          Jam Mulai
+                            Jam Mulai
                         </th>
                         <th className="px-4 py-3 text-center text-white font-bold" style={{ fontFamily: 'Urbanist, sans-serif', borderRadius: '0 12px 0 0' }}>
-                          Jam Selesai
+                            Jam Selesai
                         </th>
-                      </tr>
+                        </tr>
                     </thead>
                     <tbody>
-                      {jadwalList.map((jadwal, index) => (
+                        {jadwalList.map((jadwal, index) => (
                         <tr 
-                          key={jadwal.id}
-                          className="border-b hover:bg-gray-50 transition"
-                          style={{ borderColor: '#E5E7EB' }}
+                            key={jadwal.id}
+                            className="border-b hover:bg-gray-50 transition"
+                            style={{ borderColor: '#E5E7EB' }}
                         >
-                          <td className="px-4 py-3 text-center" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                            <td className="px-4 py-3 text-center" style={{ fontFamily: 'Urbanist, sans-serif' }}>
                             <div 
-                              className="inline-flex items-center justify-center w-10 h-10 rounded-full font-bold"
-                              style={{ backgroundColor: '#015023', color: '#FFFFFF' }}
+                                className="inline-flex items-center justify-center w-10 h-10 rounded-full font-bold"
+                                style={{ backgroundColor: '#015023', color: '#FFFFFF' }}
                             >
-                              {jadwal.pertemuan}
+                                {jadwal.pertemuan}
                             </div>
-                          </td>
-                          <td className="px-4 py-3 text-center font-medium" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                            </td>
+                            <td className="px-4 py-3 text-center font-medium" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                             {new Date(jadwal.tanggal).toLocaleDateString('id-ID', { 
-                              weekday: 'long',
-                              year: 'numeric', 
-                              month: 'long', 
-                              day: 'numeric' 
+                                weekday: 'long',
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
                             })}
-                          </td>
-                          <td className="px-4 py-3 text-center font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                            </td>
+                            <td className="px-4 py-3 text-center font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                             {jadwal.jam_mulai}
-                          </td>
-                          <td className="px-4 py-3 text-center font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                            </td>
+                            <td className="px-4 py-3 text-center font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                             {jadwal.jam_selesai}
-                          </td>
+                            </td>
                         </tr>
-                      ))}
+                        ))}
                     </tbody>
-                  </table>
+                    </table>
                 </div>
-              )}
+                )}
             </div>
         </form>
         </div>
