@@ -68,6 +68,37 @@ export const getSubjects = async () => {
 export const storeSubject = async (subjectData) => {
   try {
     const response = await api.post('/manager/subjects', subjectData);
+
+  } catch (error) {
+    console.error('Error membuat mata kuliah:', error);
+    throw error;
+  }
+};
+
+/**
+ * Ambil detail matkul dari id untuk load data ke form edit
+ * @param {number} subjectId - id matkul
+ * @returns {Promise} Response dengan data subject
+ */
+export const getSubjectById = async (subjectId) => {
+  try {
+    const response = await api.get(`/manager/subjects/${subjectId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error mengambil detail mata kuliah:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update matkul yang ada
+ * @param {number} subjectId - id matkul yang akan diupdate
+ * @param {Object} subjectData - Data matkul yang diupdate
+ * @returns {Promise} Response hasil update
+ */
+export const updateSubject = async (subjectId, subjectData) => {
+  try {
+    const response = await api.put(`/manager/subjects/${subjectId}`, subjectData);
     return response.data;
   } catch (error) {
     console.error('Error creating subject:', error);
@@ -171,6 +202,8 @@ export default {
   deleteManager,
   getSubjects,
   storeSubject,
+  getSubjectById,
+  updateSubject,
   getClasses,
   getDosen,
   storeDosen,

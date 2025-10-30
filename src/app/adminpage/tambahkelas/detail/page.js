@@ -896,7 +896,7 @@ export default function DetailKelas() {
                         <th className="px-4 py-3 text-center text-white font-bold" style={{ fontFamily: 'Urbanist, sans-serif', borderRadius: '0 12px 0 0' }}>
                           Tanggal
                         </th>
-                        </tr>
+                      </tr>
                     </thead>
                     <tbody>
                         {jadwalList.map((jadwal, index) => (
@@ -920,7 +920,13 @@ export default function DetailKelas() {
                                 month: 'long', 
                                 day: 'numeric' 
                             })}
-                          </td>
+                            </td>
+                            <td className="px-4 py-3 text-center font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                            {jadwal.jam_mulai}
+                            </td>
+                            <td className="px-4 py-3 text-center font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                            {jadwal.jam_selesai}
+                            </td>
                         </tr>
                         ))}
                     </tbody>
