@@ -68,10 +68,10 @@ export const getSubjects = async () => {
 export const storeSubject = async (subjectData) => {
   try {
     const response = await api.post('/manager/subjects', subjectData);
-
+    return response.data;
   } catch (error) {
     console.error('Error membuat mata kuliah:', error);
-    throw error;
+    throw (error.response?.data ?? error);
   }
 };
 
@@ -86,7 +86,7 @@ export const getSubjectById = async (subjectId) => {
     return response.data;
   } catch (error) {
     console.error('Error mengambil detail mata kuliah:', error);
-    throw error;
+    throw (error.response?.data ?? error);
   }
 };
 
@@ -175,7 +175,7 @@ export const getDosen = async () => {
     return response.data;
   } catch (error) {
     console.error('Error fetching dosen:', error);
-    throw error;
+    throw (error.response?.data ?? error);
   }
 };
 /**
@@ -189,6 +189,22 @@ export const storeDosen = async (dosenData) => {
     return response.data;
   } catch (error) {
     console.error('Error creating dosen:', error);
+    throw (error.response?.data ?? error);
+  }
+};
+
+/**
+ * Get all mahasiswa
+ * @returns {Promise} Response dengan data mahasiswa
+ */
+export const getMahasiswa = async () => {
+  try {
+    const response = await api.get('/manager/users-by-role', {
+      params: { role: 'mahasiswa' }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching mahasiswa:', error);
     throw (error.response?.data ?? error);
   }
 };
@@ -207,4 +223,5 @@ export default {
   getClasses,
   getDosen,
   storeDosen,
+  getMahasiswa,
 };

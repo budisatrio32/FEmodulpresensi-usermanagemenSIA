@@ -45,8 +45,8 @@ const filteredDosens = dosens.filter(dosen => {
   return (
     dosen.username.toLowerCase().includes(query) ||
     dosen.email.toLowerCase().includes(query) ||
-    dosen.role.toLowerCase().includes(query) ||
-    dosen.created_at.includes(query) ||
+    dosen.name.toLowerCase().includes(query) ||
+    dosen.program_name.toLowerCase().includes(query) ||
     (dosen.is_active ? 'active' : 'inactive').includes(query)
   );
 });
@@ -58,7 +58,6 @@ const columns = [
 { key: 'name', label: 'Nama' },
 { key: 'program_name', label: 'Program' },
 { key: 'is_active', label: 'Status' },
-{ key: 'created_at', label: 'Created At' },
 ];
 
 // Custom render untuk is_active status

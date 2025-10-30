@@ -1,24 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Users, Search, X, ArrowLeft } from 'lucide-react';
 import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
+import { getMahasiswa } from '@/lib/adminApi';
+import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 
 export default function StudentDashboard() {
 const router = useRouter();
 const [searchQuery, setSearchQuery] = useState('');
-const [students, setStudents] = useState([
-{ id: 1, role: 'mahasiswa', username: 'johndoe', email: 'john@example.com', password: '********', is_active: true, created_at: '2024-01-15' },
-{ id: 2, role: 'mahasiswa', username: 'janedoe', email: 'jane@example.com', password: '********', is_active: true, created_at: '2024-01-16' },
-{ id: 3, role: 'mahasiswa', username: 'bobsmith', email: 'bob@example.com', password: '********', is_active: true, created_at: '2024-01-17' },
-{ id: 4, role: 'mahasiswa', username: 'alicelee', email: 'alice@example.com', password: '********', is_active: false, created_at: '2024-01-18' },
-{ id: 5, role: 'mahasiswa', username: 'charlie', email: 'charlie@example.com', password: '********', is_active: true, created_at: '2024-01-19' },
-{ id: 6, role: 'mahasiswa', username: 'davidkim', email: 'david@example.com', password: '********', is_active: true, created_at: '2024-01-20' },
-{ id: 7, role: 'mahasiswa', username: 'emilytan', email: 'emily@example.com', password: '********', is_active: false, created_at: '2024-01-21' },
-{ id: 8, role: 'mahasiswa', username: 'frankwu', email: 'frank@example.com', password: '********', is_active: true, created_at: '2024-01-22' },
-]);
+const [error, setError] = useState(null);
+const [loading, setLoading] = useState(true);
+const [success, setSuccess] = useState(null);
+const [students, setStudents] = useState([]);
+
+// Fetch students from API
+const indexStudents = async () => {
+  setLoading(true);
+  try {
+    setError(null);
+    const response = await getMahasiswa();
+      if (response.status === 'success') {
+        setSuccess(true);
+        setStudents(response.data);
+      } else {
+        setError('Gagal mengambil data mahasiswa');
+      }
+  } catch (error) {
+    setError('Terjadi kesalahan saat mengambil data: ' + error.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
+useEffect(() => {
+  indexStudents();
+}, []);
 
 // Filter students berdasarkan search query
 const filteredStudents = students.filter(student => {
@@ -26,20 +45,21 @@ const filteredStudents = students.filter(student => {
   return (
     student.username.toLowerCase().includes(query) ||
     student.email.toLowerCase().includes(query) ||
-    student.role.toLowerCase().includes(query) ||
-    student.created_at.includes(query) ||
+    student.name.toLowerCase().includes(query) ||
+    student.nim.toLowerCase().includes(query) ||
+    student.program_name.toLowerCase().includes(query) ||
     (student.is_active ? 'active' : 'inactive').includes(query)
   );
 });
 
 // Define columns untuk table
 const columns = [
-{ key: 'role', label: 'Role' },
 { key: 'username', label: 'Username' },
 { key: 'email', label: 'Email' },
-{ key: 'password', label: 'Password' },
+{ key: 'name', label: 'Nama' },
+{ key: 'nim', label: 'NIM' },
+{ key: 'program_name', label: 'Program' },
 { key: 'is_active', label: 'Status' },
-{ key: 'created_at', label: 'Created At' },
 ];
 
 // Custom render untuk is_active status
@@ -142,14 +162,19 @@ return (
         </div>
     </div>
 
+    {/* Error Message */}
+    {error && (
+      <ErrorMessageBoxWithButton message={error} action={indexStudents} />
+    )}
+
     {/* Stats Card */}
     <div className="rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-xl" style={{ background: 'linear-gradient(to bottom right, #015023, #013d1c)' }}>
         <div className="flex items-center justify-between">
         <div>
             <h3 className="text-white text-base sm:text-lg font-semibold mb-2">Total Mahasiswa</h3>
-            <p className="text-white text-3xl sm:text-4xl font-bold mb-1">{filteredStudents.length}</p>
+            <p className="text-white text-3xl sm:text-4xl font-bold mb-1">{loading ? '...' : filteredStudents.length}</p>
             <p className="text-sm" style={{ color: '#DABC4E' }}>
-              {searchQuery ? 'Hasil pencarian' : 'Mahasiswa aktif'}
+              {loading ? 'Loading...' : searchQuery ? 'Hasil pencarian' : error ? error : 'Mahasiswa aktif'}
             </p>
         </div>
         <div className="p-3 sm:p-4 rounded-2xl shadow-lg" style={{ backgroundColor: '#DABC4E' }}>
@@ -181,15 +206,17 @@ return (
     </div>
 
     {/* Table using DataTable component */}
-    <DataTable
-        columns={columns}
-        data={filteredStudents}
-        actions={['delete', 'edit']}
-        pagination={true}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        customRender={customRender}
-    />
+    {success && 
+      <DataTable
+          columns={columns}
+          data={filteredStudents}
+          actions={['delete', 'edit']}
+          pagination={true}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          customRender={customRender}
+      />
+    }
     </div>
 </div>
 );
