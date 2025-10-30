@@ -552,7 +552,7 @@ export default function AddDosenForm() {
             )}
             {/* Success Message */}
             {success && (
-              <SuccessMessageBoxWithButton message={success} action={handleFinish} />
+              <SuccessMessageBoxWithButton message={success + ' Lihat Data atau tambahkan akun dosen lain'} action={handleFinish} btntext="Lihat Data" />
             )}
 
             {/* Action Buttons */}

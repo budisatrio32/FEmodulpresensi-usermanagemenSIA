@@ -323,7 +323,7 @@ export default function AddMatkulForm() {
             )}
 
             {success && (
-              <SuccessMessageBoxWithButton message={success + 'Lihat Data atau tambahkan mata kuliah lain'} action={handleFinish} btntext="Lihat Data" />
+              <SuccessMessageBoxWithButton message={success + ' Lihat Data atau tambahkan mata kuliah lain'} action={handleFinish} btntext="Lihat Data" />
             )}
 
             {/* Action Buttons */}
