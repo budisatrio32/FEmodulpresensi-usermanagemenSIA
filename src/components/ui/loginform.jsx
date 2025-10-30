@@ -22,25 +22,33 @@ const handleSubmit = async (e) => {
   setIsLoading(true);
   try {
     setError(null);
+    // Pastikan tidak ada token lama yang nyangkut sebelum login
+    Cookies.remove('token');
+    Cookies.remove('roles');
     // Panggil sessionApi.login
     const response = await sessionApi.login(email, password);
 
-    // Simpan token dan roles ke cookies
-    const token = response.data.access_token;
-    const roles = response.data.user.roles;
-    Cookies.set('token', token, { expires: 7 }); // expires in 7 days
-    Cookies.set('roles', roles, { expires: 7 });
+    if (response.status === 'success') {
+      // Simpan token dan roles ke cookies
+      const token = response.data.access_token;
+      const roles = response.data.user.roles;
+      Cookies.set('token', token, { expires: 3 }); // expires in 3 days
+      Cookies.set('roles', roles, { expires: 3 });
 
-    // redirect sesuai role
-    if (roles == 'admin' || roles == 'manager') {
-      router.push('/adminpage');
-    } else if (roles == 'mahasiswa' || roles == 'dosen') {
-      router.push('/landingpage');
+      // redirect sesuai role
+      if (roles == 'admin' || roles == 'manager') {
+        router.push('/adminpage');
+      } else if (roles == 'mahasiswa' || roles == 'dosen') {
+        router.push('/landingpage');
+      }
+    } else {
+      setError(response.message || 'hora');
     }
   } catch (error) {
-    // Tangani error
-    setError(error.response?.data?.message || 'Mohon maaf, terjadi kesalahan saat login.');
-    console.error(error);
+    // Tangani error (bisa berupa JSON dari server atau AxiosError)
+    const msg = error?.message || error?.error || error?.response?.data?.message || 'Mohon maaf, terjadi kesalahan saat login.';
+    setError(msg);
+    console.error('error di login:', error);
   } finally {
     // Hentikan loading
     setIsLoading(false);

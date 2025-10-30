@@ -3,6 +3,8 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { LogOut } from 'lucide-react'
 import { cn } from "@/lib/utils"
+import Cookies from 'js-cookie';
+import { logout } from '@/lib/sessionApi';
 
 const AdminNavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
 <div 
@@ -46,14 +48,28 @@ className={cn("text-right", className)}
 const AdminNavbar = React.forwardRef(({ className, title, ...props }, ref) => {
 const router = useRouter()
 
-const handleLogout = () => {
-  // Tambahkan logika logout di sini (clear session, token, etc)
-  // Untuk sementara langsung redirect ke home
+const handleLogout = async () => {
   if (confirm('Apakah Anda yakin ingin logout?')) {
-    // Clear any session/token if needed
-    // localStorage.removeItem('token')
-    // sessionStorage.clear()
-    router.push('/')
+    let serverMessage = '';
+    try {
+      const response = await logout();
+      if (response.status !== 'success') {
+        serverMessage = response.message || '';
+      }
+    } catch (error) {
+      // Jika token kadaluarsa/invalid, server bisa balas 401 Unauthenticated — tetap lanjut clear session
+      console.error('Error saat logout:', error);
+      serverMessage = error?.message || error?.response?.data?.message || '';
+    } finally {
+      // Selalu hapus sesi lokal dan redirect
+      Cookies.remove('token');
+      Cookies.remove('roles');
+      if (serverMessage) {
+        // Opsional tampilkan info, tapi jangan blok redirect
+        console.warn('Logout info:', serverMessage);
+      }
+      router.push('/loginpage');
+    }
   }
 }
 

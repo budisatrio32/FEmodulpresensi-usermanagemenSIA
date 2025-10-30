@@ -6,10 +6,14 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  // Ambil token dari cookies
-  const token = Cookies.get('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  // Jangan kirim Authorization hanya untuk endpoint login
+  const url = config.url || '';
+  const isLoginEndpoint = url.includes('/auth/login');
+  if (!isLoginEndpoint) {
+    const token = Cookies.get('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });
