@@ -58,10 +58,14 @@ export default function DetailKelas() {
     // Modal states
     const [showDosenModal, setShowDosenModal] = useState(false);
     const [showMahasiswaModal, setShowMahasiswaModal] = useState(false);
+    const [showGenerateJadwalModal, setShowGenerateJadwalModal] = useState(false);
     const [selectedDosenIds, setSelectedDosenIds] = useState([]);
     const [selectedMahasiswaIds, setSelectedMahasiswaIds] = useState([]);
     const [searchDosen, setSearchDosen] = useState("");
     const [searchMahasiswa, setSearchMahasiswa] = useState("");
+    const [generateJadwalForm, setGenerateJadwalForm] = useState({
+        jumlahPertemuan: "14"
+    });
 
     const hariOptions = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
@@ -226,22 +230,41 @@ export default function DetailKelas() {
     });
     };
 
-    const handleAddDosen = () => {
-    if (selectedDosenIds.length === 0) return;
+    const handleAddDosen = async () => {
+    if (selectedDosenIds.length === 0) {
+        alert("Pilih minimal 1 dosen");
+        return;
+    }
 
-    const newDosen = dosenOptions.filter(d => selectedDosenIds.includes(d.id));
-    const combinedDosen = [...assignedDosen];
+    try {
+        setIsLoading(true);
 
-    newDosen.forEach(dosen => {
+        const newDosen = dosenOptions.filter(d => selectedDosenIds.includes(d.id));
+        const combinedDosen = [...assignedDosen];
+
+        newDosen.forEach(dosen => {
         if (!combinedDosen.find(d => d.id === dosen.id)) {
-        combinedDosen.push(dosen);
+            combinedDosen.push(dosen);
         }
-    });
+        });
 
-    setAssignedDosen(combinedDosen);
-    setSelectedDosenIds([]);
-    setSearchDosen("");
-    setShowDosenModal(false);
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // TODO: API call to save dosen data
+        console.log("Saving dosen data:", combinedDosen);
+
+        setAssignedDosen(combinedDosen);
+        setSelectedDosenIds([]);
+        setSearchDosen("");
+        setShowDosenModal(false);
+        
+        alert(`Berhasil menyimpan ${newDosen.length} dosen pengampu!`);
+    } catch (error) {
+        alert("Gagal menyimpan data dosen: " + error.message);
+    } finally {
+        setIsLoading(false);
+    }
     };
 
     const handleRemoveDosen = (dosenId) => {
@@ -258,26 +281,52 @@ export default function DetailKelas() {
     });
     };
 
-    const handleAddMahasiswa = () => {
-    if (selectedMahasiswaIds.length === 0) return;
+    const handleAddMahasiswa = async () => {
+    if (selectedMahasiswaIds.length === 0) {
+        alert("Pilih minimal 1 mahasiswa");
+        return;
+    }
 
-    const newMahasiswa = mahasiswaOptions.filter(m => selectedMahasiswaIds.includes(m.id));
-    const combinedMahasiswa = [...assignedMahasiswa];
+    try {
+        setIsLoading(true);
 
-    newMahasiswa.forEach(mahasiswa => {
+        const newMahasiswa = mahasiswaOptions.filter(m => selectedMahasiswaIds.includes(m.id));
+        const combinedMahasiswa = [...assignedMahasiswa];
+
+        newMahasiswa.forEach(mahasiswa => {
         if (!combinedMahasiswa.find(m => m.id === mahasiswa.id)) {
-        combinedMahasiswa.push(mahasiswa);
+            combinedMahasiswa.push(mahasiswa);
         }
-    });
+        });
 
-    setAssignedMahasiswa(combinedMahasiswa);
-    setFormData(prev => ({
+        // Check capacity
+        if (combinedMahasiswa.length > parseInt(formData.maks_mahasiswa)) {
+        alert(`Kapasitas maksimal ${formData.maks_mahasiswa} mahasiswa. Tidak dapat menambah lebih banyak.`);
+        setIsLoading(false);
+        return;
+        }
+
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // TODO: API call to save mahasiswa data
+        console.log("Saving mahasiswa data:", combinedMahasiswa);
+
+        setAssignedMahasiswa(combinedMahasiswa);
+        setFormData(prev => ({
         ...prev,
         jumlah_mahasiswa: combinedMahasiswa.length.toString()
-    }));
-    setSelectedMahasiswaIds([]);
-    setSearchMahasiswa("");
-    setShowMahasiswaModal(false);
+        }));
+        setSelectedMahasiswaIds([]);
+        setSearchMahasiswa("");
+        setShowMahasiswaModal(false);
+        
+        alert(`Berhasil menyimpan ${newMahasiswa.length} mahasiswa!`);
+    } catch (error) {
+        alert("Gagal menyimpan data mahasiswa: " + error.message);
+    } finally {
+        setIsLoading(false);
+    }
     };
 
     const handleRemoveMahasiswa = (mahasiswaId) => {
@@ -288,43 +337,68 @@ export default function DetailKelas() {
     }));
     };
 
-    const handleSaveDosen = async () => {
-    if (assignedDosen.length === 0) {
-        alert("Belum ada dosen yang ditambahkan");
-        return;
+    const getNextDayOfWeek = (dayName) => {
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const targetDay = days.indexOf(dayName);
+    
+    if (targetDay === -1) return new Date();
+    
+    const today = new Date();
+    const currentDay = today.getDay();
+    
+    let daysUntilTarget = targetDay - currentDay;
+    if (daysUntilTarget <= 0) {
+        daysUntilTarget += 7; // Jika hari target sudah lewat minggu ini, ambil minggu depan
     }
-
-    try {
-        setIsLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // TODO: API call to save dosen data
-        console.log("Saving dosen data:", assignedDosen);
-        
-        alert(`Berhasil menyimpan ${assignedDosen.length} dosen pengampu!`);
-    } catch (error) {
-        alert("Gagal menyimpan data dosen: " + error.message);
-    } finally {
-        setIsLoading(false);
-    }
+    
+    const nextDate = new Date(today);
+    nextDate.setDate(today.getDate() + daysUntilTarget);
+    
+    return nextDate;
     };
 
-    const handleSaveMahasiswa = async () => {
-    if (assignedMahasiswa.length === 0) {
-        alert("Belum ada mahasiswa yang ditambahkan");
+    const handleGenerateJadwal = async () => {
+    const jumlah = parseInt(generateJadwalForm.jumlahPertemuan);
+    
+    if (isNaN(jumlah) || jumlah < 1 || jumlah > 16) {
+        alert("Jumlah pertemuan harus antara 1-16");
+        return;
+    }
+
+    if (!formData.hari) {
+        alert("Pilih hari kelas terlebih dahulu di form Informasi Kelas");
         return;
     }
 
     try {
         setIsLoading(true);
+        
+        // Tanggal mulai otomatis dari hari yang dipilih (hari kelas berikutnya)
+        const startDate = getNextDayOfWeek(formData.hari);
+        const generatedJadwal = [];
+
+        for (let i = 0; i < jumlah; i++) {
+        const pertemuanDate = new Date(startDate);
+        pertemuanDate.setDate(startDate.getDate() + (i * 7)); // +7 hari per pertemuan
+
+        generatedJadwal.push({
+            id: i + 1,
+            pertemuan: i + 1,
+            tanggal: pertemuanDate.toISOString().split('T')[0]
+        });
+        }
+
+        // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // TODO: API call to save mahasiswa data
-        console.log("Saving mahasiswa data:", assignedMahasiswa);
-        
-        alert(`Berhasil menyimpan ${assignedMahasiswa.length} mahasiswa!`);
+        // TODO: API call to save jadwal
+        console.log("Generated jadwal:", generatedJadwal);
+
+        setJadwalList(generatedJadwal);
+        setShowGenerateJadwalModal(false);
+        alert(`Berhasil generate ${jumlah} jadwal pertemuan dimulai dari ${formData.hari}!`);
     } catch (error) {
-        alert("Gagal menyimpan data mahasiswa: " + error.message);
+        alert("Gagal generate jadwal: " + error.message);
     } finally {
         setIsLoading(false);
     }
@@ -638,27 +712,6 @@ export default function DetailKelas() {
                 </div>
                 </div>
 
-                {/* Tanggal */}
-                <div className="mb-4">
-                <label className="block text-sm font-semibold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                    Tanggal Pelaksanaan
-                </label>
-                <input
-                    type="date"
-                    name="tanggal"
-                    value={formData.tanggal}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 focus:outline-none"
-                    style={{
-                    fontFamily: 'Urbanist, sans-serif',
-                    borderColor: '#015023',
-                    borderRadius: '12px',
-                    opacity: 0.7
-                    }}
-                    disabled={isLoading}
-                />
-                </div>
-
                 {/* Status Active */}
                 <div className="flex items-center gap-3 p-4 border-2" style={{ borderColor: '#015023', borderRadius: '12px', opacity: 0.7 }}>
                 <input
@@ -712,19 +765,6 @@ export default function DetailKelas() {
                     <h2 className="text-2xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                     Dosen Pengampu
                     </h2>
-                    <div className="flex items-center gap-2">
-                    {assignedDosen.length > 0 && (
-                        <button
-                        type="button"
-                        onClick={handleSaveDosen}
-                        disabled={isLoading}
-                        className="text-white p-2 transition shadow-md hover:opacity-90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{ backgroundColor: '#16874B', borderRadius: '8px' }}
-                        title="Simpan Data Dosen"
-                        >
-                        <Save className="w-5 h-5" />
-                        </button>
-                    )}
                     <button
                     type="button"
                     onClick={() => setShowDosenModal(true)}
@@ -734,7 +774,6 @@ export default function DetailKelas() {
                     <Plus className="w-4 h-4 inline mr-1" />
                     Tambah
                     </button>
-                    </div>
                 </div>
 
                 <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '280px' }}>
@@ -777,19 +816,6 @@ export default function DetailKelas() {
                     <h2 className="text-2xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                     Daftar Mahasiswa
                     </h2>
-                    <div className="flex items-center gap-2">
-                    {assignedMahasiswa.length > 0 && (
-                        <button
-                        type="button"
-                        onClick={handleSaveMahasiswa}
-                        disabled={isLoading}
-                        className="text-white p-2 transition shadow-md hover:opacity-90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{ backgroundColor: '#16874B', borderRadius: '8px' }}
-                        title="Simpan Data Mahasiswa"
-                        >
-                        <Save className="w-5 h-5" />
-                        </button>
-                    )}
                     <button
                     type="button"
                     onClick={() => setShowMahasiswaModal(true)}
@@ -800,7 +826,6 @@ export default function DetailKelas() {
                     <Plus className="w-4 h-4 inline mr-1" />
                     Tambah
                     </button>
-                    </div>
                 </div>
 
                 <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '280px' }}>
@@ -845,12 +870,20 @@ export default function DetailKelas() {
                 <h2 className="text-2xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                     Daftar Jadwal Kelas
                 </h2>
-                <Calendar className="w-6 h-6" style={{ color: '#015023' }} />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowGenerateJadwalModal(true)}
+                  className="text-white px-4 py-2 text-sm font-medium transition shadow-md hover:opacity-90 cursor-pointer"
+                  style={{ backgroundColor: '#DABC4E', color: '#015023', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
+                >
+                  <Calendar className="w-4 h-4 inline mr-1" />
+                  Generate Jadwal
+                </button>
+              </div>
 
                 {jadwalList.length === 0 ? (
                 <p className="text-gray-500 text-center py-4" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                    Belum ada jadwal kelas
+                  Belum ada jadwal kelas. Klik "Generate Jadwal" untuk membuat jadwal otomatis.
                 </p>
                 ) : (
                 <div className="overflow-x-auto">
@@ -860,14 +893,8 @@ export default function DetailKelas() {
                         <th className="px-4 py-3 text-center text-white font-bold" style={{ fontFamily: 'Urbanist, sans-serif', borderRadius: '12px 0 0 0' }}>
                             Pertemuan Ke
                         </th>
-                        <th className="px-4 py-3 text-center text-white font-bold" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                            Tanggal
-                        </th>
-                        <th className="px-4 py-3 text-center text-white font-bold" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                            Jam Mulai
-                        </th>
                         <th className="px-4 py-3 text-center text-white font-bold" style={{ fontFamily: 'Urbanist, sans-serif', borderRadius: '0 12px 0 0' }}>
-                            Jam Selesai
+                          Tanggal
                         </th>
                         </tr>
                     </thead>
@@ -893,13 +920,7 @@ export default function DetailKelas() {
                                 month: 'long', 
                                 day: 'numeric' 
                             })}
-                            </td>
-                            <td className="px-4 py-3 text-center font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                            {jadwal.jam_mulai}
-                            </td>
-                            <td className="px-4 py-3 text-center font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                            {jadwal.jam_selesai}
-                            </td>
+                          </td>
                         </tr>
                         ))}
                     </tbody>
@@ -999,14 +1020,6 @@ export default function DetailKelas() {
                                 {dosen.email}
                             </p>
                         </div>
-                        {selectedDosenIds.includes(dosen.id) && (
-                            <div 
-                            className="px-3 py-1 text-xs font-bold rounded-full text-white"
-                            style={{ backgroundColor: '#16874B' }}
-                            >
-                            ✓ Dipilih
-                            </div>
-                        )}
                         </div>
                     </div>
                     ))}
@@ -1047,16 +1060,25 @@ export default function DetailKelas() {
                 </button>
                 <button
                 onClick={handleAddDosen}
-                disabled={selectedDosenIds.length === 0}
+                disabled={selectedDosenIds.length === 0 || isLoading}
                 className="flex-1 px-6 py-3 text-white font-semibold transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
-                    backgroundColor: '#015023',
+                    backgroundColor: '#16874B',
                     borderRadius: '12px',
                     fontFamily: 'Urbanist, sans-serif'
                 }}
                 >
-                <Plus className="w-5 h-5 inline mr-2" />
-                Tambahkan ({selectedDosenIds.length})
+                {isLoading ? (
+                    <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    Menyimpan...
+                    </>
+                ) : (
+                    <>
+                    <Save className="w-5 h-5 inline mr-2" />
+                    Simpan Data ({selectedDosenIds.length})
+                    </>
+                )}
                 </button>
             </div>
             </div>
@@ -1219,16 +1241,160 @@ export default function DetailKelas() {
                 </button>
                 <button
                 onClick={handleAddMahasiswa}
-                disabled={selectedMahasiswaIds.length === 0}
+                disabled={selectedMahasiswaIds.length === 0 || isLoading}
                 className="flex-1 px-6 py-3 text-white font-semibold transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
-                    backgroundColor: '#015023',
+                    backgroundColor: '#16874B',
                     borderRadius: '12px',
                     fontFamily: 'Urbanist, sans-serif'
                 }}
                 >
-                <Plus className="w-5 h-5 inline mr-2" />
-                Tambahkan ({selectedMahasiswaIds.length})
+                {isLoading ? (
+                    <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    Menyimpan...
+                    </>
+                ) : (
+                    <>
+                    <Save className="w-5 h-5 inline mr-2" />
+                    Simpan Data ({selectedMahasiswaIds.length})
+                    </>
+                )}
+                </button>
+            </div>
+            </div>
+        </div>
+        )}
+
+        {/* Modal Generate Jadwal */}
+        {showGenerateJadwalModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+            <div className="bg-white p-6 max-w-md w-full shadow-2xl" style={{ borderRadius: '12px' }}>
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                <h3 className="text-2xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                    Generate Jadwal Kelas
+                </h3>
+                <p className="text-sm text-gray-600 mt-1" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                    Buat jadwal otomatis dengan sistem mingguan (+7 hari)
+                </p>
+                </div>
+                <button
+                onClick={() => {
+                    setShowGenerateJadwalModal(false);
+                    setGenerateJadwalForm({ jumlahPertemuan: "14" });
+                }}
+                className="text-gray-500 hover:text-gray-700 transition"
+                >
+                <X className="w-6 h-6" />
+                </button>
+            </div>
+
+            {/* Form Generate Jadwal */}
+            <div className="space-y-4 mb-6">
+                {/* Jumlah Pertemuan */}
+                <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                    Jumlah Pertemuan <span className="text-red-500">*</span>
+                </label>
+                <input
+                    type="number"
+                    min="1"
+                    max="16"
+                    value={generateJadwalForm.jumlahPertemuan}
+                    onChange={(e) => setGenerateJadwalForm(prev => ({ ...prev, jumlahPertemuan: e.target.value }))}
+                    className="w-full px-4 py-3 border-2 focus:outline-none"
+                    style={{
+                    fontFamily: 'Urbanist, sans-serif',
+                    borderColor: '#015023',
+                    borderRadius: '12px'
+                    }}
+                    placeholder="Masukkan jumlah pertemuan (1-16)"
+                />
+                <p className="text-xs text-gray-500 mt-1" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                    Maksimal 16 pertemuan per semester
+                </p>
+                </div>
+
+                {/* Info Preview */}
+                {generateJadwalForm.jumlahPertemuan && formData.hari && (() => {
+                const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                const targetDay = days.indexOf(formData.hari);
+                const today = new Date();
+                const currentDay = today.getDay();
+                let daysUntilTarget = targetDay - currentDay;
+                if (daysUntilTarget <= 0) daysUntilTarget += 7;
+                
+                const startDate = new Date(today);
+                startDate.setDate(today.getDate() + daysUntilTarget);
+                
+                const endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + (parseInt(generateJadwalForm.jumlahPertemuan) - 1) * 7);
+                
+                return (
+                <div className="p-4 rounded-lg" style={{ backgroundColor: '#FFF9E6', border: '2px solid #DABC4E' }}>
+                    <p className="text-sm font-semibold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                    📅 Preview Jadwal:
+                    </p>
+                    <p className="text-sm" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                    • Jumlah: <span className="font-bold">{generateJadwalForm.jumlahPertemuan} pertemuan</span>
+                    </p>
+                    <p className="text-sm" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                    • Hari Kelas: <span className="font-bold">{formData.hari}</span>
+                    </p>
+                    <p className="text-sm" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                    • Pertemuan Pertama: <span className="font-bold">{startDate.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    </p>
+                    <p className="text-sm" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                    • Pertemuan Terakhir: <span className="font-bold">{endDate.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    </p>
+                    <p className="text-xs text-gray-600 mt-2" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                    ℹ️ Jadwal otomatis mengikuti hari kelas yang dipilih (+7 hari per pertemuan)
+                    </p>
+                </div>
+                );
+                })()}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+                <button
+                onClick={() => {
+                    setShowGenerateJadwalModal(false);
+                    setGenerateJadwalForm({ jumlahPertemuan: "14" });
+                }}
+                className="flex-1 px-6 py-3 border-2 font-semibold transition hover:bg-gray-50"
+                style={{
+                    borderColor: '#015023',
+                    color: '#015023',
+                    borderRadius: '12px',
+                    fontFamily: 'Urbanist, sans-serif'
+                }}
+                >
+                Batal
+                </button>
+                <button
+                onClick={handleGenerateJadwal}
+                disabled={!generateJadwalForm.jumlahPertemuan || !formData.hari || isLoading}
+                className="flex-1 px-6 py-3 text-white font-semibold transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                    backgroundColor: '#DABC4E',
+                    color: '#015023',
+                    borderRadius: '12px',
+                    fontFamily: 'Urbanist, sans-serif'
+                }}
+                >
+                {isLoading ? (
+                    <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    Generating...
+                    </>
+                ) : (
+                    <>
+                    <Calendar className="w-5 h-5 inline mr-2" />
+                    Generate Jadwal
+                    </>
+                )}
                 </button>
             </div>
             </div>
