@@ -921,12 +921,6 @@ export default function DetailKelas() {
                                 day: 'numeric' 
                             })}
                             </td>
-                            <td className="px-4 py-3 text-center font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                            {jadwal.jam_mulai}
-                            </td>
-                            <td className="px-4 py-3 text-center font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                            {jadwal.jam_selesai}
-                            </td>
                         </tr>
                         ))}
                     </tbody>
