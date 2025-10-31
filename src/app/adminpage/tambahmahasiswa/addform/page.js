@@ -1,121 +1,199 @@
-    "use client";
+"use client";
 
-    import { useState } from "react";
-    import { useRouter } from "next/navigation";
-    import { 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { 
     Field, 
     FieldLabel, 
     FieldDescription, 
     FieldError, 
     FieldContent 
-    } from "@/components/ui/field";
-    import { Button } from "@/components/ui/button";
-    import AdminNavbar from "@/components/ui/admin-navbar";
-    import { ArrowLeft, Save, X, Info } from "lucide-react";
+} from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
+import AdminNavbar from "@/components/ui/admin-navbar";
+import { ArrowLeft, Save, X, Info } from "lucide-react";
+import { storeMahasiswa, getPrograms } from "@/lib/adminApi";
+import LoadingEffect from "@/components/ui/loading-effect";
+import { 
+    ErrorMessageBoxWithButton, 
+    ErrorMessageBox,
+    SuccessMessageBoxWithButton
+} from "@/components/ui/message-box";
 
-    export default function AddMahasiswaForm() {
+export default function AddMahasiswaForm() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState({});
+    const [success, setSuccess] = useState(null);
+    const [isFetching, setIsFetching] = useState(true);
+    const [programs, setPrograms] = useState([]);
 
     const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    role: "mahasiswa",
-    is_active: true
+        name: "",
+        username: "",
+        email: "",
+        nim: "",
+        password: "",
+        confirmPassword: "",
+        program: "",
+        is_active: true
     });
 
     const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-        ...prev,
-        [name]: type === "checkbox" ? checked : value
-    }));
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === "checkbox" ? checked : value
+        }));
 
-    // Clear error when user starts typing
-    if (errors[name]) {
-        setErrors(prev => ({ ...prev, [name]: null }));
-    }
+        // Clear error when user starts typing
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: null }));
+        }
+        if (errors.form) {
+            setErrors(prev => ({ ...prev, form: null }));
+        }
+        if (success) {
+            setSuccess(null)
+            setFormData({
+                name: "",
+                username: "",
+                email: "",
+                nim: "",
+                password: "",
+                confirmPassword: "",
+                program: "",
+                is_active: true
+            });
+        }
     };
 
     const validateForm = () => {
-    const newErrors = {};
+        const newErrors = {};
 
-    if (!formData.username.trim()) {
-        newErrors.username = "Username harus diisi";
-    } else if (formData.username.length < 3) {
-        newErrors.username = "Username minimal 3 karakter";
-    }
+        if (!formData.username.trim()) {
+            newErrors.username = "Username harus diisi";
+        } else if (formData.username.length < 3) {
+            newErrors.username = "Username minimal 3 karakter";
+        }
+        if (!formData.name.trim()) {
+            newErrors.name = "Nama harus diisi";
+        } else if (formData.name.length < 3) {
+            newErrors.name = "Nama minimal 3 karakter";
+        }
+        if (!formData.nim.trim()) {
+            newErrors.nim = "NIM harus diisi";
+        }
 
-    if (!formData.email.trim()) {
-        newErrors.email = "Email harus diisi";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-        newErrors.email = "Format email tidak valid";
-    }
+        if (!formData.email.trim()) {
+            newErrors.email = "Email harus diisi";
+        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            newErrors.email = "Format email tidak valid";
+        }
 
-    if (!formData.password) {
-        newErrors.password = "Password harus diisi";
-    } else if (formData.password.length < 6) {
-        newErrors.password = "Password minimal 6 karakter";
-    }
+        if (!formData.password) {
+            newErrors.password = "Password harus diisi";
+        } else if (formData.password.length < 6) {
+            newErrors.password = "Password minimal 6 karakter";
+        }
 
-    if (!formData.confirmPassword) {
-        newErrors.confirmPassword = "Konfirmasi password harus diisi";
-    } else if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = "Password tidak sama";
-    }
+        if (!formData.confirmPassword) {
+            newErrors.confirmPassword = "Konfirmasi password harus diisi";
+        } else if (formData.password !== formData.confirmPassword) {
+            newErrors.confirmPassword = "Password tidak sama";
+        }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+        if (!formData.program || formData.program === "") {
+            newErrors.program = "Program harus dipilih";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+    const fetchPrograms = async () => {
+        setIsFetching(true);
+        try {
+            const response = await getPrograms();
+            if (response.status === 'success') {
+                setPrograms(response.data);
+            } else {
+                setErrors(prev => ({ ...prev, fetch: response.message || 'Gagal memuat program' }));
+            }
+        } catch (error) {
+            setErrors(prev => ({ ...prev, fetch: error.message || 'Gagal memuat program' }));
+        } finally {
+            setIsFetching(false);
+        }
     };
 
+    useEffect(() => {
+        fetchPrograms();
+    }, []);
+
     const handleSubmit = async (e) => {
-    e.preventDefault();
+        e.preventDefault();
 
-    if (!validateForm()) {
-        return;
-    }
+        if (!validateForm()) {
+            return;
+        }
 
-    setIsLoading(true);
+        setIsLoading(true);
 
-    try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // TODO: Replace with actual API call
-        // const response = await fetch('/api/mahasiswa', {
-        //   method: 'POST',
-        //   headers: {
-        //     'Content-Type': 'application/json',
-        //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-        //   },
-        //   body: JSON.stringify({
-        //     username: formData.username,
-        //     email: formData.email,
-        //     password: formData.password,
-        //     role: formData.role,
-        //     is_active: formData.is_active
-        //   })
-        // });
-        
-        // if (!response.ok) throw new Error('Gagal menambah data');
-        
-        alert("Data mahasiswa berhasil ditambahkan!");
-        router.push("/adminpage/tambahmahasiswa");
-    } catch (error) {
-        alert("Gagal menambah data: " + error.message);
-    } finally {
-        setIsLoading(false);
-    }
+        const newErrors = {};
+        try {
+            // panggil API untuk menyimpan data mahasiswa
+            const response = await storeMahasiswa({
+            name: formData.name,
+            username: formData.username,
+            email: formData.email,
+            registration_number: formData.nim,
+            password: formData.password,
+            password_confirmation: formData.confirmPassword,
+            program_id: formData.program,
+            is_active: formData.is_active,
+            });
+            if (response.status === 'success') {
+                setSuccess('Data mahasiswa berhasil ditambahkan');
+            } else if (response.status === 'failed') {
+                newErrors.username = response.message;
+            } else {
+                newErrors.form = response.message || 'Gagal menambah data mahasiswa';
+            }
+        } catch (error) {
+            newErrors.form = "Gagal menambah data: " + (error.message || 'Unknown error');
+        } finally {
+            setIsLoading(false);
+            setErrors(newErrors);
+        }
     };
 
     const handleCancel = () => {
-    if (window.confirm("Apakah Anda yakin ingin membatalkan? Data yang diisi akan hilang.")) {
-        router.push("/adminpage/tambahmahasiswa");
-    }
+        if (window.confirm("Apakah Anda yakin ingin membatalkan? Data yang diisi akan hilang.")) {
+            router.push("/adminpage/tambahmahasiswa");
+        }
     };
+
+    const handleFinish = () => {
+        router.push("/adminpage/tambahmahasiswa");
+    };
+
+    if (isFetching) {
+    return (
+        <LoadingEffect/>
+    );
+    } else if (errors.fetch) {
+        return (
+        <div className="min-h-screen bg-brand-light-sage">
+            <AdminNavbar title="Dashboard Admin - Edit Akun Manager" />
+                <div className="container mx-auto px-4 py-8 max-w-5xl">
+            <ErrorMessageBoxWithButton
+                message={errors.fetch}
+                action={fetchPrograms}
+            />
+            </div>
+        </div>
+        );
+    }
 
     return (
     <div className="min-h-screen bg-brand-light-sage">
@@ -222,6 +300,86 @@
                 </FieldContent>
                 {errors.username && (
                 <FieldError>{errors.username}</FieldError>
+                )}
+            </Field>
+            {/* name Field */}
+            <Field>
+                <FieldLabel htmlFor="name">
+                Name <span className="text-red-500">*</span>
+                </FieldLabel>
+                <FieldDescription>
+                Nama lengkap mahasiswa
+                </FieldDescription>
+                <FieldContent>
+                <div className="relative">
+                    <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100"
+                    style={{
+                        fontFamily: 'Urbanist, sans-serif',
+                        borderColor: errors.name ? '#BE0414' : '#015023',
+                        borderRadius: '12px',
+                        opacity: errors.name ? 1 : 0.7
+                    }}
+                    placeholder="Masukkan nama lengkap"
+                    disabled={isLoading}
+                    />
+                    {formData.name && !errors.name && (
+                    <div 
+                        className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                        style={{ backgroundColor: '#16874B' }}
+                    >
+                        ✓
+                    </div>
+                    )}
+                </div>
+                </FieldContent>
+                {errors.name && (
+                <FieldError>{errors.name}</FieldError>
+                )}
+            </Field>
+            {/* nim Field */}
+            <Field>
+                <FieldLabel htmlFor="nim">
+                NIM <span className="text-red-500">*</span>
+                </FieldLabel>
+                <FieldDescription>
+                Nomor Induk Mahasiswa
+                </FieldDescription>
+                <FieldContent>
+                <div className="relative">
+                    <input
+                    type="text"
+                    id="nim"
+                    name="nim"
+                    value={formData.nim}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100"
+                    style={{
+                        fontFamily: 'Urbanist, sans-serif',
+                        borderColor: errors.nim ? '#BE0414' : '#015023',
+                        borderRadius: '12px',
+                        opacity: errors.nim ? 1 : 0.7
+                    }}
+                    placeholder="Masukkan NIM"
+                    disabled={isLoading}
+                    />
+                    {formData.nim && !errors.nim && (
+                    <div
+                        className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                        style={{ backgroundColor: '#16874B' }}
+                    >
+                        ✓
+                    </div>
+                    )}
+                </div>
+                </FieldContent>
+                {errors.nim && (
+                <FieldError>{errors.nim}</FieldError>
                 )}
             </Field>
 
@@ -351,17 +509,17 @@
             {/* Role Field */}
             <Field>
                 <FieldLabel htmlFor="role">
-                Role <span className="text-red-500">*</span>
+                Program <span className="text-red-500">*</span>
                 </FieldLabel>
                 <FieldDescription>
-                Pilih role untuk pengguna ini
+                Pilih program untuk pengguna ini
                 </FieldDescription>
                 <FieldContent>
                 <div className="relative">
                     <select
-                    id="role"
-                    name="role"
-                    value={formData.role}
+                    id="program"
+                    name="program"
+                    value={formData.program}
                     onChange={handleChange}
                     className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100 appearance-none cursor-pointer"
                     style={{
@@ -376,10 +534,12 @@
                     }}
                     disabled={isLoading}
                     >
-                    <option value="mahasiswa">Mahasiswa</option>
-                    <option value="dosen">Dosen</option>
-                    <option value="admin">Admin</option>
-                    <option value="manager">Manager</option>
+                    <option value="">Pilih Program</option>
+                    {programs.map(program => (
+                        <option key={program.id} value={program.id}>
+                        {program.name}
+                        </option>
+                    ))}
                     </select>
                 </div>
                 </FieldContent>
@@ -417,6 +577,15 @@
                 </div>
                 </div>
             </Field>
+
+            {/* Form Error */}
+            {errors.form && (
+              <ErrorMessageBox message={errors.form} />
+            )}
+            {/* Success Message */}
+            {success && (
+              <SuccessMessageBoxWithButton message={success + ' Lihat Data atau tambahkan akun dosen lain'} action={handleFinish} btntext="Lihat Data" />
+            )}
 
             {/* Action Buttons */}
             <div className="pt-8">

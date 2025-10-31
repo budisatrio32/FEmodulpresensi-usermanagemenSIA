@@ -208,6 +208,20 @@ export const getMahasiswa = async () => {
     throw (error.response?.data ?? error);
   }
 };
+/**
+ * Store mahasiswa baru
+ * @param {Object} mahasiswaData - Data mahasiswa baru
+ * @returns {Promise} Response hasil create
+ */
+export const storeMahasiswa = async (mahasiswaData) => {
+  try {
+    const response = await api.post('/manager/students', mahasiswaData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating mahasiswa:', error);
+    throw (error.response?.data ?? error);
+  }
+};
 
 export default {
   getDashboardStatistics,
@@ -224,4 +238,5 @@ export default {
   getDosen,
   storeDosen,
   getMahasiswa,
+  storeMahasiswa,
 };
