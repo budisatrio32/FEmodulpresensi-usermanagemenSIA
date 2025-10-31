@@ -116,6 +116,15 @@ export default function AddManagerForm() {
       });
       if (response.status === 'success') {
         setSuccess('Manager berhasil ditambahkan');
+        // Reset form
+        setFormData({
+          name: "",
+          username: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+          is_active: true
+        });
       } else if (response.status === 'failed') {
         newErrors.username = response.message;
       } else {

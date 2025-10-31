@@ -154,6 +154,17 @@ export default function AddMahasiswaForm() {
             });
             if (response.status === 'success') {
                 setSuccess('Data mahasiswa berhasil ditambahkan');
+                // Reset form
+                setFormData({
+                    name: "",
+                    username: "",
+                    email: "",
+                    nim: "",
+                    password: "",
+                    confirmPassword: "",
+                    program: "",
+                    is_active: true
+                });
             } else if (response.status === 'failed') {
                 newErrors.username = response.message;
             } else {

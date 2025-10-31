@@ -147,6 +147,16 @@ export default function AddDosenForm() {
       });
       if (response.status === 'success') {
         setSuccess('Dosen berhasil ditambahkan');
+        // Reset form
+        setFormData({
+          name: "",
+          username: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+          program: "",
+          is_active: true
+        });
       } else if (response.status === 'failed') {
         newErrors.username = response.message;
       } else {

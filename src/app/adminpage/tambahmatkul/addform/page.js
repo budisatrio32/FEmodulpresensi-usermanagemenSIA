@@ -95,6 +95,12 @@ export default function AddMatkulForm() {
       });
       if (response.status === 'success') {
         setSuccess('Mata kuliah berhasil ditambahkan');
+        // Reset form
+        setFormData({
+          name_subject: "",
+          code_subject: "",
+          sks: ""
+        });
       } else if (response.status === 'failed') {
         newErrors.code_subject = response.message;
       } else {
