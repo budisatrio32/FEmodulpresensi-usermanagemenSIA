@@ -20,12 +20,11 @@ export default function AddKelasForm() {
   
   const [formData, setFormData] = useState({
     kode_kelas: "",
-    jumlah_mahasiswa: "0",
-    maks_mahasiswa: "",
     hari: "",
+    maks_mahasiswa: "",
+    mata_kuliah_id: "",
     jam_mulai: "",
     jam_selesai: "",
-    tanggal: "",
     is_active: true
   });
 
@@ -36,6 +35,18 @@ export default function AddKelasForm() {
     "Kamis",
     "Jumat",
     "Sabtu"
+  ];
+
+  // Dummy data mata kuliah
+  const matkulOptions = [
+    { id: 1, kode: "CS101", nama: "Algoritma dan Pemrograman" },
+    { id: 2, kode: "CS102", nama: "Struktur Data" },
+    { id: 3, kode: "CS201", nama: "Basis Data" },
+    { id: 4, kode: "CS202", nama: "Sistem Operasi" },
+    { id: 5, kode: "CS301", nama: "Pemrograman Web" },
+    { id: 6, kode: "CS302", nama: "Jaringan Komputer" },
+    { id: 7, kode: "CS401", nama: "Machine Learning" },
+    { id: 8, kode: "CS402", nama: "Keamanan Siber" }
   ];
 
   const handleChange = (e) => {
@@ -60,10 +71,8 @@ export default function AddKelasForm() {
       newErrors.kode_kelas = "Kode kelas minimal 2 karakter";
     }
     
-    if (!formData.jumlah_mahasiswa) {
-      newErrors.jumlah_mahasiswa = "Jumlah mahasiswa harus diisi";
-    } else if (parseInt(formData.jumlah_mahasiswa) < 0) {
-      newErrors.jumlah_mahasiswa = "Jumlah mahasiswa tidak boleh negatif";
+    if (!formData.hari) {
+      newErrors.hari = "Hari harus dipilih";
     }
     
     if (!formData.maks_mahasiswa) {
@@ -72,15 +81,8 @@ export default function AddKelasForm() {
       newErrors.maks_mahasiswa = "Maksimal mahasiswa harus antara 1-100";
     }
     
-    // Validasi jumlah mahasiswa tidak boleh lebih dari maksimal
-    if (formData.jumlah_mahasiswa && formData.maks_mahasiswa) {
-      if (parseInt(formData.jumlah_mahasiswa) > parseInt(formData.maks_mahasiswa)) {
-        newErrors.jumlah_mahasiswa = "Jumlah mahasiswa tidak boleh melebihi maksimal";
-      }
-    }
-    
-    if (!formData.hari) {
-      newErrors.hari = "Hari harus dipilih";
+    if (!formData.mata_kuliah_id) {
+      newErrors.mata_kuliah_id = "Mata kuliah harus dipilih";
     }
     
     if (!formData.jam_mulai) {
@@ -89,10 +91,6 @@ export default function AddKelasForm() {
     
     if (!formData.jam_selesai) {
       newErrors.jam_selesai = "Jam selesai harus diisi";
-    }
-    
-    if (!formData.tanggal) {
-      newErrors.tanggal = "Tanggal harus diisi";
     }
     
     // Validasi jam selesai harus lebih besar dari jam mulai
@@ -131,10 +129,9 @@ export default function AddKelasForm() {
       //   },
       //   body: JSON.stringify({
       //     kode_kelas: formData.kode_kelas.toUpperCase(),
-      //     jumlah_mahasiswa: parseInt(formData.jumlah_mahasiswa),
+      //     mata_kuliah_id: parseInt(formData.mata_kuliah_id),
       //     maks_mahasiswa: parseInt(formData.maks_mahasiswa),
       //     jadwal: jadwal,
-      //     tanggal: formData.tanggal,
       //     is_active: formData.is_active
       //   })
       // });
@@ -229,7 +226,7 @@ export default function AddKelasForm() {
                 Kode Kelas <span className="text-red-500">*</span>
               </FieldLabel>
               <FieldDescription>
-                Masukkan kode unik untuk kelas ini (contoh: A-CS101)
+                Kode unik untuk identifikasi kelas (minimal 2 karakter)
               </FieldDescription>
               <FieldContent>
                 <div className="relative">
@@ -246,10 +243,10 @@ export default function AddKelasForm() {
                       borderRadius: '12px',
                       opacity: errors.kode_kelas ? 1 : 0.7
                     }}
-                    placeholder="Contoh: A-CS101"
+                    placeholder="Contoh: A1, B2, CS101-A"
                     disabled={isLoading}
                   />
-                  {formData.kode_kelas && !errors.kode_kelas && formData.kode_kelas.length >= 2 && (
+                  {formData.kode_kelas && !errors.kode_kelas && (
                     <div 
                       className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
                       style={{ backgroundColor: '#16874B' }}
@@ -264,94 +261,98 @@ export default function AddKelasForm() {
               )}
             </Field>
 
-            {/* Jumlah & Maks Mahasiswa Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Jumlah Mahasiswa Field */}
-              <Field>
-                <FieldLabel htmlFor="jumlah_mahasiswa">
-                  Jumlah Mahasiswa Saat Ini <span className="text-red-500">*</span>
-                </FieldLabel>
-                <FieldDescription>
-                  Jumlah mahasiswa yang sudah terdaftar
-                </FieldDescription>
-                <FieldContent>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      id="jumlah_mahasiswa"
-                      name="jumlah_mahasiswa"
-                      value={formData.jumlah_mahasiswa}
-                      onChange={handleChange}
-                      min="0"
-                      max="100"
-                      className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100"
-                      style={{
-                        fontFamily: 'Urbanist, sans-serif',
-                        borderColor: errors.jumlah_mahasiswa ? '#BE0414' : '#015023',
-                        borderRadius: '12px',
-                        opacity: errors.jumlah_mahasiswa ? 1 : 0.7
-                      }}
-                      placeholder="Contoh: 30"
-                      disabled={isLoading}
-                    />
-                    {formData.jumlah_mahasiswa && !errors.jumlah_mahasiswa && parseInt(formData.jumlah_mahasiswa) >= 0 && (
-                      <div 
-                        className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                        style={{ backgroundColor: '#16874B' }}
-                      >
-                        ✓
-                      </div>
-                    )}
-                  </div>
-                </FieldContent>
-                {errors.jumlah_mahasiswa && (
-                  <FieldError>{errors.jumlah_mahasiswa}</FieldError>
-                )}
-              </Field>
+            {/* Mata Kuliah Field */}
+            <Field>
+              <FieldLabel htmlFor="mata_kuliah_id">
+                Mata Kuliah <span className="text-red-500">*</span>
+              </FieldLabel>
+              <FieldDescription>
+                Pilih mata kuliah yang akan diajarkan
+              </FieldDescription>
+              <FieldContent>
+                <div className="relative">
+                  <select
+                    id="mata_kuliah_id"
+                    name="mata_kuliah_id"
+                    value={formData.mata_kuliah_id}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100 appearance-none cursor-pointer"
+                    style={{
+                      fontFamily: 'Urbanist, sans-serif',
+                      borderColor: errors.mata_kuliah_id ? '#BE0414' : '#015023',
+                      borderRadius: '12px',
+                      opacity: errors.mata_kuliah_id ? 1 : 0.7,
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23015023' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 1rem center',
+                      backgroundSize: '1.5rem'
+                    }}
+                    disabled={isLoading}
+                  >
+                    <option value="">Pilih Mata Kuliah</option>
+                    {matkulOptions.map(matkul => (
+                      <option key={matkul.id} value={matkul.id}>
+                        {matkul.kode} - {matkul.nama}
+                      </option>
+                    ))}
+                  </select>
+                  {formData.mata_kuliah_id && !errors.mata_kuliah_id && (
+                    <div 
+                      className="absolute right-12 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                      style={{ backgroundColor: '#16874B' }}
+                    >
+                      ✓
+                    </div>
+                  )}
+                </div>
+              </FieldContent>
+              {errors.mata_kuliah_id && (
+                <FieldError>{errors.mata_kuliah_id}</FieldError>
+              )}
+            </Field>
 
-              {/* Maks Mahasiswa Field */}
-              <Field>
-                <FieldLabel htmlFor="maks_mahasiswa">
-                  Maksimal Mahasiswa <span className="text-red-500">*</span>
-                </FieldLabel>
-                <FieldDescription>
-                  Kapasitas maksimal kelas (1-100)
-                </FieldDescription>
-                <FieldContent>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      id="maks_mahasiswa"
-                      name="maks_mahasiswa"
-                      value={formData.maks_mahasiswa}
-                      onChange={handleChange}
-                      min="1"
-                      max="100"
-                      className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100"
-                      style={{
-                        fontFamily: 'Urbanist, sans-serif',
-                        borderColor: errors.maks_mahasiswa ? '#BE0414' : '#015023',
-                        borderRadius: '12px',
-                        opacity: errors.maks_mahasiswa ? 1 : 0.7
-                      }}
-                      placeholder="Contoh: 40"
-                      disabled={isLoading}
-                    />
-                    {formData.maks_mahasiswa && !errors.maks_mahasiswa && parseInt(formData.maks_mahasiswa) >= 1 && (
-                      <div 
-                        className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                        style={{ backgroundColor: '#16874B' }}
-                      >
-                        ✓
-                      </div>
-                    )}
-                  </div>
-                </FieldContent>
-                {errors.maks_mahasiswa && (
-                  <FieldError>{errors.maks_mahasiswa}</FieldError>
-                )}
-              </Field>
-            </div>
+            {/* Maksimal Mahasiswa Field */}
+            <Field>
+              <FieldLabel htmlFor="maks_mahasiswa">
+                Maksimal Mahasiswa <span className="text-red-500">*</span>
+              </FieldLabel>
+              <FieldDescription>
+                Kapasitas maksimal kelas
+              </FieldDescription>
+              <FieldContent>
+                <div className="relative">
+                  <input
+                    type="number"
+                    id="maks_mahasiswa"
+                    name="maks_mahasiswa"
+                    value={formData.maks_mahasiswa}
+                    onChange={handleChange}
+                    min="1"
+                    max="100"
+                    className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100"
+                    style={{
+                      fontFamily: 'Urbanist, sans-serif',
+                      borderColor: errors.maks_mahasiswa ? '#BE0414' : '#015023',
+                      borderRadius: '12px',
+                      opacity: errors.maks_mahasiswa ? 1 : 0.7
+                    }}
+                    placeholder="Contoh: 40"
+                    disabled={isLoading}
+                  />
+                  {formData.maks_mahasiswa && !errors.maks_mahasiswa && parseInt(formData.maks_mahasiswa) >= 1 && (
+                    <div 
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                      style={{ backgroundColor: '#16874B' }}
+                    >
+                      ✓
+                    </div>
+                  )}
+                </div>
+              </FieldContent>
+              {errors.maks_mahasiswa && (
+                <FieldError>{errors.maks_mahasiswa}</FieldError>
+              )}
+            </Field>
 
             {/* Jadwal Section */}
             <div className="space-y-6">
@@ -416,46 +417,6 @@ export default function AddKelasForm() {
                 </FieldContent>
                 {errors.hari && (
                   <FieldError>{errors.hari}</FieldError>
-                )}
-              </Field>
-
-              {/* Tanggal Field */}
-              <Field>
-                <FieldLabel htmlFor="tanggal">
-                  Tanggal Pelaksanaan <span className="text-red-500">*</span>
-                </FieldLabel>
-                <FieldDescription>
-                  Tanggal pelaksanaan kelas pertama kali
-                </FieldDescription>
-                <FieldContent>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      id="tanggal"
-                      name="tanggal"
-                      value={formData.tanggal}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100"
-                      style={{
-                        fontFamily: 'Urbanist, sans-serif',
-                        borderColor: errors.tanggal ? '#BE0414' : '#015023',
-                        borderRadius: '12px',
-                        opacity: errors.tanggal ? 1 : 0.7
-                      }}
-                      disabled={isLoading}
-                    />
-                    {formData.tanggal && !errors.tanggal && (
-                      <div 
-                        className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                        style={{ backgroundColor: '#16874B' }}
-                      >
-                        ✓
-                      </div>
-                    )}
-                  </div>
-                </FieldContent>
-                {errors.tanggal && (
-                  <FieldError>{errors.tanggal}</FieldError>
                 )}
               </Field>
 
@@ -669,11 +630,12 @@ export default function AddKelasForm() {
                   color: '#015023'
                 }}
               >
-                <li>• Pastikan kode kelas unik dan tidak duplikat</li>
-                <li>• Jumlah mahasiswa tidak boleh melebihi maksimal kapasitas</li>
+                <li>• Kode kelas harus unik (minimal 2 karakter)</li>
+                <li>• Pilih mata kuliah yang sesuai untuk kelas ini</li>
                 <li>• Maksimal mahasiswa biasanya 25-40 orang per kelas</li>
+                <li>• Pastikan hari dan jam sesuai dengan jadwal akademik</li>
                 <li>• Jam selesai harus lebih besar dari jam mulai</li>
-                <li>• Tanggal akan ditampilkan dalam format lengkap (Hari, Tanggal Bulan Tahun)</li>
+                <li>• Jadwal pertemuan dapat dibuat setelah kelas ditambahkan</li>
               </ul>
             </div>
           </div>
