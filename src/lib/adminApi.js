@@ -14,7 +14,6 @@ export const getDashboardStatistics = async () => {
     const response = await api.get('/manager/statistics');
     return response.data;
   } catch (error) {
-    console.error('Error fetching dashboard statistics:', error);
     throw (error.response?.data ?? error);
   }
 };
@@ -28,7 +27,6 @@ export const getDetailedStatistics = async () => {
     const response = await api.get('/manager/statistics/detailed');
     return response.data;
   } catch (error) {
-    console.error('Error fetching detailed statistics:', error);
     throw (error.response?.data ?? error);
   }
 };
@@ -42,7 +40,6 @@ export const getPrograms = async () => {
     const response = await api.get('/manager/programs');
     return response.data;
   } catch (error) {
-    console.error('Error fetching programs:', error);
     throw (error.response?.data ?? error);
   }
 };
@@ -56,7 +53,6 @@ export const getSubjects = async () => {
     const response = await api.get('/manager/subjects');
     return response.data;
   } catch (error) {
-    console.error('Error fetching subjects:', error);
     throw (error.response?.data ?? error);
   }
 };
@@ -70,7 +66,6 @@ export const storeSubject = async (subjectData) => {
     const response = await api.post('/manager/subjects', subjectData);
     return response.data;
   } catch (error) {
-    console.error('Error membuat mata kuliah:', error);
     throw (error.response?.data ?? error);
   }
 };
@@ -85,7 +80,6 @@ export const getSubjectById = async (subjectId) => {
     const response = await api.get(`/manager/subjects/${subjectId}`);
     return response.data;
   } catch (error) {
-    console.error('Error mengambil detail mata kuliah:', error);
     throw (error.response?.data ?? error);
   }
 };
@@ -101,7 +95,6 @@ export const updateSubject = async (subjectId, subjectData) => {
     const response = await api.put(`/manager/subjects/${subjectId}`, subjectData);
     return response.data;
   } catch (error) {
-    console.error('Error creating subject:', error);
     throw (error.response?.data ?? error);
   }
 };
@@ -115,7 +108,6 @@ export const getClasses = async () => {
     const response = await api.get('/manager/classes');
     return response.data;
   } catch (error) {
-    console.error('Error fetching classes:', error);
     throw (error.response?.data ?? error);
   }
 };
@@ -129,7 +121,6 @@ export const getManagers = async () => {
     const response = await api.get('/admin/managers');
     return response.data;
   } catch (error) {
-    console.error('Error fetching managers:', error);
     throw (error.response?.data ?? error);
   }
 };
@@ -144,7 +135,6 @@ export const storeManager = async (managerData) => {
     const response = await api.post('/admin/managers', managerData);
     return response.data;
   } catch (error) {
-    console.error('Error creating manager:', error);
     throw (error.response?.data ?? error);
   }
 };
@@ -159,7 +149,6 @@ export const deleteManager = async (managerId) => {
     const response = await api.delete(`/admin/managers/${managerId}`);
     return response.data;
   } catch (error) {
-    console.error('Error deleting manager:', error);
     throw (error.response?.data ?? error);
   }
 };
@@ -174,7 +163,6 @@ export const getDosen = async () => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching dosen:', error);
     throw (error.response?.data ?? error);
   }
 };
@@ -188,7 +176,6 @@ export const storeDosen = async (dosenData) => {
     const response = await api.post('/manager/lecturers', dosenData);
     return response.data;
   } catch (error) {
-    console.error('Error creating dosen:', error);
     throw (error.response?.data ?? error);
   }
 };
@@ -204,7 +191,6 @@ export const getMahasiswa = async () => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching mahasiswa:', error);
     throw (error.response?.data ?? error);
   }
 };
@@ -218,7 +204,6 @@ export const storeMahasiswa = async (mahasiswaData) => {
     const response = await api.post('/manager/students', mahasiswaData);
     return response.data;
   } catch (error) {
-    console.error('Error creating mahasiswa:', error);
     throw (error.response?.data ?? error);
   }
 };

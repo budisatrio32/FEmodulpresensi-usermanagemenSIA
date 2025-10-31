@@ -1,48 +1,64 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, Search, X, ArrowLeft } from 'lucide-react';
 import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
+import { getAllClasses } from '@/lib/ClassApi';
+import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 
 export default function KelasDashboard() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [kelas, setKelas] = useState([
-    { id: 1, kode_kelas: 'A-CS101', mata_kuliah: 'Pemrograman Dasar', jumlah_mahasiswa: 35, maks_mahasiswa: 40, jadwal: 'Senin, 08.00 - 10.00', tanggal: '2024-11-04', is_active: true, created_at: '2024-01-15' },
-    { id: 2, kode_kelas: 'B-CS101', mata_kuliah: 'Pemrograman Dasar', jumlah_mahasiswa: 38, maks_mahasiswa: 40, jadwal: 'Selasa, 10.00 - 12.00', tanggal: '2024-11-05', is_active: true, created_at: '2024-01-16' },
-    { id: 3, kode_kelas: 'A-CS102', mata_kuliah: 'Struktur Data', jumlah_mahasiswa: 30, maks_mahasiswa: 35, jadwal: 'Rabu, 13.00 - 15.00', tanggal: '2024-11-06', is_active: true, created_at: '2024-01-17' },
-    { id: 4, kode_kelas: 'B-CS102', mata_kuliah: 'Struktur Data', jumlah_mahasiswa: 20, maks_mahasiswa: 35, jadwal: 'Kamis, 09.00 - 11.00', tanggal: '2024-11-07', is_active: false, created_at: '2024-01-18' },
-    { id: 5, kode_kelas: 'A-CS201', mata_kuliah: 'Algoritma dan Pemrograman', jumlah_mahasiswa: 28, maks_mahasiswa: 30, jadwal: 'Jumat, 08.00 - 10.00', tanggal: '2024-11-08', is_active: true, created_at: '2024-01-19' },
-    { id: 6, kode_kelas: 'B-CS201', mata_kuliah: 'Algoritma dan Pemrograman', jumlah_mahasiswa: 15, maks_mahasiswa: 30, jadwal: 'Senin, 13.00 - 15.00', tanggal: '2024-11-11', is_active: true, created_at: '2024-01-20' },
-    { id: 7, kode_kelas: 'A-CS301', mata_kuliah: 'Pemrograman Web', jumlah_mahasiswa: 10, maks_mahasiswa: 25, jadwal: 'Selasa, 15.00 - 17.00', tanggal: '2024-11-12', is_active: false, created_at: '2024-01-21' },
-    { id: 8, kode_kelas: 'B-CS301', mata_kuliah: 'Pemrograman Web', jumlah_mahasiswa: 22, maks_mahasiswa: 25, jadwal: 'Rabu, 08.00 - 10.00', tanggal: '2024-11-13', is_active: true, created_at: '2024-01-22' },
-  ]);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [success, setSuccess] = useState(null);
+  const [kelas, setKelas] = useState([]);
+
+  // ambil data kelas dari API
+  const indexKelas = async () => {
+    setLoading(true);
+    try {
+      setError(null);
+      const response = await getAllClasses();
+      if (response.status === 'success') {
+        setSuccess(true);
+        setKelas(response.data);
+      } else {
+        setError('Gagal mengambil data kelas');
+      }
+    } catch (error) {
+      setError('Terjadi kesalahan saat mengambil data: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    indexKelas();
+  }, []);
 
   // Filter kelas berdasarkan search query
   const filteredKelas = kelas.filter(kelasItem => {
     const query = searchQuery.toLowerCase();
     return (
-      kelasItem.kode_kelas.toLowerCase().includes(query) ||
-      kelasItem.mata_kuliah.toLowerCase().includes(query) ||
+      kelasItem.code_class.toLowerCase().includes(query) ||
+      kelasItem.name_subject.toLowerCase().includes(query) ||
       kelasItem.jumlah_mahasiswa.toString().includes(query) ||
       kelasItem.maks_mahasiswa.toString().includes(query) ||
       kelasItem.jadwal.toLowerCase().includes(query) ||
       kelasItem.tanggal.includes(query) ||
-      kelasItem.created_at.includes(query) ||
       (kelasItem.is_active ? 'active' : 'inactive').includes(query)
     );
   });
 
   // Define columns untuk table
   const columns = [
-    { key: 'kode_kelas', label: 'Kode Kelas' },
-    { key: 'mata_kuliah', label: 'Mata Kuliah' },
+    { key: 'name_subject', label: 'Mata Kuliah' },
+    { key: 'code_class', label: 'Kode Kelas' },
     { key: 'jumlah_mahasiswa', label: 'Jumlah/Maks Mahasiswa' },
     { key: 'jadwal', label: 'Jadwal' },
     { key: 'is_active', label: 'Status' },
-    { key: 'created_at', label: 'Created At' },
   ];
 
   // Custom render untuk jumlah_mahasiswa dan is_active status

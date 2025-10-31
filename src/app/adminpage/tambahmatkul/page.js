@@ -46,8 +46,7 @@ export default function MatkulDashboard() {
     return (
       matkul.name_subject.toLowerCase().includes(query) ||
       matkul.code_subject.toLowerCase().includes(query) ||
-      matkul.sks.toString().includes(query) ||
-      matkul.created_at.includes(query)
+      matkul.sks.toString().includes(query)
     );
   });
 
@@ -56,7 +55,6 @@ export default function MatkulDashboard() {
     { key: 'name_subject', label: 'Nama Mata Kuliah' },
     { key: 'code_subject', label: 'Kode MK' },
     { key: 'sks', label: 'SKS' },
-    { key: 'created_at', label: 'Created At' },
   ];
 
   // Custom render untuk nomor urut dan SKS

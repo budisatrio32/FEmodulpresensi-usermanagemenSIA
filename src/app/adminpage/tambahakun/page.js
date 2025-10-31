@@ -46,8 +46,7 @@ export default function AkunManagerDashboard() {
     const query = searchQuery.toLowerCase();
     return (
       manager.username.toLowerCase().includes(query) ||
-      manager.email.toLowerCase().includes(query) ||
-      manager.created_at.includes(query) ||
+      manager.email.toLowerCase().includes(query)
       (manager.is_active ? 'active' : 'inactive').includes(query)
     );
   });
@@ -58,7 +57,6 @@ export default function AkunManagerDashboard() {
     { key: 'email', label: 'Email' },
     { key: 'name', label: 'Nama' },
     { key: 'is_active', label: 'Status' },
-    { key: 'created_at', label: 'Created At' },
   ];
 
   // Custom render untuk is_active status
