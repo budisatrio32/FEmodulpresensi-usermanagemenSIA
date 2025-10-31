@@ -93,6 +93,7 @@ export default function AddMatkulForm() {
         code_subject: formData.code_subject.toUpperCase(),
         sks: parseInt(formData.sks)
       });
+      
       if (response.status === 'success') {
         setSuccess('Mata kuliah berhasil ditambahkan');
         // Reset form
