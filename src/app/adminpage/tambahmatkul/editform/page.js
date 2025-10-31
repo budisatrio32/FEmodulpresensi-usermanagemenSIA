@@ -61,7 +61,7 @@ export default function EditMatkulForm() {
 
     } catch (error) {
       console.error('Error fetching subject:', error);
-      alert("Gagal mengambil data mata kuliah: " + (error.response?.data?.message || error.message));
+      alert("Error fetching subjects: " + (error.response?.data?.message || error.message));
       router.push("/adminpage/tambahmatkul");
     } finally {
       setIsFetching(false);
