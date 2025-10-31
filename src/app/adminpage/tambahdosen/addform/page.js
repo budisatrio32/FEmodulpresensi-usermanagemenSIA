@@ -158,7 +158,7 @@ export default function AddDosenForm() {
           is_active: true
         });
       } else if (response.status === 'failed') {
-        newErrors.username = response.message;
+        newErrors.username = response.message || 'Gagal menambahkan data';
       } else {
         newErrors.form = response.message || 'Gagal menambahkan data';
       }

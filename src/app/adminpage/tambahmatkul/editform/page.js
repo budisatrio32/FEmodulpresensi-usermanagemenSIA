@@ -14,6 +14,7 @@ import AdminNavbar from "@/components/ui/admin-navbar";
 import { ArrowLeft, Save, X, Info } from "lucide-react";
 import { getSubjectById, updateSubject } from "@/lib/adminApi";
 import LoadingEffect from "@/components/ui/loading-effect";
+import { ErrorMessageBox, SuccessMessageBoxWithButton, ErrorMessageBoxWithButton } from "@/components/ui/message-box";
 
 export default function EditMatkulForm() {
   const router = useRouter();
@@ -24,49 +25,13 @@ export default function EditMatkulForm() {
   const [isFetching, setIsFetching] = useState(true);
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(null);
+  const [countdown, setCountdown] = useState(5);
   
   const [formData, setFormData] = useState({
     name_subject: "",
     code_subject: "",
     sks: ""
   });
-
-  // Fetch data matkul saat component mount
-  useEffect(() => {
-    if (matkulId) {
-      fetchMatkulData();
-    } else {
-      alert("ID mata kuliah tidak ditemukan.");
-      router.push("/adminpage/tambahmatkul");
-    }
-  }, [matkulId]);
-
-  const fetchMatkulData = async () => {
-    try {
-      setIsFetching(true);
-      
-      // Call API untuk GET detail matkul
-      const response = await getSubjectById(matkulId);
-      
-      if (response.success) {
-        // Mengambil data dari database dan set ke form
-        setFormData({
-          name_subject: response.data.name_subject,
-          code_subject: response.data.code_subject,
-          sks: response.data.sks.toString()
-        });
-      } else {
-        throw new Error(response.message || 'Gagal mengambil data');
-      }
-
-    } catch (error) {
-      console.error('Error fetching subject:', error);
-      alert("Error fetching subjects: " + (error.response?.data?.message || error.message));
-      router.push("/adminpage/tambahmatkul");
-    } finally {
-      setIsFetching(false);
-    }
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -106,6 +71,51 @@ export default function EditMatkulForm() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const fetchMatkulData = async () => {
+    setIsFetching(true);
+    try {
+      // Call API untuk GET detail matkul
+      const response = await getSubjectById(matkulId);
+      
+      if (response.status === 'success') {
+        // Mengambil data dari database dan set ke form
+        setFormData({
+          name_subject: response.data.name_subject,
+          code_subject: response.data.code_subject,
+          sks: response.data.sks.toString()
+        });
+      } else {
+        setErrors(pref => ({ ...pref, fetch: response.message || 'Gagal memuat data mata kuliah' }));
+      }
+
+    } catch (error) {
+      setErrors(pref => ({ ...pref, fetch: "Error fetching subjects: " + (error.message || 'Gagal memuat data mata kuliah') }));
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMatkulData();
+  }, []);
+
+  // Auto-redirect 5s setelah berhasil update
+  useEffect(() => {
+    if (!success) return;
+    setCountdown(5);
+    const intervalId = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(intervalId);
+          router.push('/adminpage/tambahmatkul');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(intervalId);
+  }, [success]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -114,38 +124,29 @@ export default function EditMatkulForm() {
     }
     
     setIsLoading(true);
-    setErrors({});
     
+    const newErrors = {};
     try {
-      const payload = {
+      // Call API untuk UPDATE
+      const response = await updateSubject(matkulId, {
         name_subject: formData.name_subject.trim(),
         code_subject: formData.code_subject.trim().toUpperCase(),
         sks: parseInt(formData.sks)
-      };
+      });
       
-      // Call API untuk UPDATE
-      const response = await updateSubject(matkulId, payload);
-      
-      if (response.success) {
+      if (response.status === 'success') {
         setSuccess('Mata kuliah berhasil diperbarui');
+      } else if (response.status === 'failed') { 
+        newErrors.form = response.errors || 'Gagal mengupdate data';
       } else {
-        setErrors({ form: response.message || 'Gagal mengupdate data' });
+        newErrors.form = response.message || 'Gagal mengupdate data';
       }
       
     } catch (error) {
-      console.error('Error updating subject:', error);
-      
-      if (error.response?.data?.errors) {
-        // Validasi error (422)
-        setErrors(error.response.data.errors);
-      } else {
-        // Other errors
-        setErrors({ 
-          form: error.response?.data?.message || error.message || 'Gagal mengupdate data' 
-        });
-      }
+      newErrors.form = 'Gagal mengupdate data: ' + (error.message || 'Terjadi kesalahan'); 
     } finally {
       setIsLoading(false);
+      setErrors(newErrors);
     }
   };
 
@@ -163,58 +164,23 @@ export default function EditMatkulForm() {
     return (
       <LoadingEffect/>
     );
+  } else if (errors.fetch) {
+    return (
+      <div className="min-h-screen bg-brand-light-sage">
+        <AdminNavbar title="Dashboard Admin - Edit Mata Kuliah" />
+        <div className="container mx-auto px-4 py-8 max-w-5xl">
+          <ErrorMessageBoxWithButton
+            message={errors.fetch}
+            action={fetchMatkulData}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-brand-light-sage">
       <AdminNavbar title="Dashboard Admin - Edit Mata Kuliah" />
-      
-      {/* Success Modal */}
-      {success && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div 
-            className="bg-white p-8 max-w-md w-full shadow-2xl"
-            style={{ borderRadius: '16px' }}
-          >
-            <div className="text-center">
-              <div 
-                className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
-                style={{ backgroundColor: '#16874B' }}
-              >
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 
-                className="text-2xl font-bold mb-2"
-                style={{ 
-                  fontFamily: 'Urbanist, sans-serif',
-                  color: '#015023'
-                }}
-              >
-                Berhasil!
-              </h3>
-              <p 
-                className="text-gray-600 mb-6"
-                style={{ fontFamily: 'Urbanist, sans-serif' }}
-              >
-                {success}
-              </p>
-              <button
-                onClick={handleFinish}
-                className="w-full text-white py-3 font-semibold hover:opacity-90 transition"
-                style={{ 
-                  backgroundColor: '#015023',
-                  borderRadius: '12px',
-                  fontFamily: 'Urbanist, sans-serif'
-                }}
-              >
-                Kembali ke Daftar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header */}
@@ -450,6 +416,16 @@ export default function EditMatkulForm() {
                 <FieldError>{errors.sks}</FieldError>
               )}
             </Field>
+
+            {/* Form Error */}
+            {errors.form && (
+              <ErrorMessageBox message={errors.form} />
+            )}
+
+            {/* Success Message */}
+            {success && (
+              <SuccessMessageBoxWithButton message={`${success}. Kembali dalam ${countdown} detik atau klik`} action={handleFinish} />
+            )}
 
             {/* Action Buttons */}
             <div className="pt-8">
