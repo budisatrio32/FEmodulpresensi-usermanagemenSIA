@@ -64,7 +64,8 @@ export default function DetailKelas() {
     const [searchDosen, setSearchDosen] = useState("");
     const [searchMahasiswa, setSearchMahasiswa] = useState("");
     const [generateJadwalForm, setGenerateJadwalForm] = useState({
-        jumlahPertemuan: "14"
+        jumlahPertemuan: "14",
+        tanggalMulai: new Date().toISOString().split('T')[0]
     });
 
     const hariOptions = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -337,26 +338,6 @@ export default function DetailKelas() {
     }));
     };
 
-    const getNextDayOfWeek = (dayName) => {
-    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-    const targetDay = days.indexOf(dayName);
-    
-    if (targetDay === -1) return new Date();
-    
-    const today = new Date();
-    const currentDay = today.getDay();
-    
-    let daysUntilTarget = targetDay - currentDay;
-    if (daysUntilTarget <= 0) {
-        daysUntilTarget += 7; // Jika hari target sudah lewat minggu ini, ambil minggu depan
-    }
-    
-    const nextDate = new Date(today);
-    nextDate.setDate(today.getDate() + daysUntilTarget);
-    
-    return nextDate;
-    };
-
     const handleGenerateJadwal = async () => {
     const jumlah = parseInt(generateJadwalForm.jumlahPertemuan);
     
@@ -365,16 +346,16 @@ export default function DetailKelas() {
         return;
     }
 
-    if (!formData.hari) {
-        alert("Pilih hari kelas terlebih dahulu di form Informasi Kelas");
+    if (!generateJadwalForm.tanggalMulai) {
+        alert("Pilih tanggal mulai pertemuan");
         return;
     }
 
     try {
         setIsLoading(true);
         
-        // Tanggal mulai otomatis dari hari yang dipilih (hari kelas berikutnya)
-        const startDate = getNextDayOfWeek(formData.hari);
+        // Tanggal mulai dari form input
+        const startDate = new Date(generateJadwalForm.tanggalMulai);
         const generatedJadwal = [];
 
         for (let i = 0; i < jumlah; i++) {
@@ -396,7 +377,7 @@ export default function DetailKelas() {
 
         setJadwalList(generatedJadwal);
         setShowGenerateJadwalModal(false);
-        alert(`Berhasil generate ${jumlah} jadwal pertemuan dimulai dari ${formData.hari}!`);
+        alert(`Berhasil generate ${jumlah} jadwal pertemuan!`);
     } catch (error) {
         alert("Gagal generate jadwal: " + error.message);
     } finally {
@@ -1282,7 +1263,10 @@ export default function DetailKelas() {
                 <button
                 onClick={() => {
                     setShowGenerateJadwalModal(false);
-                    setGenerateJadwalForm({ jumlahPertemuan: "14" });
+                    setGenerateJadwalForm({ 
+                        jumlahPertemuan: "14",
+                        tanggalMulai: new Date().toISOString().split('T')[0]
+                    });
                 }}
                 className="text-gray-500 hover:text-gray-700 transition"
                 >
@@ -1316,18 +1300,30 @@ export default function DetailKelas() {
                 </p>
                 </div>
 
+                {/* Tanggal Mulai Pertemuan */}
+                <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                    Tanggal Mulai Pertemuan <span className="text-red-500">*</span>
+                </label>
+                <input
+                    type="date"
+                    value={generateJadwalForm.tanggalMulai}
+                    onChange={(e) => setGenerateJadwalForm(prev => ({ ...prev, tanggalMulai: e.target.value }))}
+                    className="w-full px-4 py-3 border-2 focus:outline-none"
+                    style={{
+                    fontFamily: 'Urbanist, sans-serif',
+                    borderColor: '#015023',
+                    borderRadius: '12px'
+                    }}
+                />
+                <p className="text-xs text-gray-500 mt-1" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                    Pertemuan selanjutnya akan ditambahkan setiap +7 hari
+                </p>
+                </div>
+
                 {/* Info Preview */}
-                {generateJadwalForm.jumlahPertemuan && formData.hari && (() => {
-                const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-                const targetDay = days.indexOf(formData.hari);
-                const today = new Date();
-                const currentDay = today.getDay();
-                let daysUntilTarget = targetDay - currentDay;
-                if (daysUntilTarget <= 0) daysUntilTarget += 7;
-                
-                const startDate = new Date(today);
-                startDate.setDate(today.getDate() + daysUntilTarget);
-                
+                {generateJadwalForm.jumlahPertemuan && generateJadwalForm.tanggalMulai && (() => {
+                const startDate = new Date(generateJadwalForm.tanggalMulai);
                 const endDate = new Date(startDate);
                 endDate.setDate(startDate.getDate() + (parseInt(generateJadwalForm.jumlahPertemuan) - 1) * 7);
                 
@@ -1340,16 +1336,13 @@ export default function DetailKelas() {
                     • Jumlah: <span className="font-bold">{generateJadwalForm.jumlahPertemuan} pertemuan</span>
                     </p>
                     <p className="text-sm" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                    • Hari Kelas: <span className="font-bold">{formData.hari}</span>
+                    • Mulai: <span className="font-bold">{startDate.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                     </p>
                     <p className="text-sm" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                    • Pertemuan Pertama: <span className="font-bold">{startDate.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                    </p>
-                    <p className="text-sm" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                    • Pertemuan Terakhir: <span className="font-bold">{endDate.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    • Selesai: <span className="font-bold">{endDate.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                     </p>
                     <p className="text-xs text-gray-600 mt-2" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                    ℹ️ Jadwal otomatis mengikuti hari kelas yang dipilih (+7 hari per pertemuan)
+                    ℹ️ Pertemuan selanjutnya akan dijadwalkan setiap +7 hari
                     </p>
                 </div>
                 );
@@ -1361,7 +1354,10 @@ export default function DetailKelas() {
                 <button
                 onClick={() => {
                     setShowGenerateJadwalModal(false);
-                    setGenerateJadwalForm({ jumlahPertemuan: "14" });
+                    setGenerateJadwalForm({ 
+                        jumlahPertemuan: "14",
+                        tanggalMulai: new Date().toISOString().split('T')[0]
+                    });
                 }}
                 className="flex-1 px-6 py-3 border-2 font-semibold transition hover:bg-gray-50"
                 style={{
@@ -1375,7 +1371,7 @@ export default function DetailKelas() {
                 </button>
                 <button
                 onClick={handleGenerateJadwal}
-                disabled={!generateJadwalForm.jumlahPertemuan || !formData.hari || isLoading}
+                disabled={!generateJadwalForm.jumlahPertemuan || !generateJadwalForm.tanggalMulai || isLoading}
                 className="flex-1 px-6 py-3 text-white font-semibold transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                     backgroundColor: '#DABC4E',
