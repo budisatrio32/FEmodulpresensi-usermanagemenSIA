@@ -172,6 +172,8 @@ export default function EditMatkulForm() {
           <ErrorMessageBoxWithButton
             message={errors.fetch}
             action={fetchMatkulData}
+            back={true}
+            actionback={handleFinish}
           />
         </div>
       </div>

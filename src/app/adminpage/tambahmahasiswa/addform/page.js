@@ -200,6 +200,8 @@ export default function AddMahasiswaForm() {
             <ErrorMessageBoxWithButton
                 message={errors.fetch}
                 action={fetchPrograms}
+                back={true}
+                actionback={handleFinish}
             />
             </div>
         </div>

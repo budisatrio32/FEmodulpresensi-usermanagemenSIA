@@ -192,6 +192,8 @@ export default function AddDosenForm() {
           <ErrorMessageBoxWithButton
             message={errors.fetch}
             action={fetchPrograms}
+            back={true}
+            actionback={handleFinish}
           />
         </div>
       </div>
