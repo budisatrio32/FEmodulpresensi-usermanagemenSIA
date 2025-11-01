@@ -96,7 +96,7 @@ export default function DataTable({
             onClick={() => onActivate && onActivate(item, index)}
             className="text-white p-2 transition shadow-sm hover:opacity-90"
             style={{ 
-              backgroundColor: item.is_active ? '#16874B' : '#BE0414',
+              backgroundColor: item.is_active ? '#BE0414' : '#16874B',
               borderRadius: '12px',
               fontFamily: 'Urbanist, sans-serif'
             }}
