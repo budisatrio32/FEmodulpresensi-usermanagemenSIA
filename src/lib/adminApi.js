@@ -220,7 +220,7 @@ export const toggleUserStatus = async (userId) => {
     return response.data;
   } catch (error) {
     console.error("Error toggling user status:", error);
-    throw error;
+    throw (error.response?.data ?? error);
   }
 };
 
@@ -236,7 +236,7 @@ export const toggleManagerStatus = async (managerId) => {
     return response.data;
   } catch (error) {
     console.error("Error toggling manager status:", error);
-    throw error;
+    throw (error.response?.data ?? error);
   }
 };
 
