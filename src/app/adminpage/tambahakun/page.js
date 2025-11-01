@@ -91,36 +91,9 @@ export default function AkunManagerDashboard() {
   };
 
   // Handle edit action
-  const handleEdit = (manager, index) => {
-    console.log('Edit manager:', manager, 'at index:', index);
+  const handleActivate = (manager, index) => {
+    console.log('Activate manager:', manager, 'at index:', index);
     router.push(`/adminpage/tambahakun/editform?id=${manager.id}`);
-  };
-
-  // Handle delete action
-  const handleDelete = async (manager, index) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus akun manager "${manager.username}"?`)) {
-      try {
-        // TODO: Replace with actual API call
-        // const response = await fetch(`/api/manager/${manager.id}`, {
-        //   method: 'DELETE',
-        //   headers: {
-        //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-        //   }
-        // });
-        
-        // if (!response.ok) throw new Error('Gagal menghapus data');
-        
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Remove manager from state
-        setManagers(prevManagers => prevManagers.filter((_, i) => i !== index));
-        
-        alert(`Akun manager "${manager.username}" berhasil dihapus!`);
-      } catch (error) {
-        alert("Gagal menghapus data: " + error.message);
-      }
-    }
   };
 
   return (
@@ -205,10 +178,9 @@ export default function AkunManagerDashboard() {
           <DataTable
             columns={columns}
             data={filteredManagers}
-            actions={['delete', 'edit']}
+            actions={['activate']}
             pagination={true}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
+            onActivate={handleActivate}
             customRender={customRender}
           />
         )}

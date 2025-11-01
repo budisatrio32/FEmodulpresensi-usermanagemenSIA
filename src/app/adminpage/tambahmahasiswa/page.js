@@ -94,37 +94,10 @@ const handleClearSearch = () => {
 };
 
 // Handle edit action
-const handleEdit = (student, index) => {
-console.log('Edit student:', student, 'at index:', index);
+const handleActivate = (student, index) => {
+console.log('Activate student:', student, 'at index:', index);
 // Redirect ke halaman edit dengan ID mahasiswa
 router.push(`/adminpage/tambahmahasiswa/editform?id=${student.id}`);
-};
-
-// Handle delete action
-const handleDelete = async (student, index) => {
-if (window.confirm(`Apakah Anda yakin ingin menghapus mahasiswa "${student.username}"?`)) {
-    try {
-    // TODO: Replace with actual API call
-    // const response = await fetch(`/api/mahasiswa/${student.id}`, {
-    //   method: 'DELETE',
-    //   headers: {
-    //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-    //   }
-    // });
-    
-    // if (!response.ok) throw new Error('Gagal menghapus data');
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Remove student from state
-    setStudents(prevStudents => prevStudents.filter((_, i) => i !== index));
-    
-    alert(`Mahasiswa "${student.username}" berhasil dihapus!`);
-    } catch (error) {
-    alert("Gagal menghapus data: " + error.message);
-    }
-}
 };
 
 return (
@@ -210,10 +183,9 @@ return (
       <DataTable
           columns={columns}
           data={filteredStudents}
-          actions={['delete', 'edit']}
+          actions={['activate']}
           pagination={true}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
+          onActivate={handleActivate}
           customRender={customRender}
       />
     }

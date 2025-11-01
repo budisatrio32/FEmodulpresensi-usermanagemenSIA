@@ -92,37 +92,10 @@ const handleClearSearch = () => {
 };
 
 // Handle edit action
-const handleEdit = (dosen, index) => {
-console.log('Edit dosen:', dosen, 'at index:', index);
+const handleActivate = (dosen, index) => {
+console.log('Activate dosen:', dosen, 'at index:', index);
 // Redirect ke halaman edit dengan ID dosen
 router.push(`/adminpage/tambahdosen/editform?id=${dosen.id}`);
-};
-
-// Handle delete action
-const handleDelete = async (dosen, index) => {
-if (window.confirm(`Apakah Anda yakin ingin menghapus dosen "${dosen.username}"?`)) {
-    try {
-    // TODO: Replace with actual API call
-    // const response = await fetch(`/api/dosen/${dosen.id}`, {
-    //   method: 'DELETE',
-    //   headers: {
-    //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-    //   }
-    // });
-    
-    // if (!response.ok) throw new Error('Gagal menghapus data');
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Remove dosen from state
-    setDosens(prevDosens => prevDosens.filter((_, i) => i !== index));
-    
-    alert(`Dosen "${dosen.username}" berhasil dihapus!`);
-    } catch (error) {
-    alert("Gagal menghapus data: " + error.message);
-    }
-}
 };
 
 return (
@@ -206,10 +179,9 @@ return (
       <DataTable
         columns={columns}
         data={filteredDosens}
-        actions={['delete', 'edit']}
+        actions={['activate']}
         pagination={true}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
+        onActivate={handleActivate}
         customRender={customRender}
       />
     }

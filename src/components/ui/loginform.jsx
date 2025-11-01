@@ -42,7 +42,7 @@ const handleSubmit = async (e) => {
         router.push('/landingpage');
       }
     } else {
-      setError(response.message || 'hora');
+      setError(response.message);
     }
   } catch (error) {
     // Tangani error (bisa berupa JSON dari server atau AxiosError)

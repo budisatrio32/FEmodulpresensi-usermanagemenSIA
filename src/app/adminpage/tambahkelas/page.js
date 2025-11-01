@@ -14,7 +14,16 @@ export default function KelasDashboard() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(null);
-  const [kelas, setKelas] = useState([]);
+  const [kelas, setKelas] = useState([
+    { id: 1, code_class: 'A-CS101', mata_kuliah: 'Pemrograman Dasar', jumlah_mahasiswa: 35, maks_mahasiswa: 40, jadwal: 'Senin, 08.00 - 10.00', tanggal: '2024-11-04', is_active: true, created_at: '2024-01-15' },
+    { id: 2, code_class: 'B-CS101', mata_kuliah: 'Pemrograman Dasar', jumlah_mahasiswa: 38, maks_mahasiswa: 40, jadwal: 'Selasa, 10.00 - 12.00', tanggal: '2024-11-05', is_active: true, created_at: '2024-01-16' },
+    { id: 3, code_class: 'A-CS102', mata_kuliah: 'Struktur Data', jumlah_mahasiswa: 30, maks_mahasiswa: 35, jadwal: 'Rabu, 13.00 - 15.00', tanggal: '2024-11-06', is_active: true, created_at: '2024-01-17' },
+    { id: 4, code_class: 'B-CS102', mata_kuliah: 'Struktur Data', jumlah_mahasiswa: 20, maks_mahasiswa: 35, jadwal: 'Kamis, 09.00 - 11.00', tanggal: '2024-11-07', is_active: false, created_at: '2024-01-18' },
+    { id: 5, code_class: 'A-CS201', mata_kuliah: 'Algoritma dan Pemrograman', jumlah_mahasiswa: 28, maks_mahasiswa: 30, jadwal: 'Jumat, 08.00 - 10.00', tanggal: '2024-11-08', is_active: true, created_at: '2024-01-19' },
+    { id: 6, code_class: 'B-CS201', mata_kuliah: 'Algoritma dan Pemrograman', jumlah_mahasiswa: 15, maks_mahasiswa: 30, jadwal: 'Senin, 13.00 - 15.00', tanggal: '2024-11-11', is_active: true, created_at: '2024-01-20' },
+    { id: 7, code_class: 'A-CS301', mata_kuliah: 'Pemrograman Web', jumlah_mahasiswa: 10, maks_mahasiswa: 25, jadwal: 'Selasa, 15.00 - 17.00', tanggal: '2024-11-12', is_active: false, created_at: '2024-01-21' },
+    { id: 8, code_class: 'B-CS301', mata_kuliah: 'Pemrograman Web', jumlah_mahasiswa: 22, maks_mahasiswa: 25, jadwal: 'Rabu, 08.00 - 10.00', tanggal: '2024-11-13', is_active: true, created_at: '2024-01-22' },
+  ]);
 
   // ambil data kelas dari API
   const indexKelas = async () => {
@@ -24,7 +33,7 @@ export default function KelasDashboard() {
       const response = await getAllClasses();
       if (response.status === 'success') {
         setSuccess(true);
-        setKelas(response.data);
+        // setKelas(response.data);
       } else {
         setError('Gagal mengambil data kelas');
       }
@@ -43,9 +52,8 @@ export default function KelasDashboard() {
     const query = searchQuery.toLowerCase();
     return (
       kelasItem.code_class.toLowerCase().includes(query) ||
-      kelasItem.name_subject.toLowerCase().includes(query) ||
+      kelasItem.mata_kuliah.toLowerCase().includes(query) ||
       kelasItem.jumlah_mahasiswa.toString().includes(query) ||
-      kelasItem.maks_mahasiswa.toString().includes(query) ||
       kelasItem.jadwal.toLowerCase().includes(query) ||
       kelasItem.tanggal.includes(query) ||
       (kelasItem.is_active ? 'active' : 'inactive').includes(query)
@@ -54,7 +62,7 @@ export default function KelasDashboard() {
 
   // Define columns untuk table
   const columns = [
-    { key: 'name_subject', label: 'Mata Kuliah' },
+    { key: 'mata_kuliah', label: 'Mata Kuliah' },
     { key: 'code_class', label: 'Kode Kelas' },
     { key: 'jumlah_mahasiswa', label: 'Jumlah/Maks Mahasiswa' },
     { key: 'jadwal', label: 'Jadwal' },
@@ -125,8 +133,8 @@ export default function KelasDashboard() {
   };
 
   // Handle delete action
-  const handleDelete = async (kelasItem, index) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus kelas "${kelasItem.kode_kelas}"?`)) {
+  const handleActivate = async (kelasItem, index) => {
+    if (window.confirm(`Apakah Anda yakin ingin mengaktifkan kelas "${kelasItem.kode_kelas}"?`)) {
       try {
         // TODO: Replace with actual API call
         // const response = await fetch(`/api/kelas/${kelasItem.id}`, {
@@ -186,14 +194,18 @@ export default function KelasDashboard() {
           </div>
         </div>
 
+        {error && (
+          <ErrorMessageBoxWithButton message={error} action={indexKelas} />
+        )}
+
         {/* Stats Card */}
         <div className="rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-xl" style={{ background: 'linear-gradient(to bottom right, #015023, #013d1c)' }}>
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-white text-base sm:text-lg font-semibold mb-2">Total Kelas</h3>
-              <p className="text-white text-3xl sm:text-4xl font-bold mb-1">{filteredKelas.length}</p>
+              <p className="text-white text-3xl sm:text-4xl font-bold mb-1">{loading ? '...' : filteredKelas.length}</p>
               <p className="text-sm" style={{ color: '#DABC4E' }}>
-                {searchQuery ? 'Hasil pencarian' : 'Kelas terdaftar'}
+                {loading ? 'Loading...' : (searchQuery ? 'Hasil pencarian' : error ? error : 'Kelas terdaftar')}
               </p>
             </div>
             <div className="p-3 sm:p-4 rounded-2xl shadow-lg" style={{ backgroundColor: '#DABC4E' }}>
@@ -225,15 +237,17 @@ export default function KelasDashboard() {
         </div>
 
         {/* Table using DataTable component */}
-        <DataTable
-          columns={columns}
-          data={filteredKelas}
-          actions={['detail', 'delete']}
-          pagination={true}
-          onDetail={handleDetail}
-          onDelete={handleDelete}
-          customRender={customRender}
-        />
+        {success && (
+          <DataTable
+            columns={columns}
+            data={filteredKelas}
+            actions={['detail', 'activate']}
+            pagination={true}
+            onDetail={handleDetail}
+            onActivate={handleActivate}
+            customRender={customRender}
+          />
+        )}
       </div>
     </div>
   );

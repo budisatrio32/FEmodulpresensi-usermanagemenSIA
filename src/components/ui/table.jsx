@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, Edit, Eye } from 'lucide-react';
+import { Trash2, Edit, Eye, Power } from 'lucide-react';
 import {
   Pagination,
   PaginationContent,
@@ -17,6 +17,7 @@ export default function DataTable({
   onEdit,
   onDelete,
   onDetail,
+  onActivate,
   customRender = {},
   headerClassName = "text-white"
 }) {
@@ -88,6 +89,21 @@ export default function DataTable({
             title="Hapus"
           >
             <Trash2 className="w-4 h-4" />
+          </button>
+        )}
+        {actions.includes('activate') && (
+          <button
+            onClick={() => onActivate && onActivate(item, index)}
+            className="text-white p-2 transition shadow-sm hover:opacity-90"
+            style={{ 
+              backgroundColor: item.is_active ? '#16874B' : '#BE0414',
+              borderRadius: '12px',
+              fontFamily: 'Urbanist, sans-serif'
+            }}
+            aria-label={item.is_active ? "Non-Aktifkan" : "Aktifkan"}
+            title={item.is_active ? "Non-Aktifkan" : "Aktifkan"}
+          >
+            <Power className="w-4 h-4" />
           </button>
         )}
       </div>
