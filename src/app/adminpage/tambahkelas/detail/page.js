@@ -240,11 +240,12 @@ export default function DetailKelas() {
     try {
         setIsLoading(true);
 
-        const newDosen = dosenOptions.filter(d => selectedDosenIds.includes(d.id));
+        const newDosen = dosenOptions.filter(d => selectedDosenIds.includes(d.id_user_si || d.id));
         const combinedDosen = [...assignedDosen];
 
         newDosen.forEach(dosen => {
-        if (!combinedDosen.find(d => d.id === dosen.id)) {
+        const dosenId = dosen.id_user_si || dosen.id;
+        if (!combinedDosen.find(d => (d.id_user_si || d.id) === dosenId)) {
             combinedDosen.push(dosen);
         }
         });
@@ -269,7 +270,7 @@ export default function DetailKelas() {
     };
 
     const handleRemoveDosen = (dosenId) => {
-    setAssignedDosen(assignedDosen.filter(d => d.id !== dosenId));
+    setAssignedDosen(assignedDosen.filter(d => (d.id_user_si || d.id) !== dosenId));
     };
 
     const handleToggleMahasiswa = (mahasiswaId) => {
@@ -593,8 +594,8 @@ export default function DetailKelas() {
                 >
                     <option value="">Pilih Mata Kuliah</option>
                     {matkulOptions.map(matkul => (
-                    <option key={matkul.id} value={matkul.id}>
-                        {matkul.code} - {matkul.name}
+                    <option key={matkul.id_subject || matkul.id} value={matkul.id_subject || matkul.id}>
+                        {matkul.code_subject || matkul.code} - {matkul.name_subject || matkul.name}
                     </option>
                     ))}
                 </select>
@@ -765,7 +766,7 @@ export default function DetailKelas() {
                     ) : (
                     assignedDosen.map(dosen => (
                         <div 
-                        key={dosen.id} 
+                        key={dosen.id_user_si || dosen.id} 
                         className="flex items-center justify-between p-3 border"
                         style={{ borderRadius: '8px', borderColor: '#E5E7EB' }}
                         >
@@ -779,7 +780,7 @@ export default function DetailKelas() {
                         </div>
                         <button
                             type="button"
-                            onClick={() => handleRemoveDosen(dosen.id)}
+                            onClick={() => handleRemoveDosen(dosen.id_user_si || dosen.id)}
                             className="text-white p-2 hover:opacity-80 transition"
                             style={{ backgroundColor: '#BE0414', borderRadius: '8px' }}
                         >
@@ -967,29 +968,31 @@ export default function DetailKelas() {
             <div className="flex-1 overflow-y-auto mb-4 border-2 p-2" style={{ borderRadius: '12px', borderColor: '#E5E7EB' }}>
                 <div className="space-y-2">
                 {dosenOptions
-                    .filter(d => !assignedDosen.find(ad => ad.id === d.id))
+                    .filter(d => !assignedDosen.find(ad => (ad.id_user_si || ad.id) === (d.id_user_si || d.id)))
                     .filter(d => 
                     d.name.toLowerCase().includes(searchDosen.toLowerCase()) ||
                     d.email.toLowerCase().includes(searchDosen.toLowerCase())
                     )
-                    .map(dosen => (
+                    .map(dosen => {
+                    const dosenId = dosen.id_user_si || dosen.id;
+                    return (
                     <div
-                        key={dosen.id}
-                        onClick={() => handleToggleDosen(dosen.id)}
+                        key={dosenId}
+                        onClick={() => handleToggleDosen(dosenId)}
                         className={`p-4 border-2 cursor-pointer transition hover:shadow-md ${
-                        selectedDosenIds.includes(dosen.id) ? 'border-opacity-100' : 'border-opacity-30'
+                        selectedDosenIds.includes(dosenId) ? 'border-opacity-100' : 'border-opacity-30'
                         }`}
                         style={{
                         borderRadius: '12px',
-                        borderColor: selectedDosenIds.includes(dosen.id) ? '#015023' : '#E5E7EB',
-                        backgroundColor: selectedDosenIds.includes(dosen.id) ? '#F0F9F4' : 'white'
+                        borderColor: selectedDosenIds.includes(dosenId) ? '#015023' : '#E5E7EB',
+                        backgroundColor: selectedDosenIds.includes(dosenId) ? '#F0F9F4' : 'white'
                         }}
                     >
                         <div className="flex items-center gap-3">
                         <input
                             type="checkbox"
-                            checked={selectedDosenIds.includes(dosen.id)}
-                            onChange={() => handleToggleDosen(dosen.id)}
+                            checked={selectedDosenIds.includes(dosenId)}
+                            onChange={() => handleToggleDosen(dosenId)}
                             className="w-5 h-5 cursor-pointer"
                             style={{ accentColor: '#015023' }}
                         />
@@ -1003,8 +1006,9 @@ export default function DetailKelas() {
                         </div>
                         </div>
                     </div>
-                    ))}
-                {dosenOptions.filter(d => !assignedDosen.find(ad => ad.id === d.id)).length === 0 && (
+                    );
+                    })}
+                {dosenOptions.filter(d => !assignedDosen.find(ad => (ad.id_user_si || ad.id) === (d.id_user_si || d.id))).length === 0 && (
                     <p className="text-center text-gray-500 py-8" style={{ fontFamily: 'Urbanist, sans-serif' }}>
                     Semua dosen sudah ditambahkan
                     </p>

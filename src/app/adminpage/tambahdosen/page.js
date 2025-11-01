@@ -95,7 +95,7 @@ const handleClearSearch = () => {
 const handleActivate = (dosen, index) => {
 console.log('Activate dosen:', dosen, 'at index:', index);
 // Redirect ke halaman edit dengan ID dosen
-router.push(`/adminpage/tambahdosen/editform?id=${dosen.id}`);
+router.push(`/adminpage/tambahdosen/editform?id=${dosen.id_user_si || dosen.id}`);
 };
 
 return (

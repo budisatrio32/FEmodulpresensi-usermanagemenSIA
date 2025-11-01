@@ -97,7 +97,7 @@ const handleClearSearch = () => {
 const handleActivate = (student, index) => {
 console.log('Activate student:', student, 'at index:', index);
 // Redirect ke halaman edit dengan ID mahasiswa
-router.push(`/adminpage/tambahmahasiswa/editform?id=${student.id}`);
+router.push(`/adminpage/tambahmahasiswa/editform?id=${student.id_user_si || student.id}`);
 };
 
 return (

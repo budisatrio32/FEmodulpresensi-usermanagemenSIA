@@ -91,7 +91,7 @@ export default function MatkulDashboard() {
   // Handle edit action
   const handleEdit = (matkul, index) => {
     console.log('Edit matkul:', matkul, 'at index:', index);
-    router.push(`/adminpage/tambahmatkul/editform?id=${matkul.id}`);
+    router.push(`/adminpage/tambahmatkul/editform?id=${matkul.id_subject || matkul.id}`);
   };
 
   // Handle delete action

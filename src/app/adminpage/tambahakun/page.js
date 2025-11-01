@@ -93,7 +93,7 @@ export default function AkunManagerDashboard() {
   // Handle edit action
   const handleActivate = (manager, index) => {
     console.log('Activate manager:', manager, 'at index:', index);
-    router.push(`/adminpage/tambahakun/editform?id=${manager.id}`);
+    router.push(`/adminpage/tambahakun/editform?id=${manager.id_user_si || manager.id}`);
   };
 
   return (

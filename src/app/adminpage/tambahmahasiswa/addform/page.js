@@ -549,7 +549,7 @@ export default function AddMahasiswaForm() {
                     >
                     <option value="">Pilih Program</option>
                     {programs.map(program => (
-                        <option key={program.id} value={program.id}>
+                        <option key={program.id_program || program.id} value={program.id_program || program.id}>
                         {program.name}
                         </option>
                     ))}

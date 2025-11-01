@@ -291,8 +291,8 @@ export default function AddKelasForm() {
                   >
                     <option value="">Pilih Mata Kuliah</option>
                     {matkulOptions.map(matkul => (
-                      <option key={matkul.id} value={matkul.id}>
-                        {matkul.kode} - {matkul.nama}
+                      <option key={matkul.id_subject || matkul.id} value={matkul.id_subject || matkul.id}>
+                        {matkul.code_subject || matkul.kode} - {matkul.name_subject || matkul.nama}
                       </option>
                     ))}
                   </select>
