@@ -142,7 +142,7 @@ export default function AddDosenForm() {
         email: formData.email,
         password: formData.password,
         password_confirmation: formData.confirmPassword,
-        program_id: formData.program,
+        id_program: formData.program,
         is_active: formData.is_active
       });
       if (response.status === 'success') {
