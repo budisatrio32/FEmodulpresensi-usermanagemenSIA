@@ -149,7 +149,7 @@ export default function AddMahasiswaForm() {
             registration_number: formData.nim,
             password: formData.password,
             password_confirmation: formData.confirmPassword,
-            program_id: formData.program,
+            id_program: formData.program,
             is_active: formData.is_active,
             });
             if (response.status === 'success') {
@@ -597,7 +597,7 @@ export default function AddMahasiswaForm() {
             )}
             {/* Success Message */}
             {success && (
-              <SuccessMessageBoxWithButton message={success + ' Lihat Data atau tambahkan akun dosen lain'} action={handleFinish} btntext="Lihat Data" />
+              <SuccessMessageBoxWithButton message={success + ' Lihat Data atau tambahkan akun mahasiswa lain'} action={handleFinish} btntext="Lihat Data" />
             )}
 
             {/* Action Buttons */}
