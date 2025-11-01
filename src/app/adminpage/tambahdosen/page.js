@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Users, Search, X, ArrowLeft } from 'lucide-react';
 import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
-import { getDosen } from '@/lib/adminApi';
+import { getDosen, toggleUserStatus } from '@/lib/adminApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 
 export default function DosenDashboard() {
@@ -15,6 +15,7 @@ const [error, setError] = useState(null);
 const [loading, setLoading] = useState(true);
 const [success, setSuccess] = useState(null);
 const [dosens, setDosens] = useState([]);
+const [isTogglingStatus, setIsTogglingStatus] = useState(null);
 
 // Fetch dosens from API
   const indexDosens = async () => {
@@ -91,11 +92,38 @@ const handleClearSearch = () => {
   setSearchQuery('');
 };
 
-// Handle edit action
-const handleActivate = (dosen, index) => {
-console.log('Activate dosen:', dosen, 'at index:', index);
-// Redirect ke halaman edit dengan ID dosen
-router.push(`/adminpage/tambahdosen/editform?id=${dosen.id_user_si || dosen.id}`);
+// Handle toggle status active/inactive
+const handleActivate = async (dosen, index) => {
+  const userId = dosen.id_user_si || dosen.id;
+  const statusText = dosen.is_active ? 'Non-Aktifkan' : 'Aktifkan';
+  
+  if (!window.confirm(`Apakah Anda yakin ingin ${statusText.toLowerCase()} akun ${dosen.name}?`)) {
+    return;
+  }
+
+  setIsTogglingStatus(userId);
+  
+  try {
+    const response = await toggleUserStatus(userId);
+    
+    if (response.status === 'success') {
+      // Update local state
+      setDosens(dosens.map(d => 
+        (d.id_user_si || d.id) === userId
+          ? { ...d, is_active: response.data.is_active }
+          : d
+      ));
+      
+      alert(`Status berhasil diubah menjadi ${response.data.is_active ? 'Aktif' : 'Non-Aktif'}`);
+    } else {
+      alert('Gagal mengubah status user');
+    }
+  } catch (error) {
+    console.error("Error toggling status:", error);
+    alert("Gagal mengubah status user: " + (error.message || 'Unknown error'));
+  } finally {
+    setIsTogglingStatus(null);
+  }
 };
 
 return (

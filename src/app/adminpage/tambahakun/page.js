@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { UserCog, Search, X, ArrowLeft } from 'lucide-react';
 import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
-import { getManagers } from '@/lib/adminApi';
+import { getManagers, toggleManagerStatus } from '@/lib/adminApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 
 export default function AkunManagerDashboard() {
@@ -15,6 +15,7 @@ export default function AkunManagerDashboard() {
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(null);
   const [managers, setManagers] = useState([]);
+  const [isTogglingStatus, setIsTogglingStatus] = useState(null);
 
   //ambil data dari getManagers API
 
@@ -46,7 +47,8 @@ export default function AkunManagerDashboard() {
     const query = searchQuery.toLowerCase();
     return (
       manager.username.toLowerCase().includes(query) ||
-      manager.email.toLowerCase().includes(query)
+      manager.email.toLowerCase().includes(query) ||
+      manager.name.toLowerCase().includes(query) ||
       (manager.is_active ? 'active' : 'inactive').includes(query)
     );
   });
@@ -90,10 +92,38 @@ export default function AkunManagerDashboard() {
     setSearchQuery('');
   };
 
-  // Handle edit action
-  const handleActivate = (manager, index) => {
-    console.log('Activate manager:', manager, 'at index:', index);
-    router.push(`/adminpage/tambahakun/editform?id=${manager.id_user_si || manager.id}`);
+  // Handle toggle status active/inactive for Manager (Admin only)
+  const handleActivate = async (manager, index) => {
+    const managerId = manager.id_user_si || manager.id;
+    const statusText = manager.is_active ? 'Non-Aktifkan' : 'Aktifkan';
+    
+    if (!window.confirm(`Apakah Anda yakin ingin ${statusText.toLowerCase()} akun manager ${manager.name}?`)) {
+      return;
+    }
+
+    setIsTogglingStatus(managerId);
+    
+    try {
+      const response = await toggleManagerStatus(managerId);
+      
+      if (response.status === 'success') {
+        // Update local state
+        setManagers(managers.map(m => 
+          (m.id_user_si || m.id) === managerId
+            ? { ...m, is_active: response.data.is_active }
+            : m
+        ));
+        
+        alert(`Status berhasil diubah menjadi ${response.data.is_active ? 'Aktif' : 'Non-Aktif'}`);
+      } else {
+        alert('Gagal mengubah status manager');
+      }
+    } catch (error) {
+      console.error("Error toggling manager status:", error);
+      alert("Gagal mengubah status manager: " + (error.message || 'Unknown error'));
+    } finally {
+      setIsTogglingStatus(null);
+    }
   };
 
   return (

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Users, Search, X, ArrowLeft } from 'lucide-react';
 import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
-import { getMahasiswa } from '@/lib/adminApi';
+import { getMahasiswa, toggleUserStatus } from '@/lib/adminApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 
 export default function StudentDashboard() {
@@ -15,6 +15,7 @@ const [error, setError] = useState(null);
 const [loading, setLoading] = useState(true);
 const [success, setSuccess] = useState(null);
 const [students, setStudents] = useState([]);
+const [isTogglingStatus, setIsTogglingStatus] = useState(null);
 
 // Fetch students from API
 const indexStudents = async () => {
@@ -93,11 +94,38 @@ const handleClearSearch = () => {
   setSearchQuery('');
 };
 
-// Handle edit action
-const handleActivate = (student, index) => {
-console.log('Activate student:', student, 'at index:', index);
-// Redirect ke halaman edit dengan ID mahasiswa
-router.push(`/adminpage/tambahmahasiswa/editform?id=${student.id_user_si || student.id}`);
+// Handle toggle status active/inactive
+const handleActivate = async (student, index) => {
+  const userId = student.id_user_si || student.id;
+  const statusText = student.is_active ? 'Non-Aktifkan' : 'Aktifkan';
+  
+  if (!window.confirm(`Apakah Anda yakin ingin ${statusText.toLowerCase()} akun ${student.name}?`)) {
+    return;
+  }
+
+  setIsTogglingStatus(userId);
+  
+  try {
+    const response = await toggleUserStatus(userId);
+    
+    if (response.status === 'success') {
+      // Update local state
+      setStudents(students.map(s => 
+        (s.id_user_si || s.id) === userId
+          ? { ...s, is_active: response.data.is_active }
+          : s
+      ));
+      
+      alert(`Status berhasil diubah menjadi ${response.data.is_active ? 'Aktif' : 'Non-Aktif'}`);
+    } else {
+      alert('Gagal mengubah status user');
+    }
+  } catch (error) {
+    console.error("Error toggling status:", error);
+    alert("Gagal mengubah status user: " + (error.message || 'Unknown error'));
+  } finally {
+    setIsTogglingStatus(null);
+  }
 };
 
 return (

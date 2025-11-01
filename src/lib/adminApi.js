@@ -208,6 +208,38 @@ export const storeMahasiswa = async (mahasiswaData) => {
   }
 };
 
+/**
+ * Ubah status aktif/non-aktif user (Mahasiswa/Dosen)
+ * Dapat diakses oleh Admin dan Manager
+ * @param {number} userId - ID user yang akan diubah statusnya
+ * @returns {Promise} Response hasil update
+ */
+export const toggleUserStatus = async (userId) => {
+  try {
+    const response = await api.patch(`/manager/users/${userId}/toggle-status`);
+    return response.data;
+  } catch (error) {
+    console.error("Error toggling user status:", error);
+    throw error;
+  }
+};
+
+/**
+ * Ubah status aktif/non-aktif manager
+ * Hanya dapat diakses oleh Admin
+ * @param {number} managerId - ID manager yang akan diubah statusnya
+ * @returns {Promise} Response hasil update
+ */
+export const toggleManagerStatus = async (managerId) => {
+  try {
+    const response = await api.patch(`/admin/managers/${managerId}/toggle-status`);
+    return response.data;
+  } catch (error) {
+    console.error("Error toggling manager status:", error);
+    throw error;
+  }
+};
+
 export default {
   getDashboardStatistics,
   getDetailedStatistics,
@@ -224,4 +256,6 @@ export default {
   storeDosen,
   getMahasiswa,
   storeMahasiswa,
+  toggleUserStatus,
+  toggleManagerStatus,
 };
