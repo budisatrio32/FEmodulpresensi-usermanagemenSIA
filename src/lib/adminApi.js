@@ -100,6 +100,19 @@ export const updateSubject = async (subjectId, subjectData) => {
 };
 
 /**
+ * Get all academic periods
+ * @returns {Promise} Response dengan data academic periods
+ */
+export const getAcademicPeriods = async () => {
+  try {
+    const response = await api.get('/manager/academic-periods');
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error);
+  }
+};
+
+/**
  * Get all classes
  * @returns {Promise} Response dengan data kelas
  */

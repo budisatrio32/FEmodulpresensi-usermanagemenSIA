@@ -12,7 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 import AdminNavbar from "@/components/ui/admin-navbar";
 import { ArrowLeft, Save, X, Info } from "lucide-react";
-import { getSubjects } from "@/lib/adminApi";
+import { getSubjects, getAcademicPeriods, storeClass } from "@/lib/adminApi";
+import LoadingEffect from "@/components/ui/loading-effect";
+import { ErrorMessageBox, ErrorMessageBoxWithButton, SuccessMessageBoxWithButton } from "@/components/ui/message-box";
 
 export default function AddKelasForm() {
   const router = useRouter();
@@ -136,9 +138,33 @@ export default function AddKelasForm() {
     }
   };
 
-  useEffect(() => {
+  const fetchAcademicPeriods = async () => {
+    try {
+      const response = await getAcademicPeriods();
+      if (response.status === 'success') {
+        setAcademicPeriod(response.data);
+      } else {
+        setErrors(prev => ({ ...prev, fetch: response.message || 'Gagal memuat tahun akademik' }));
+      }
+    } catch (error) {
+      setErrors(prev => ({ ...prev, fetch: error.message || 'Gagal memuat tahun akademik' }));
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  const fetchAll = async () => {
     fetchSubjects();
+    fetchAcademicPeriods();
+  };
+
+  useEffect(() => {
+    fetchAll();
   }, []);
+
+  const handleFinish = () => {
+    router.push("/adminpage/tambahkelas");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -149,36 +175,29 @@ export default function AddKelasForm() {
     
     setIsLoading(true);
     
+    const newErrors = {};
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Format jadwal
-      const jadwal = `${formData.hari}, ${formData.jam_mulai} - ${formData.jam_selesai}`;
-      
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/kelas', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-      //   },
-      //   body: JSON.stringify({
-      //     kode_kelas: formData.kode_kelas.toUpperCase(),
-      //     mata_kuliah_id: parseInt(formData.mata_kuliah_id),
-      //     maks_mahasiswa: parseInt(formData.maks_mahasiswa),
-      //     jadwal: jadwal,
-      //     is_active: formData.is_active
-      //   })
-      // });
-      
-      // if (!response.ok) throw new Error('Gagal menambahkan data');
-      
-      alert("Data kelas berhasil ditambahkan!");
-      router.push("/adminpage/tambahkelas");
+      const response = await storeClass({
+        id_subject: formData.mata_kuliah_id,
+        id_academic_period: formData.academic_period,
+        code_class: formData.kode_kelas,
+        member_class: parseInt(formData.maks_mahasiswa),
+        day_of_week: formData.hari,
+        start_time: formData.jam_mulai,
+        end_time: formData.jam_selesai,
+        is_active: formData.is_active
+      });
+      if (response.status === 'success') {
+        setSuccess('Kelas berhasil ditambahkan');
+      } else if (response.status === 'failed') {
+        newErrors.form = response.message || 'Gagal menambahkan kelas';
+      } else {
+        newErrors.form = 'Terjadi kesalahan tak terduga';
+      }
     } catch (error) {
-      alert("Gagal menambahkan data: " + error.message);
+      newErrors.form = 'Gagal menambahkan kelas: ' + (error.message || 'Unknown error');
     } finally {
+      setErrors(newErrors);
       setIsLoading(false);
     }
   };
@@ -188,6 +207,26 @@ export default function AddKelasForm() {
       router.push("/adminpage/tambahkelas");
     }
   };
+
+  if (isFetching) {
+    return (
+      <LoadingEffect />
+    );
+  } else if (errors.fetch) {
+    return (
+      <div className="min-h-screen bg-brand-light-sage">
+        <AdminNavbar title="Dashboard Admin - Edit Akun Manager" />
+        <div className="container mx-auto px-4 py-8 max-w-5xl">
+          <ErrorMessageBoxWithButton
+            message={errors.fetch}
+            action={fetchAll}
+            back={true}
+            actionback={handleFinish}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-brand-light-sage">
@@ -636,6 +675,16 @@ export default function AddKelasForm() {
                 )}
               </div>
             </Field>
+
+            {/* Error Message */}
+            {errors.form && (
+              <ErrorMessageBox message={errors.form} />
+            )}
+
+            {/* Success Message */}
+            {success && (
+              <SuccessMessageBoxWithButton message={success + ' Lihat data atau tambahkan kelas lain'} action={handleFinish} btntext={'Lihat Data'} />
+            )}
 
             {/* Action Buttons */}
             <div className="pt-8">

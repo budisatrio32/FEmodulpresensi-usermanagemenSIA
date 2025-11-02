@@ -158,7 +158,7 @@ export default function AddDosenForm() {
           is_active: true
         });
       } else if (response.status === 'failed') {
-        newErrors.username = response.message || 'Gagal menambahkan data';
+        newErrors.form = response.message || 'Gagal menambahkan data';
       } else {
         newErrors.form = response.message || 'Gagal menambahkan data';
       }
@@ -187,7 +187,7 @@ export default function AddDosenForm() {
   } else if (errors.fetch) {
     return (
       <div className="min-h-screen bg-brand-light-sage">
-        <AdminNavbar title="Dashboard Admin - Edit Akun Manager" />
+        <AdminNavbar title="Dashboard Admin - Tambah Dosen" />
         <div className="container mx-auto px-4 py-8 max-w-5xl">
           <ErrorMessageBoxWithButton
             message={errors.fetch}
