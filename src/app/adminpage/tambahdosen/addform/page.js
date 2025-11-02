@@ -501,7 +501,7 @@ export default function AddDosenForm() {
                   >
                     <option value="" disabled>Pilih program</option>
                     {programs.map((program) => (
-                      <option key={program.id_program || program.id} value={program.id_program || program.id}>
+                      <option key={program.id_program} value={program.id_program}>
                         {program.name}
                       </option>
                     ))}

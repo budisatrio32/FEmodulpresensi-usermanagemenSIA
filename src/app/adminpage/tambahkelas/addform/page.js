@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Field, 
@@ -12,11 +12,17 @@ import {
 import { Button } from "@/components/ui/button";
 import AdminNavbar from "@/components/ui/admin-navbar";
 import { ArrowLeft, Save, X, Info } from "lucide-react";
+import { getSubjects } from "@/lib/adminApi";
 
 export default function AddKelasForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [isFetching, setIsFetching] = useState(true);
+  const [success, setSuccess] = useState(null);
+  const [subjects, setSubjects] = useState([]);
+  const [academic_period, setAcademicPeriod] = useState([]);
+
   
   const [formData, setFormData] = useState({
     kode_kelas: "",
@@ -25,28 +31,18 @@ export default function AddKelasForm() {
     mata_kuliah_id: "",
     jam_mulai: "",
     jam_selesai: "",
+    academic_period: "",
     is_active: true
   });
 
   const hariOptions = [
-    "Senin",
-    "Selasa",
-    "Rabu",
-    "Kamis",
-    "Jumat",
-    "Sabtu"
-  ];
-
-  // Dummy data mata kuliah
-  const matkulOptions = [
-    { id: 1, kode: "CS101", nama: "Algoritma dan Pemrograman" },
-    { id: 2, kode: "CS102", nama: "Struktur Data" },
-    { id: 3, kode: "CS201", nama: "Basis Data" },
-    { id: 4, kode: "CS202", nama: "Sistem Operasi" },
-    { id: 5, kode: "CS301", nama: "Pemrograman Web" },
-    { id: 6, kode: "CS302", nama: "Jaringan Komputer" },
-    { id: 7, kode: "CS401", nama: "Machine Learning" },
-    { id: 8, kode: "CS402", nama: "Keamanan Siber" }
+    {key: 1, label: "Senin"},
+    {key: 2, label: "Selasa"},
+    {key: 3, label: "Rabu"},
+    {key: 4, label: "Kamis"},
+    {key: 5, label: "Jumat"},
+    {key: 6, label: "Sabtu"},
+    {key: 7, label: "Minggu"}
   ];
 
   const handleChange = (e) => {
@@ -59,6 +55,22 @@ export default function AddKelasForm() {
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
+    }
+    if (errors.form) {
+      setErrors(prev => ({ ...prev, form: null }));
+    }
+    if (success) {
+      setSuccess(null);
+      setFormData({
+        kode_kelas: "",
+        hari: "",
+        maks_mahasiswa: "",
+        mata_kuliah_id: "",
+        jam_mulai: "",
+        jam_selesai: "",
+        id_academic_year: "",
+        is_active: true
+      });
     }
   };
 
@@ -84,7 +96,11 @@ export default function AddKelasForm() {
     if (!formData.mata_kuliah_id) {
       newErrors.mata_kuliah_id = "Mata kuliah harus dipilih";
     }
-    
+
+    if (!formData.academic_period) {
+      newErrors.academic_period = "Tahun akademik harus dipilih";
+    }
+
     if (!formData.jam_mulai) {
       newErrors.jam_mulai = "Jam mulai harus diisi";
     }
@@ -103,6 +119,26 @@ export default function AddKelasForm() {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  const fetchSubjects = async () => {
+    setIsFetching(true);
+    try {
+      const response = await getSubjects();
+      if (response.status === 'success') {
+        setSubjects(response.data);
+      } else {
+        setErrors(prev => ({ ...prev, fetch: response.message || 'Gagal memuat mata kuliah' }));
+      }
+    } catch (error) {
+      setErrors(prev => ({ ...prev, fetch: error.message || 'Gagal memuat mata kuliah' }));
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSubjects();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -289,14 +325,64 @@ export default function AddKelasForm() {
                     }}
                     disabled={isLoading}
                   >
-                    <option value="">Pilih Mata Kuliah</option>
-                    {matkulOptions.map(matkul => (
-                      <option key={matkul.id_subject || matkul.id} value={matkul.id_subject || matkul.id}>
-                        {matkul.code_subject || matkul.kode} - {matkul.name_subject || matkul.nama}
+                    <option value="" disabled>Pilih Mata Kuliah</option>
+                    {subjects.map(matkul => (
+                      <option key={matkul.id_subject} value={matkul.id_subject}>
+                        {matkul.code_subject} - {matkul.name_subject}
                       </option>
                     ))}
                   </select>
                   {formData.mata_kuliah_id && !errors.mata_kuliah_id && (
+                    <div 
+                      className="absolute right-12 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                      style={{ backgroundColor: '#16874B' }}
+                    >
+                      ✓
+                    </div>
+                  )}
+                </div>
+              </FieldContent>
+              {errors.mata_kuliah_id && (
+                <FieldError>{errors.mata_kuliah_id}</FieldError>
+              )}
+            </Field>
+
+            {/* Tahun ajaran Field */}
+            <Field>
+              <FieldLabel htmlFor="tahun_ajaran">
+                Tahun Ajaran <span className="text-red-500">*</span>
+              </FieldLabel>
+              <FieldDescription>
+                Pilih tahun ajaran yang akan digunakan
+              </FieldDescription>
+              <FieldContent>
+                <div className="relative">
+                  <select
+                    id="academic_period"
+                    name="academic_period"
+                    value={formData.academic_period}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100 appearance-none cursor-pointer"
+                    style={{
+                      fontFamily: 'Urbanist, sans-serif',
+                      borderColor: errors.academic_period ? '#BE0414' : '#015023',
+                      borderRadius: '12px',
+                      opacity: errors.academic_period ? 1 : 0.7,
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23015023' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 1rem center',
+                      backgroundSize: '1.5rem'
+                    }}
+                    disabled={isLoading}
+                  >
+                    <option value="">Pilih Tahun Ajaran</option>
+                    {academic_period.map(year => (
+                      <option key={year.id_academic_period} value={year.id_academic_period}>
+                        {year.name}
+                      </option>
+                    ))}
+                  </select>
+                  {formData.academic_period && !errors.academic_period && (
                     <div 
                       className="absolute right-12 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
                       style={{ backgroundColor: '#16874B' }}
@@ -358,7 +444,7 @@ export default function AddKelasForm() {
             <div className="space-y-6">
               <div>
                 <h3 
-                  className="text-xl font-bold mb-4"
+                  className="text-lg font-bold mb-4"
                   style={{ 
                     fontFamily: 'Urbanist, sans-serif',
                     color: '#015023'
@@ -367,7 +453,7 @@ export default function AddKelasForm() {
                   Jadwal Kelas
                 </h3>
                 <div 
-                  className="w-16 h-0.5 rounded-full mb-6"
+                  className="w-20 h-0.5 rounded-full mb-6"
                   style={{ backgroundColor: '#DABC4E' }}
                 />
               </div>
@@ -400,9 +486,11 @@ export default function AddKelasForm() {
                       }}
                       disabled={isLoading}
                     >
-                      <option value="">Pilih Hari</option>
-                      {hariOptions.map(hari => (
-                        <option key={hari} value={hari}>{hari}</option>
+                      <option value="" disabled>Pilih Hari</option>
+                      {hariOptions.map((hari) => (
+                        <option key={hari.key} value={hari.key}>
+                          {hari.label}
+                        </option>
                       ))}
                     </select>
                     {formData.hari && !errors.hari && (

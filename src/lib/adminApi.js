@@ -113,6 +113,20 @@ export const getClasses = async () => {
 };
 
 /**
+ * Store new class
+ * @param {Object} classData - Data kelas baru
+ * @returns {Promise} Response hasil create
+ */
+export const storeClass = async (classData) => {
+  try {
+    const response = await api.post('/manager/classes', classData);
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error);
+  }
+};
+
+/**
  * Get all managers
  * @returns {Promise} Response dengan data managers
  */
