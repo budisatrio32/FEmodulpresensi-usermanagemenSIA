@@ -54,6 +54,7 @@ export default function DetailKelas() {
     const [matkulOptions, setMatkulOptions] = useState([]);
     const [dosenOptions, setDosenOptions] = useState([]);
     const [mahasiswaOptions, setMahasiswaOptions] = useState([]);
+    const [periodeOptions, setPeriodeOptions] = useState([]);
 
     // Modal states
     const [showDosenModal, setShowDosenModal] = useState(false);
@@ -216,9 +217,15 @@ export default function DetailKelas() {
     };
 
     const handleMatkulChange = (e) => {
-    const matkulId = parseInt(e.target.value);
-    const matkul = matkulOptions.find(m => m.id === matkulId);
-    setAssignedMatkul(matkul);
+        const matkulId = parseInt(e.target.value);
+        const matkul = matkulOptions.find(m => m.id === matkulId);
+        setAssignedMatkul(matkul);
+    };
+
+    const handlePeriodeChange = (e) => {
+        const periodeId = parseInt(e.target.value);
+        const periode = periodeOptions.find(p => p.id === periodeId);
+        setAssignedPeriode(periode);
     };
 
     const handleToggleDosen = (dosenId) => {
@@ -542,201 +549,230 @@ export default function DetailKelas() {
             </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 space-y-6">
             {/* Left Column - Form Data Kelas */}
             <div className="bg-white border-2 p-6 shadow-lg flex flex-col" style={{ borderColor: '#015023', borderRadius: '12px' }}>
                 <h2 className="text-2xl font-bold mb-6" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                 Informasi Kelas
                 </h2>
-
-                {/* Kode Kelas */}
-                <div className="mb-4">
-                <label className="block text-sm font-semibold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                    Kode Kelas <span className="text-red-500">*</span>
-                </label>
-                <input
-                    type="text"
-                    name="kode_kelas"
-                    value={formData.kode_kelas}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 focus:outline-none uppercase"
-                    style={{
-                    fontFamily: 'Urbanist, sans-serif',
-                    borderColor: errors.kode_kelas ? '#BE0414' : '#015023',
-                    borderRadius: '12px',
-                    opacity: 0.7
-                    }}
-                    disabled={isLoading}
-                />
-                {errors.kode_kelas && (
-                    <p className="text-red-500 text-sm mt-1">{errors.kode_kelas}</p>
-                )}
-                </div>
-
-                {/* Mata Kuliah */}
-                <div className="mb-4">
-                <label className="block text-sm font-semibold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                    Mata Kuliah <span className="text-red-500">*</span>
-                </label>
-                <select
-                    value={assignedMatkul?.id || ""}
-                    onChange={handleMatkulChange}
-                    className="w-full px-4 py-3 border-2 focus:outline-none"
-                    style={{
-                    fontFamily: 'Urbanist, sans-serif',
-                    borderColor: errors.matkul ? '#BE0414' : '#015023',
-                    borderRadius: '12px',
-                    opacity: 0.7
-                    }}
-                    disabled={isLoading}
-                >
-                    <option value="">Pilih Mata Kuliah</option>
-                    {matkulOptions.map(matkul => (
-                    <option key={matkul.id_subject || matkul.id} value={matkul.id_subject || matkul.id}>
-                        {matkul.code_subject || matkul.code} - {matkul.name_subject || matkul.name}
-                    </option>
-                    ))}
-                </select>
-                {errors.matkul && (
-                    <p className="text-red-500 text-sm mt-1">{errors.matkul}</p>
-                )}
-                </div>
-
-                {/* Maks Mahasiswa */}
-                <div className="mb-4">
-                <label className="block text-sm font-semibold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                    Maksimal Mahasiswa <span className="text-red-500">*</span>
-                </label>
-                <input
-                    type="number"
-                    name="maks_mahasiswa"
-                    value={formData.maks_mahasiswa}
-                    onChange={handleChange}
-                    min="1"
-                    max="100"
-                    className="w-full px-4 py-3 border-2 focus:outline-none"
-                    style={{
-                    fontFamily: 'Urbanist, sans-serif',
-                    borderColor: errors.maks_mahasiswa ? '#BE0414' : '#015023',
-                    borderRadius: '12px',
-                    opacity: 0.7
-                    }}
-                    disabled={isLoading}
-                />
-                </div>
-
-                {/* Hari */}
-                <div className="mb-4">
-                <label className="block text-sm font-semibold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                    Hari <span className="text-red-500">*</span>
-                </label>
-                <select
-                    name="hari"
-                    value={formData.hari}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 focus:outline-none"
-                    style={{
-                    fontFamily: 'Urbanist, sans-serif',
-                    borderColor: '#015023',
-                    borderRadius: '12px',
-                    opacity: 0.7
-                    }}
-                    disabled={isLoading}
-                >
-                    <option value="">Pilih Hari</option>
-                    {hariOptions.map(hari => (
-                    <option key={hari} value={hari}>{hari}</option>
-                    ))}
-                </select>
-                </div>
-
-                {/* Jam Mulai & Selesai */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
+                <form onSubmit={handleSubmit}>
+                    {/* Kode Kelas */}
+                    <div className="mb-4">
                     <label className="block text-sm font-semibold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                    Jam Mulai
+                        Kode Kelas <span className="text-red-500">*</span>
                     </label>
                     <input
-                    type="time"
-                    name="jam_mulai"
-                    value={formData.jam_mulai}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 focus:outline-none"
-                    style={{
+                        type="text"
+                        name="kode_kelas"
+                        value={formData.kode_kelas}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border-2 focus:outline-none uppercase"
+                        style={{
                         fontFamily: 'Urbanist, sans-serif',
-                        borderColor: '#015023',
+                        borderColor: errors.kode_kelas ? '#BE0414' : '#015023',
                         borderRadius: '12px',
                         opacity: 0.7
-                    }}
-                    disabled={isLoading}
+                        }}
+                        disabled={isLoading}
                     />
-                </div>
-                <div>
-                    <label className="block text-sm font-semibold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                    Jam Selesai
-                    </label>
-                    <input
-                    type="time"
-                    name="jam_selesai"
-                    value={formData.jam_selesai}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 focus:outline-none"
-                    style={{
-                        fontFamily: 'Urbanist, sans-serif',
-                        borderColor: '#015023',
-                        borderRadius: '12px',
-                        opacity: 0.7
-                    }}
-                    disabled={isLoading}
-                    />
-                </div>
-                </div>
-
-                {/* Status Active */}
-                <div className="flex items-center gap-3 p-4 border-2" style={{ borderColor: '#015023', borderRadius: '12px', opacity: 0.7 }}>
-                <input
-                    type="checkbox"
-                    name="is_active"
-                    checked={formData.is_active}
-                    onChange={handleChange}
-                    className="w-5 h-5 cursor-pointer"
-                    disabled={isLoading}
-                />
-                <label className="font-semibold cursor-pointer" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                    Status Aktif
-                </label>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex justify-end gap-4 mt-6">
-                <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => router.push("/adminpage/tambahkelas")}
-                    disabled={isLoading}
-                >
-                    Batal
-                </Button>
-                <Button
-                    type="submit"
-                    disabled={isLoading}
-                    className="min-w-[200px]"
-                >
-                    {isLoading ? (
-                    <>
-                        <span className="animate-spin mr-2">⏳</span>
-                        Menyimpan...
-                    </>
-                    ) : (
-                    <>
-                        <Save className="w-5 h-5 mr-2" />
-                        Simpan Perubahan
-                    </>
+                    {errors.kode_kelas && (
+                        <p className="text-red-500 text-sm mt-1">{errors.kode_kelas}</p>
                     )}
-                </Button>
-                </div>
+                    </div>
+
+                    {/* Mata Kuliah */}
+                    <div className="mb-4">
+                    <label className="block text-sm font-semibold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                        Mata Kuliah <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                        value={assignedMatkul?.id || ""}
+                        onChange={handleMatkulChange}
+                        className="w-full px-4 py-3 border-2 focus:outline-none"
+                        style={{
+                        fontFamily: 'Urbanist, sans-serif',
+                        borderColor: errors.matkul ? '#BE0414' : '#015023',
+                        borderRadius: '12px',
+                        opacity: 0.7
+                        }}
+                        disabled={isLoading}
+                    >
+                        <option value="">Pilih Mata Kuliah</option>
+                        {matkulOptions.map(matkul => (
+                        <option key={matkul.id_subject || matkul.id} value={matkul.id_subject || matkul.id}>
+                            {matkul.code_subject || matkul.code} - {matkul.name_subject || matkul.name}
+                        </option>
+                        ))}
+                    </select>
+                    {errors.matkul && (
+                        <p className="text-red-500 text-sm mt-1">{errors.matkul}</p>
+                    )}
+                    </div>
+
+                    {/* Academic Period */}
+                    <div className="mb-4">
+                    <label className="block text-sm font-semibold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                        Periode Akademik <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                        value={assignedMatkul?.id || ""}
+                        onChange={handlePeriodeChange}
+                        className="w-full px-4 py-3 border-2 focus:outline-none"
+                        style={{
+                        fontFamily: 'Urbanist, sans-serif',
+                        borderColor: errors.periode ? '#BE0414' : '#015023',
+                        borderRadius: '12px',
+                        opacity: 0.7
+                        }}
+                        disabled={isLoading}
+                    >
+                        <option value="">Pilih Periode Akademik</option>
+                        {periodeOptions.map(periode => (
+                        <option key={periode.id} value={periode.id}>
+                            {periode.name}
+                        </option>
+                        ))}
+                    </select>
+                    {errors.periode && (
+                        <p className="text-red-500 text-sm mt-1">{errors.periode}</p>
+                    )}
+                    </div>
+
+                    {/* Maks Mahasiswa */}
+                    <div className="mb-4">
+                    <label className="block text-sm font-semibold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                        Maksimal Mahasiswa <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="number"
+                        name="maks_mahasiswa"
+                        value={formData.maks_mahasiswa}
+                        onChange={handleChange}
+                        min="1"
+                        max="100"
+                        className="w-full px-4 py-3 border-2 focus:outline-none"
+                        style={{
+                        fontFamily: 'Urbanist, sans-serif',
+                        borderColor: errors.maks_mahasiswa ? '#BE0414' : '#015023',
+                        borderRadius: '12px',
+                        opacity: 0.7
+                        }}
+                        disabled={isLoading}
+                    />
+                    </div>
+
+                    {/* Hari */}
+                    <div className="mb-4">
+                    <label className="block text-sm font-semibold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                        Hari <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                        name="hari"
+                        value={formData.hari}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border-2 focus:outline-none"
+                        style={{
+                        fontFamily: 'Urbanist, sans-serif',
+                        borderColor: '#015023',
+                        borderRadius: '12px',
+                        opacity: 0.7
+                        }}
+                        disabled={isLoading}
+                    >
+                        <option value="">Pilih Hari</option>
+                        {hariOptions.map(hari => (
+                        <option key={hari} value={hari}>{hari}</option>
+                        ))}
+                    </select>
+                    </div>
+
+                    {/* Jam Mulai & Selesai */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label className="block text-sm font-semibold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                        Jam Mulai
+                        </label>
+                        <input
+                        type="time"
+                        name="jam_mulai"
+                        value={formData.jam_mulai}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border-2 focus:outline-none"
+                        style={{
+                            fontFamily: 'Urbanist, sans-serif',
+                            borderColor: '#015023',
+                            borderRadius: '12px',
+                            opacity: 0.7
+                        }}
+                        disabled={isLoading}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                        Jam Selesai
+                        </label>
+                        <input
+                        type="time"
+                        name="jam_selesai"
+                        value={formData.jam_selesai}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border-2 focus:outline-none"
+                        style={{
+                            fontFamily: 'Urbanist, sans-serif',
+                            borderColor: '#015023',
+                            borderRadius: '12px',
+                            opacity: 0.7
+                        }}
+                        disabled={isLoading}
+                        />
+                    </div>
+                    </div>
+
+                    {/* Status Active */}
+                    <div className="flex items-center gap-3 p-4 border-2" style={{ borderColor: '#015023', borderRadius: '12px', opacity: 0.7 }}>
+                    <input
+                        type="checkbox"
+                        name="is_active"
+                        checked={formData.is_active}
+                        onChange={handleChange}
+                        className="w-5 h-5 cursor-pointer"
+                        disabled={isLoading}
+                    />
+                    <label className="font-semibold cursor-pointer" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                        Status Aktif
+                    </label>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex justify-end gap-4 mt-6">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => router.push("/adminpage/tambahkelas")}
+                        disabled={isLoading}
+                    >
+                        Batal
+                    </Button>
+                    <Button
+                        type="submit"
+                        disabled={isLoading}
+                        className="min-w-[200px]"
+                    >
+                        {isLoading ? (
+                        <>
+                            <span className="animate-spin mr-2">⏳</span>
+                            Menyimpan...
+                        </>
+                        ) : (
+                        <>
+                            <Save className="w-5 h-5 mr-2" />
+                            Simpan Perubahan
+                        </>
+                        )}
+                    </Button>
+                    </div>
+                </form>
             </div>
 
             {/* Right Column - Dosen & Mahasiswa */}
@@ -910,7 +946,6 @@ export default function DetailKelas() {
                 </div>
                 )}
             </div>
-        </form>
         </div>
 
         {/* Modal Tambah Dosen */}
