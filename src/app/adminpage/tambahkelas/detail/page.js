@@ -636,12 +636,16 @@ export default function DetailKelas() {
                         name="matkul"
                         value={formData.matkul}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border-2 focus:outline-none"
+                        className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100 appearance-none cursor-pointer"
                         style={{
                             fontFamily: 'Urbanist, sans-serif',
                             borderColor: errors.matkul ? '#BE0414' : '#015023',
                             borderRadius: '12px',
-                            opacity: 0.7
+                            opacity: 0.7,
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23015023' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'right 1rem center',
+                            backgroundSize: '1.5rem'
                         }}
                         disabled={isLoading}
                     >
@@ -666,12 +670,16 @@ export default function DetailKelas() {
                         name="periode"
                         value={formData.periode}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border-2 focus:outline-none"
+                        className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100 appearance-none cursor-pointer"
                         style={{
                             fontFamily: 'Urbanist, sans-serif',
                             borderColor: errors.periode ? '#BE0414' : '#015023',
                             borderRadius: '12px',
-                            opacity: 0.7
+                            opacity: 0.7,
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23015023' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'right 1rem center',
+                            backgroundSize: '1.5rem'
                         }}
                         disabled={isLoading}
                     >
@@ -719,12 +727,16 @@ export default function DetailKelas() {
                         name="hari"
                         value={formData.hari}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border-2 focus:outline-none"
+                        className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100 appearance-none cursor-pointer"
                         style={{
-                        fontFamily: 'Urbanist, sans-serif',
-                        borderColor: '#015023',
-                        borderRadius: '12px',
-                        opacity: 0.7
+                            fontFamily: 'Urbanist, sans-serif',
+                            borderColor: '#015023',
+                            borderRadius: '12px',
+                            opacity: 0.7,
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23015023' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'right 1rem center',
+                            backgroundSize: '1.5rem'
                         }}
                         disabled={isLoading}
                     >
