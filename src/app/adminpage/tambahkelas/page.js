@@ -47,6 +47,7 @@ export default function KelasDashboard() {
       kelasItem.code_class.toLowerCase().includes(query) ||
       kelasItem.total_students.toString().includes(query) ||
       kelasItem.schedule.toLowerCase().includes(query) ||
+      kelasItem.academic_period_name.toLowerCase().includes(query) ||
       (kelasItem.is_active ? 'active' : 'inactive').includes(query)
     );
   });
@@ -56,6 +57,7 @@ export default function KelasDashboard() {
     { key: 'code_subject', label: 'Kode MK' },
     { key: 'name_subject', label: 'Mata Kuliah' },
     { key: 'code_class', label: 'Kode Kelas' },
+    { key: 'academic_period_name', label: 'Periode Akademik' },
     { key: 'total_students', label: 'Jumlah/Maks Mahasiswa' },
     { key: 'schedule', label: 'Jadwal' },
     { key: 'is_active', label: 'Status' },

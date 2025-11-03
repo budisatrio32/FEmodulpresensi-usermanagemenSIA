@@ -109,6 +109,7 @@ export default function DetailKelas() {
                 setFormData({
                     kode_kelas: response.data.code_class,
                     matkul: response.data.id_subject,
+                    periode: response.data.id_academic_period,
                     jumlah_mahasiswa: response.data.jumlah_mahasiswa,
                     maks_mahasiswa: response.data.member_class,
                     hari: response.data.day_of_week,
