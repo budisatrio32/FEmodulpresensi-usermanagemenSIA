@@ -16,6 +16,8 @@ Trash2
 import AdminNavbar from "@/components/ui/admin-navbar";
 import { Button } from "@/components/ui/button";
 import LoadingEffect from "@/components/ui/loading-effect";
+import { getClassById, getAcademicPeriods, getSubjects, getMahasiswa, getDosen } from "@/lib/adminApi";
+import { ErrorMessageBoxWithButton } from "@/components/ui/message-box";
 
 export default function DetailKelas() {
     const router = useRouter();
@@ -28,14 +30,15 @@ export default function DetailKelas() {
 
     // Data kelas
     const [formData, setFormData] = useState({
-    kode_kelas: "",
-    jumlah_mahasiswa: "0",
-    maks_mahasiswa: "",
-    hari: "",
-    jam_mulai: "",
-    jam_selesai: "",
-    tanggal: "",
-    is_active: true
+        kode_kelas: "",
+        matkul: "",
+        jumlah_mahasiswa: "0",
+        maks_mahasiswa: "",
+        hari: "",
+        jam_mulai: "",
+        jam_selesai: "",
+        tanggal: "",
+        is_active: true
     });
 
     // Data mata kuliah yang sudah di-assign
@@ -69,151 +72,119 @@ export default function DetailKelas() {
         tanggalMulai: new Date().toISOString().split('T')[0]
     });
 
-    const hariOptions = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    const hariOptions = [
+        {key: 1, label: "Senin"},
+        {key: 2, label: "Selasa"},
+        {key: 3, label: "Rabu"},
+        {key: 4, label: "Kamis"},
+        {key: 5, label: "Jumat"},
+        {key: 6, label: "Sabtu"},
+        {key: 7, label: "Minggu"}
+    ];
 
     // Fetch data kelas saat component mount
     useEffect(() => {
     if (kelasId) {
-        fetchKelasData();
-        fetchMatkulOptions();
-        fetchDosenOptions();
-        fetchMahasiswaOptions();
+        fetchAll();
     }
     }, [kelasId]);
 
-    const fetchKelasData = async () => {
-    try {
+    const fetchAll = async () => {
         setIsFetching(true);
-        await new Promise(resolve => setTimeout(resolve, 800));
-
-        // Dummy data
-        const dummyData = {
-        kode_kelas: "A-CS101",
-        jumlah_mahasiswa: "35",
-        maks_mahasiswa: "40",
-        jadwal: "Senin, 08.00 - 10.00",
-        tanggal: "2024-11-04",
-        is_active: true,
-        matkul: { id: 1, name: "Pemrograman Web", code: "CS101" },
-        dosen: [
-            { id: 1, name: "Dr. Ahmad Zaki", email: "ahmad.zaki@university.ac.id" },
-            { id: 2, name: "Prof. Siti Nurhaliza", email: "siti.n@university.ac.id" }
-        ],
-        mahasiswa: [
-            { id: 1, name: "Budi Santoso", nim: "2021001", email: "budi@student.ac.id" },
-            { id: 2, name: "Ani Wijaya", nim: "2021002", email: "ani@student.ac.id" },
-            { id: 3, name: "Citra Dewi", nim: "2021003", email: "citra@student.ac.id" }
-        ]
-        };
-
-        const jadwalParts = dummyData.jadwal.split(', ');
-        const timeParts = jadwalParts[1].split(' - ');
-
-        setFormData({
-        kode_kelas: dummyData.kode_kelas,
-        jumlah_mahasiswa: dummyData.jumlah_mahasiswa,
-        maks_mahasiswa: dummyData.maks_mahasiswa,
-        hari: jadwalParts[0],
-        jam_mulai: timeParts[0],
-        jam_selesai: timeParts[1],
-        tanggal: dummyData.tanggal,
-        is_active: dummyData.is_active
-        });
-
-        setAssignedMatkul(dummyData.matkul);
-        setAssignedDosen(dummyData.dosen);
-        setAssignedMahasiswa(dummyData.mahasiswa);
-        
-        // Set jadwal list - pertemuan untuk semester ini
-        setJadwalList([
-            { id: 1, pertemuan: 1, tanggal: '2024-11-04', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
-            { id: 2, pertemuan: 2, tanggal: '2024-11-11', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
-            { id: 3, pertemuan: 3, tanggal: '2024-11-18', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
-            { id: 4, pertemuan: 4, tanggal: '2024-11-25', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
-            { id: 5, pertemuan: 5, tanggal: '2024-12-02', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
-            { id: 6, pertemuan: 6, tanggal: '2024-12-09', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
-            { id: 7, pertemuan: 7, tanggal: '2024-12-16', jam_mulai: '08.00', jam_selesai: '10.00', ruangan: 'Lab A301' },
+        await Promise.all([
+            fetchDosenOptions(),
+            fetchMahasiswaOptions(),
+            fetchMatkulOptions(),
+            fetchPeriodeOptions(),
+            fetchKelasData()
         ]);
-    } catch (error) {
-        alert("Gagal mengambil data kelas: " + error.message);
-        router.push("/adminpage/tambahkelas");
-    } finally {
         setIsFetching(false);
-    }
     };
 
+    const fetchKelasData = async () => {
+        try {
+            const response = await getClassById(kelasId);
+            if (response.status === 'success') {
+                // Set form data
+                setFormData({
+                    kode_kelas: response.data.code_class,
+                    matkul: response.data.id_subject,
+                    jumlah_mahasiswa: response.data.jumlah_mahasiswa,
+                    maks_mahasiswa: response.data.member_class,
+                    hari: response.data.day_of_week,
+                    jam_mulai: response.data.start_time,
+                    jam_selesai: response.data.end_time,
+                    tanggal: response.data.date,
+                    is_active: response.data.is_active
+                });
+                setAssignedMatkul(response.data.subject);
+                setAssignedDosen(response.data.lecturers);
+                setAssignedMahasiswa(response.data.students);
+                setJadwalList(response.data.schedules);
+            }
+        }
+        catch (error) {
+            setErrors(prev => ({...prev, fetch: "Gagal mengambil data kelas: " + error.message}));
+        }
+    }
+
     const fetchMatkulOptions = async () => {
-    // Dummy mata kuliah options
-    setMatkulOptions([
-        { id: 1, name: "Pemrograman Web", code: "CS101" },
-        { id: 2, name: "Basis Data", code: "CS102" },
-        { id: 3, name: "Struktur Data", code: "CS201" },
-        { id: 4, name: "Algoritma", code: "CS202" }
-    ]);
+        try {
+            const response = await getSubjects();
+            setMatkulOptions(response.data);
+        } catch (error) {
+            setErrors(prev => ({...prev, matkul: "Gagal mengambil data " + error.message}));
+        }
     };
 
     const fetchDosenOptions = async () => {
-    // Dummy dosen options
-    setDosenOptions([
-        { id: 1, name: "Dr. Ahmad Zaki", email: "ahmad.zaki@university.ac.id" },
-        { id: 2, name: "Prof. Siti Nurhaliza", email: "siti.n@university.ac.id" },
-        { id: 3, name: "Dr. Bambang Susilo", email: "bambang.s@university.ac.id" },
-        { id: 4, name: "Dr. Rina Puspita", email: "rina.p@university.ac.id" },
-        { id: 5, name: "Prof. Hadi Wijaya", email: "hadi.w@university.ac.id" },
-        { id: 6, name: "Dr. Mira Kusuma", email: "mira.k@university.ac.id" },
-        { id: 7, name: "Dr. Agus Setiawan", email: "agus.s@university.ac.id" },
-        { id: 8, name: "Prof. Dewi Sartika", email: "dewi.s@university.ac.id" },
-        { id: 9, name: "Dr. Rudi Hartono", email: "rudi.h@university.ac.id" },
-        { id: 10, name: "Dr. Linda Prasetyo", email: "linda.p@university.ac.id" },
-        { id: 11, name: "Prof. Irfan Hakim", email: "irfan.h@university.ac.id" },
-        { id: 12, name: "Dr. Dian Permata", email: "dian.p@university.ac.id" },
-        { id: 13, name: "Dr. Fajar Ramadhan", email: "fajar.r@university.ac.id" },
-        { id: 14, name: "Prof. Aisyah Rahman", email: "aisyah.r@university.ac.id" },
-        { id: 15, name: "Dr. Teguh Santoso", email: "teguh.s@university.ac.id" }
-    ]);
+        try {
+            const response = await getDosen();
+            if (response.status === 'success') {
+                setDosenOptions(response.data);
+            } else {
+                setErrors(prev => ({...prev, fetch: "Gagal mengambil data " + response.message}));
+            }
+        } catch (error) {
+            setErrors(prev => ({...prev, fetch: "Gagal mengambil data " + error.message}));
+        }
     };
 
     const fetchMahasiswaOptions = async () => {
-    // Dummy mahasiswa options
-    setMahasiswaOptions([
-        { id: 1, name: "Budi Santoso", nim: "2021001", email: "budi@student.ac.id" },
-        { id: 2, name: "Ani Wijaya", nim: "2021002", email: "ani@student.ac.id" },
-        { id: 3, name: "Citra Dewi", nim: "2021003", email: "citra@student.ac.id" },
-        { id: 4, name: "Dedi Kurniawan", nim: "2021004", email: "dedi@student.ac.id" },
-        { id: 5, name: "Eka Putri", nim: "2021005", email: "eka@student.ac.id" },
-        { id: 6, name: "Farel Akbar", nim: "2021006", email: "farel@student.ac.id" },
-        { id: 7, name: "Gita Safitri", nim: "2021007", email: "gita@student.ac.id" },
-        { id: 8, name: "Hendra Wijaya", nim: "2021008", email: "hendra@student.ac.id" },
-        { id: 9, name: "Indah Permata", nim: "2021009", email: "indah@student.ac.id" },
-        { id: 10, name: "Joko Susilo", nim: "2021010", email: "joko@student.ac.id" },
-        { id: 11, name: "Kartika Sari", nim: "2021011", email: "kartika@student.ac.id" },
-        { id: 12, name: "Lukman Hakim", nim: "2021012", email: "lukman@student.ac.id" },
-        { id: 13, name: "Maya Anggraini", nim: "2021013", email: "maya@student.ac.id" },
-        { id: 14, name: "Nanda Pratama", nim: "2021014", email: "nanda@student.ac.id" },
-        { id: 15, name: "Oki Setiawan", nim: "2021015", email: "oki@student.ac.id" },
-        { id: 16, name: "Putri Ayu", nim: "2021016", email: "putri@student.ac.id" },
-        { id: 17, name: "Qori Rahman", nim: "2021017", email: "qori@student.ac.id" },
-        { id: 18, name: "Rina Kusuma", nim: "2021018", email: "rina@student.ac.id" },
-        { id: 19, name: "Sandi Permana", nim: "2021019", email: "sandi@student.ac.id" },
-        { id: 20, name: "Tari Wulandari", nim: "2021020", email: "tari@student.ac.id" },
-        { id: 21, name: "Umar Bakri", nim: "2021021", email: "umar@student.ac.id" },
-        { id: 22, name: "Vina Melati", nim: "2021022", email: "vina@student.ac.id" },
-        { id: 23, name: "Wandi Prasetyo", nim: "2021023", email: "wandi@student.ac.id" },
-        { id: 24, name: "Yudi Saputra", nim: "2021024", email: "yudi@student.ac.id" },
-        { id: 25, name: "Zahra Amelia", nim: "2021025", email: "zahra@student.ac.id" }
-    ]);
+        try {
+            const response = await getMahasiswa();
+            if (response.status === 'success') {
+                setMahasiswaOptions(response.data);
+            } else {
+                setErrors(prev => ({...prev, fetch: "Gagal mengambil data " + response.message}));
+            }
+        } catch (error) {
+            setErrors(prev => ({...prev, fetch: "Gagal mengambil data " + error.message}));
+        }
+    };
+    const fetchPeriodeOptions = async () => {
+        try {
+            const response = await getAcademicPeriods();
+            if (response.status === 'success') {
+                setPeriodeOptions(response.data);
+            } else {
+                setErrors(prev => ({...prev, periode: "Gagal mengambil data " + response.message}));
+            }
+        } catch (error) {
+            setErrors(prev => ({...prev, periode: "Gagal mengambil data " + error.message}));
+        }
     };
 
     const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-        ...prev,
-        [name]: type === "checkbox" ? checked : value
-    }));
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === "checkbox" ? checked : value
+        }));
 
-    if (errors[name]) {
-        setErrors(prev => ({ ...prev, [name]: null }));
-    }
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: null }));
+        }
     };
 
     const handleMatkulChange = (e) => {
@@ -283,165 +254,193 @@ export default function DetailKelas() {
     const handleToggleMahasiswa = (mahasiswaId) => {
     setSelectedMahasiswaIds(prev => {
         if (prev.includes(mahasiswaId)) {
-        return prev.filter(id => id !== mahasiswaId);
+            return prev.filter(id => id !== mahasiswaId);
         } else {
-        return [...prev, mahasiswaId];
+            return [...prev, mahasiswaId];
         }
     });
     };
 
     const handleAddMahasiswa = async () => {
-    if (selectedMahasiswaIds.length === 0) {
-        alert("Pilih minimal 1 mahasiswa");
-        return;
-    }
-
-    try {
-        setIsLoading(true);
-
-        const newMahasiswa = mahasiswaOptions.filter(m => selectedMahasiswaIds.includes(m.id));
-        const combinedMahasiswa = [...assignedMahasiswa];
-
-        newMahasiswa.forEach(mahasiswa => {
-        if (!combinedMahasiswa.find(m => m.id === mahasiswa.id)) {
-            combinedMahasiswa.push(mahasiswa);
-        }
-        });
-
-        // Check capacity
-        if (combinedMahasiswa.length > parseInt(formData.maks_mahasiswa)) {
-        alert(`Kapasitas maksimal ${formData.maks_mahasiswa} mahasiswa. Tidak dapat menambah lebih banyak.`);
-        setIsLoading(false);
-        return;
+        if (selectedMahasiswaIds.length === 0) {
+            alert("Pilih minimal 1 mahasiswa");
+            return;
         }
 
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // TODO: API call to save mahasiswa data
-        console.log("Saving mahasiswa data:", combinedMahasiswa);
+        try {
+            setIsLoading(true);
 
-        setAssignedMahasiswa(combinedMahasiswa);
-        setFormData(prev => ({
-        ...prev,
-        jumlah_mahasiswa: combinedMahasiswa.length.toString()
-        }));
-        setSelectedMahasiswaIds([]);
-        setSearchMahasiswa("");
-        setShowMahasiswaModal(false);
-        
-        alert(`Berhasil menyimpan ${newMahasiswa.length} mahasiswa!`);
-    } catch (error) {
-        alert("Gagal menyimpan data mahasiswa: " + error.message);
-    } finally {
-        setIsLoading(false);
-    }
+            const newMahasiswa = mahasiswaOptions.filter(m => selectedMahasiswaIds.includes(m.id));
+            const combinedMahasiswa = [...assignedMahasiswa];
+
+            newMahasiswa.forEach(mahasiswa => {
+            if (!combinedMahasiswa.find(m => m.id === mahasiswa.id)) {
+                combinedMahasiswa.push(mahasiswa);
+            }
+            });
+
+            // Check capacity
+            if (combinedMahasiswa.length > parseInt(formData.maks_mahasiswa)) {
+            alert(`Kapasitas maksimal ${formData.maks_mahasiswa} mahasiswa. Tidak dapat menambah lebih banyak.`);
+            setIsLoading(false);
+            return;
+            }
+
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // TODO: API call to save mahasiswa data
+            console.log("Saving mahasiswa data:", combinedMahasiswa);
+
+            setAssignedMahasiswa(combinedMahasiswa);
+            setFormData(prev => ({
+            ...prev,
+            jumlah_mahasiswa: combinedMahasiswa.length.toString()
+            }));
+            setSelectedMahasiswaIds([]);
+            setSearchMahasiswa("");
+            setShowMahasiswaModal(false);
+            
+            alert(`Berhasil menyimpan ${newMahasiswa.length} mahasiswa!`);
+        } catch (error) {
+            alert("Gagal menyimpan data mahasiswa: " + error.message);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleRemoveMahasiswa = (mahasiswaId) => {
-    setAssignedMahasiswa(assignedMahasiswa.filter(m => m.id !== mahasiswaId));
-    setFormData(prev => ({
-        ...prev,
-        jumlah_mahasiswa: (assignedMahasiswa.length - 1).toString()
-    }));
+        setAssignedMahasiswa(assignedMahasiswa.filter(m => m.id !== mahasiswaId));
+        setFormData(prev => ({
+            ...prev,
+            jumlah_mahasiswa: (assignedMahasiswa.length - 1).toString()
+        }));
     };
 
     const handleGenerateJadwal = async () => {
-    const jumlah = parseInt(generateJadwalForm.jumlahPertemuan);
-    
-    if (isNaN(jumlah) || jumlah < 1 || jumlah > 16) {
-        alert("Jumlah pertemuan harus antara 1-16");
-        return;
-    }
-
-    if (!generateJadwalForm.tanggalMulai) {
-        alert("Pilih tanggal mulai pertemuan");
-        return;
-    }
-
-    try {
-        setIsLoading(true);
+        const jumlah = parseInt(generateJadwalForm.jumlahPertemuan);
         
-        // Tanggal mulai dari form input
-        const startDate = new Date(generateJadwalForm.tanggalMulai);
-        const generatedJadwal = [];
-
-        for (let i = 0; i < jumlah; i++) {
-        const pertemuanDate = new Date(startDate);
-        pertemuanDate.setDate(startDate.getDate() + (i * 7)); // +7 hari per pertemuan
-
-        generatedJadwal.push({
-            id: i + 1,
-            pertemuan: i + 1,
-            tanggal: pertemuanDate.toISOString().split('T')[0]
-        });
+        if (isNaN(jumlah) || jumlah < 1 || jumlah > 20) {
+            alert("Jumlah pertemuan harus antara 1-20");
+            return;
         }
 
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // TODO: API call to save jadwal
-        console.log("Generated jadwal:", generatedJadwal);
+        if (!generateJadwalForm.tanggalMulai) {
+            alert("Pilih tanggal mulai pertemuan");
+            return;
+        }
 
-        setJadwalList(generatedJadwal);
-        setShowGenerateJadwalModal(false);
-        alert(`Berhasil generate ${jumlah} jadwal pertemuan!`);
-    } catch (error) {
-        alert("Gagal generate jadwal: " + error.message);
-    } finally {
-        setIsLoading(false);
-    }
+        try {
+            setIsLoading(true);
+            
+            // Tanggal mulai dari form input
+            const startDate = new Date(generateJadwalForm.tanggalMulai);
+            const generatedJadwal = [];
+
+            for (let i = 0; i < jumlah; i++) {
+            const pertemuanDate = new Date(startDate);
+            pertemuanDate.setDate(startDate.getDate() + (i * 7)); // +7 hari per pertemuan
+
+            generatedJadwal.push({
+                id: i + 1,
+                pertemuan: i + 1,
+                tanggal: pertemuanDate.toISOString().split('T')[0]
+            });
+            }
+
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // TODO: API call to save jadwal
+            console.log("Generated jadwal:", generatedJadwal);
+
+            setJadwalList(generatedJadwal);
+            setShowGenerateJadwalModal(false);
+            alert(`Berhasil generate ${jumlah} jadwal pertemuan!`);
+        } catch (error) {
+            alert("Gagal generate jadwal: " + error.message);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const validateForm = () => {
-    const newErrors = {};
+        const newErrors = {};
 
-    if (!formData.kode_kelas.trim()) {
-        newErrors.kode_kelas = "Kode kelas harus diisi";
-    }
+        if (!formData.kode_kelas.trim()) {
+            newErrors.kode_kelas = "Kode kelas harus diisi";
+        }
 
-    if (!formData.maks_mahasiswa) {
-        newErrors.maks_mahasiswa = "Maksimal mahasiswa harus diisi";
-    }
+        if (!formData.maks_mahasiswa) {
+            newErrors.maks_mahasiswa = "Maksimal mahasiswa harus diisi";
+        }
 
-    if (!assignedMatkul) {
-        newErrors.matkul = "Mata kuliah harus dipilih";
-    }
+        if (!formData.hari) {
+            newErrors.hari = "Hari harus dipilih";
+        }
+        if (!formData.jam_mulai) {
+            newErrors.jam_mulai = "Jam mulai harus diisi";
+        }
+        if (!formData.jam_selesai) {
+            newErrors.jam_selesai = "Jam selesai harus diisi";
+        }
+        if (parseInt(formData.jam_selesai.replace('.', '')) <= parseInt(formData.jam_mulai.replace('.', ''))) {
+            newErrors.jam_selesai = "Jam selesai harus lebih besar dari jam mulai";
+        }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = async (e) => {
-    e.preventDefault();
+        e.preventDefault();
 
-    if (!validateForm()) {
-        return;
-    }
+        if (!validateForm()) {
+            return;
+        }
 
-    setIsLoading(true);
+        setIsLoading(true);
 
-    try {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // TODO: API call to update kelas
-        
-        alert("Data kelas berhasil diperbarui!");
+        try {
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // TODO: API call to update kelas
+            
+            alert("Data kelas berhasil diperbarui!");
+            router.push("/adminpage/tambahkelas");
+        } catch (error) {
+            alert("Gagal memperbarui data: " + error.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    const handleBack = () => {
         router.push("/adminpage/tambahkelas");
-    } catch (error) {
-        alert("Gagal memperbarui data: " + error.message);
-    } finally {
-        setIsLoading(false);
-    }
     };
 
     if (isFetching) {
-    return (
-        <LoadingEffect message="Memuat data kelas..." />
-    );
+        return (
+            <LoadingEffect message="Memuat data kelas..." />
+        );
+    } else if (errors.fetch) {
+        return (
+        <div className="min-h-screen bg-brand-light-sage">
+            <AdminNavbar title="Dashboard Admin - Detail Kelas" />
+            <div className="container mx-auto px-4 py-8 max-w-5xl">
+            <ErrorMessageBoxWithButton
+                message={errors.fetch}
+                action={fetchAll}
+                back={true}
+                actionback={handleBack}
+            />
+            </div>
+        </div>
+        );
     }
 
-    const percentage = (parseInt(formData.jumlah_mahasiswa) / parseInt(formData.maks_mahasiswa)) * 100;
+    const percentage = (parseInt(assignedMahasiswa.length) / parseInt(formData.maks_mahasiswa)) * 100;
 
     return (
     <div className="min-h-screen bg-brand-light-sage">
@@ -452,7 +451,7 @@ export default function DetailKelas() {
         <div className="mb-8">
             <Button
             variant="ghost"
-            onClick={() => router.push("/adminpage/tambahkelas")}
+            onClick={handleBack}
             className="mb-6 -ml-4"
             style={{ fontFamily: 'Urbanist, sans-serif' }}
             >
@@ -496,7 +495,7 @@ export default function DetailKelas() {
                 Mahasiswa
             </h3>
             <p className="text-3xl font-bold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                {formData.jumlah_mahasiswa}/{formData.maks_mahasiswa}
+                {assignedMahasiswa.length}/{formData.maks_mahasiswa}
             </p>
             <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
@@ -527,10 +526,10 @@ export default function DetailKelas() {
                 Mata Kuliah
             </h3>
             <p className="text-xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                {assignedMatkul ? assignedMatkul.name : '-'}
+                {assignedMatkul ? assignedMatkul.name_subject : '-'}
             </p>
             <p className="text-sm text-gray-500" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                {assignedMatkul ? assignedMatkul.code : ''}
+                {assignedMatkul ? assignedMatkul.code_subject : ''}
             </p>
             </div>
 
@@ -541,10 +540,10 @@ export default function DetailKelas() {
                 Jadwal
             </h3>
             <p className="text-lg font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                {formData.hari}, {formData.tanggal}
+                {hariOptions.find(h => h.key === formData.hari).label}
             </p>
             <p className="text-sm text-gray-600" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                {formData.jam_mulai} - {formData.jam_selesai}
+                {`${formData.jam_mulai?.slice(0,5)} - ${formData.jam_selesai?.slice(0,5)}`}
             </p>
             </div>
         </div>
@@ -587,21 +586,22 @@ export default function DetailKelas() {
                         Mata Kuliah <span className="text-red-500">*</span>
                     </label>
                     <select
-                        value={assignedMatkul?.id || ""}
-                        onChange={handleMatkulChange}
+                        name="matkul"
+                        value={formData.matkul}
+                        onChange={handleChange}
                         className="w-full px-4 py-3 border-2 focus:outline-none"
                         style={{
-                        fontFamily: 'Urbanist, sans-serif',
-                        borderColor: errors.matkul ? '#BE0414' : '#015023',
-                        borderRadius: '12px',
-                        opacity: 0.7
+                            fontFamily: 'Urbanist, sans-serif',
+                            borderColor: errors.matkul ? '#BE0414' : '#015023',
+                            borderRadius: '12px',
+                            opacity: 0.7
                         }}
                         disabled={isLoading}
                     >
-                        <option value="">Pilih Mata Kuliah</option>
+                        <option value="" disabled>Pilih Mata Kuliah</option>
                         {matkulOptions.map(matkul => (
-                        <option key={matkul.id_subject || matkul.id} value={matkul.id_subject || matkul.id}>
-                            {matkul.code_subject || matkul.code} - {matkul.name_subject || matkul.name}
+                        <option key={matkul.id_subject} value={matkul.id_subject}>
+                            {matkul.code_subject} - {matkul.name_subject}
                         </option>
                         ))}
                     </select>
@@ -616,20 +616,21 @@ export default function DetailKelas() {
                         Periode Akademik <span className="text-red-500">*</span>
                     </label>
                     <select
-                        value={assignedMatkul?.id || ""}
-                        onChange={handlePeriodeChange}
+                        name="periode"
+                        value={formData.periode}
+                        onChange={handleChange}
                         className="w-full px-4 py-3 border-2 focus:outline-none"
                         style={{
-                        fontFamily: 'Urbanist, sans-serif',
-                        borderColor: errors.periode ? '#BE0414' : '#015023',
-                        borderRadius: '12px',
-                        opacity: 0.7
+                            fontFamily: 'Urbanist, sans-serif',
+                            borderColor: errors.periode ? '#BE0414' : '#015023',
+                            borderRadius: '12px',
+                            opacity: 0.7
                         }}
                         disabled={isLoading}
                     >
-                        <option value="">Pilih Periode Akademik</option>
+                        <option value="" disabled>Pilih Periode Akademik</option>
                         {periodeOptions.map(periode => (
-                        <option key={periode.id} value={periode.id}>
+                        <option key={periode.id_academic_period} value={periode.id_academic_period}>
                             {periode.name}
                         </option>
                         ))}
@@ -680,9 +681,9 @@ export default function DetailKelas() {
                         }}
                         disabled={isLoading}
                     >
-                        <option value="">Pilih Hari</option>
+                        <option value="" disabled>Pilih Hari</option>
                         {hariOptions.map(hari => (
-                        <option key={hari} value={hari}>{hari}</option>
+                        <option key={hari.key} value={hari.key}>{hari.label}</option>
                         ))}
                     </select>
                     </div>
@@ -883,7 +884,7 @@ export default function DetailKelas() {
             </div>
 
             {/* Jadwal Kelas Section */}
-            <div className="bg-white border-2 p-6 shadow-lg" style={{ borderColor: '#015023', borderRadius: '12px', cursor: 'default' }}>
+            <div className="bg-white border-2 p-6 shadow-lg my-5" style={{ borderColor: '#015023', borderRadius: '12px', cursor: 'default' }}>
                 <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                     Daftar Jadwal Kelas

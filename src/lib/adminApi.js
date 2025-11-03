@@ -140,6 +140,20 @@ export const storeClass = async (classData) => {
 };
 
 /**
+ * Get detail class by ID
+ * @param {number} classId - ID kelas
+ * @returns {Promise} Response dengan data kelas
+ */
+export const getClassById = async (classId) => {
+  try {
+    const response = await api.get(`/manager/classes/${classId}`);
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error);
+  }
+};
+
+/**
  * Get all managers
  * @returns {Promise} Response dengan data managers
  */

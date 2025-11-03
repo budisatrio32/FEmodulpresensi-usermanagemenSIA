@@ -3,7 +3,7 @@ import Cookies from 'js-cookie';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL, // dari .env.local
-  timeout: 10000, // 10 detik
+  timeout: 60000, // 1 menit
 });
 
 api.interceptors.request.use((config) => {
