@@ -113,7 +113,7 @@ export default function EditManagerForm() {
       }
     }
     
-    setErrors(newErrors);
+    setErrors(prev => ({...prev, ...newErrors}));
     return Object.keys(newErrors).length === 0;
   };
 

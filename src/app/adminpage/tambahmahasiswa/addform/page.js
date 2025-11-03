@@ -107,7 +107,7 @@ export default function AddMahasiswaForm() {
             newErrors.program = "Program harus dipilih";
         }
 
-        setErrors(newErrors);
+        setErrors(prev => ({...prev, ...newErrors}));
         return Object.keys(newErrors).length === 0;
     };
     const fetchPrograms = async () => {
@@ -174,7 +174,7 @@ export default function AddMahasiswaForm() {
             newErrors.form = "Gagal menambah data: " + (error.message || 'Unknown error');
         } finally {
             setIsLoading(false);
-            setErrors(newErrors);
+            setErrors(prev => ({...prev, ...newErrors}));
         }
     };
 

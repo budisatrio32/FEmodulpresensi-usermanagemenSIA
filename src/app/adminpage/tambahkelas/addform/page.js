@@ -117,8 +117,8 @@ export default function AddKelasForm() {
         newErrors.jam_selesai = "Jam selesai harus lebih besar dari jam mulai";
       }
     }
-    
-    setErrors(newErrors);
+
+    setErrors(prev => ({ ...prev, ...newErrors }));
     return Object.keys(newErrors).length === 0;
   };
 
@@ -154,8 +154,11 @@ export default function AddKelasForm() {
   };
 
   const fetchAll = async () => {
-    fetchSubjects();
-    fetchAcademicPeriods();
+    setErrors(prev => ({...prev, fetch: null}));
+    await Promise.all([
+      fetchSubjects(),
+      fetchAcademicPeriods()
+    ]);
   };
 
   useEffect(() => {
@@ -182,9 +185,9 @@ export default function AddKelasForm() {
         id_academic_period: formData.academic_period,
         code_class: formData.kode_kelas,
         member_class: parseInt(formData.maks_mahasiswa),
-        day_of_week: formData.hari,
-        start_time: formData.jam_mulai,
-        end_time: formData.jam_selesai,
+        day_of_week: parseInt(formData.hari),
+        start_time: formData.jam_mulai.slice(0,5),
+        end_time: formData.jam_selesai.slice(0,5),
         is_active: formData.is_active
       });
       if (response.status === 'success') {
@@ -197,7 +200,7 @@ export default function AddKelasForm() {
     } catch (error) {
       newErrors.form = 'Gagal menambahkan kelas: ' + (error.message || 'Unknown error');
     } finally {
-      setErrors(newErrors);
+      setErrors(prev => ({...prev, ...newErrors}));
       setIsLoading(false);
     }
   };

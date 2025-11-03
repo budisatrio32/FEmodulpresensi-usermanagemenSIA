@@ -72,7 +72,7 @@ export default function AddMatkulForm() {
       newErrors.sks = "SKS harus antara 1-6";
     }
     
-    setErrors(newErrors);
+    setErrors(prev => ({...prev, ...newErrors}));
     return Object.keys(newErrors).length === 0;
   };
 
@@ -111,7 +111,7 @@ export default function AddMatkulForm() {
       newErrors.form = "Gagal menambahkan data: " + (error.message || 'Unknown error');
     } finally {
       setIsLoading(false);
-      setErrors(newErrors);
+      setErrors(prev => ({...prev, ...newErrors}));
     }
   };
 

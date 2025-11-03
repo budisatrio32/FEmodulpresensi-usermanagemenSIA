@@ -154,6 +154,21 @@ export const getClassById = async (classId) => {
 };
 
 /**
+ * Update class by ID
+ * @param {number} classId - ID kelas
+ * @param {Object} classData - Data kelas yang diupdate
+ * @returns {Promise} Response hasil update
+ */
+export const updateClass = async (classId, classData) => {
+  try {
+    const response = await api.put(`/manager/classes/${classId}`, classData);
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error);
+  }
+};
+
+/**
  * Get all managers
  * @returns {Promise} Response dengan data managers
  */

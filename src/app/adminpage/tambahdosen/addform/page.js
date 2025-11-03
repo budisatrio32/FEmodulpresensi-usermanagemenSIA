@@ -100,7 +100,7 @@ export default function AddDosenForm() {
       newErrors.program = "Program harus dipilih";
     }
     
-    setErrors(newErrors);
+    setErrors(prev => ({...prev, ...newErrors}));
     return Object.keys(newErrors).length === 0;
   };
 
@@ -166,7 +166,7 @@ export default function AddDosenForm() {
       newErrors.form = "Gagal menambah data: " + (error.message || 'Unknown error');
     } finally {
       setIsLoading(false);
-      setErrors(newErrors);
+      setErrors(prev => ({ ...prev, ...newErrors }));
     }
   };
 

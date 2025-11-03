@@ -90,7 +90,7 @@ export default function AddManagerForm() {
       newErrors.confirmPassword = "Password tidak sama";
     }
     
-    setErrors(newErrors);
+    setErrors(prev => ({...prev, ...newErrors}));
     return Object.keys(newErrors).length === 0;
   };
 
@@ -134,7 +134,7 @@ export default function AddManagerForm() {
       newErrors.form = "Gagal menambahkan data: " + (error.message || 'Unknown error');
     } finally {
       setIsLoading(false);
-      setErrors(newErrors);
+      setErrors(prev => ({...prev, ...newErrors}));
     }
   };
 

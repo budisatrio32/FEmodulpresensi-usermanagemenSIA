@@ -16,8 +16,8 @@ Trash2
 import AdminNavbar from "@/components/ui/admin-navbar";
 import { Button } from "@/components/ui/button";
 import LoadingEffect from "@/components/ui/loading-effect";
-import { getClassById, getAcademicPeriods, getSubjects, getMahasiswa, getDosen } from "@/lib/adminApi";
-import { ErrorMessageBoxWithButton } from "@/components/ui/message-box";
+import { getClassById, getAcademicPeriods, getSubjects, getMahasiswa, getDosen, updateClass } from "@/lib/adminApi";
+import { ErrorMessageBoxWithButton, SuccessMessageBox, ErrorMessageBox } from "@/components/ui/message-box";
 
 export default function DetailKelas() {
     const router = useRouter();
@@ -25,6 +25,8 @@ export default function DetailKelas() {
     const kelasId = searchParams.get('id');
 
     const [isLoading, setIsLoading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [updatedSuccess, setUpdatedSuccess] = useState('');
     const [isFetching, setIsFetching] = useState(true);
     const [errors, setErrors] = useState({});
 
@@ -72,6 +74,16 @@ export default function DetailKelas() {
         tanggalMulai: new Date().toISOString().split('T')[0]
     });
 
+    //stats
+    const [currentMaksMahasiswa, setCurrentMaksMahasiswa] = useState(0);
+    const [currentJadwalKelas, setCurrentJadwalKelas] = useState({
+        hari: '', 
+        jam_mulai: '', 
+        jam_selesai: ''
+    });
+
+
+    // Hari options
     const hariOptions = [
         {key: 1, label: "Senin"},
         {key: 2, label: "Selasa"},
@@ -90,6 +102,7 @@ export default function DetailKelas() {
     }, [kelasId]);
 
     const fetchAll = async () => {
+        setErrors(prev => ({...prev, fetch: null}));
         setIsFetching(true);
         await Promise.all([
             fetchDosenOptions(),
@@ -122,9 +135,16 @@ export default function DetailKelas() {
                 setAssignedDosen(response.data.lecturers);
                 setAssignedMahasiswa(response.data.students);
                 setJadwalList(response.data.schedules);
+                setCurrentMaksMahasiswa(response.data.member_class);
+                setCurrentJadwalKelas({
+                    hari: response.data.day_of_week,
+                    jam_mulai: response.data.start_time,
+                    jam_selesai: response.data.end_time
+                });
+            } else {
+                setErrors(prev => ({...prev, fetch: "Gagal mengambil data kelas: " + response.message}));
             }
-        }
-        catch (error) {
+        } catch (error) {
             setErrors(prev => ({...prev, fetch: "Gagal mengambil data kelas: " + error.message}));
         }
     }
@@ -132,9 +152,13 @@ export default function DetailKelas() {
     const fetchMatkulOptions = async () => {
         try {
             const response = await getSubjects();
-            setMatkulOptions(response.data);
+            if (response.status === 'success') {
+                setMatkulOptions(response.data);
+            } else {
+                setErrors(prev => ({...prev, fetch: "Gagal mengambil data " + response.message}));
+            }
         } catch (error) {
-            setErrors(prev => ({...prev, matkul: "Gagal mengambil data " + error.message}));
+            setErrors(prev => ({...prev, fetch: "Gagal mengambil data " + error.message}));
         }
     };
 
@@ -163,16 +187,17 @@ export default function DetailKelas() {
             setErrors(prev => ({...prev, fetch: "Gagal mengambil data " + error.message}));
         }
     };
+
     const fetchPeriodeOptions = async () => {
         try {
             const response = await getAcademicPeriods();
             if (response.status === 'success') {
                 setPeriodeOptions(response.data);
             } else {
-                setErrors(prev => ({...prev, periode: "Gagal mengambil data " + response.message}));
+                setErrors(prev => ({...prev, fetch: "Gagal mengambil data " + response.message}));
             }
         } catch (error) {
-            setErrors(prev => ({...prev, periode: "Gagal mengambil data " + error.message}));
+            setErrors(prev => ({...prev, fetch: "Gagal mengambil data " + error.message}));
         }
     };
 
@@ -186,18 +211,12 @@ export default function DetailKelas() {
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: null }));
         }
-    };
-
-    const handleMatkulChange = (e) => {
-        const matkulId = parseInt(e.target.value);
-        const matkul = matkulOptions.find(m => m.id === matkulId);
-        setAssignedMatkul(matkul);
-    };
-
-    const handlePeriodeChange = (e) => {
-        const periodeId = parseInt(e.target.value);
-        const periode = periodeOptions.find(p => p.id === periodeId);
-        setAssignedPeriode(periode);
+        if (errors.form) {
+            setErrors(prev => ({ ...prev, form: null }));
+        }
+        if (updatedSuccess) {
+            setUpdatedSuccess('');
+        }
     };
 
     const handleToggleDosen = (dosenId) => {
@@ -374,6 +393,16 @@ export default function DetailKelas() {
 
         if (!formData.maks_mahasiswa) {
             newErrors.maks_mahasiswa = "Maksimal mahasiswa harus diisi";
+        } else if (parseInt(formData.maks_mahasiswa) < 1) {
+            newErrors.maks_mahasiswa = "Maksimal mahasiswa harus lebih besar dari 0";
+        }
+
+        if (!formData.periode) {
+            newErrors.periode = "Periode akademik harus dipilih";
+        } 
+
+        if (!formData.matkul) {
+            newErrors.matkul = "Mata kuliah harus dipilih";
         }
 
         if (!formData.hari) {
@@ -390,7 +419,7 @@ export default function DetailKelas() {
         }
 
 
-        setErrors(newErrors);
+        setErrors(prev => ({...prev, ...newErrors}));
         return Object.keys(newErrors).length === 0;
     };
 
@@ -401,19 +430,36 @@ export default function DetailKelas() {
             return;
         }
 
-        setIsLoading(true);
-
+        setIsSubmitting(true);
+        const newErrors = {};
         try {
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
-            // TODO: API call to update kelas
-            
-            alert("Data kelas berhasil diperbarui!");
-            router.push("/adminpage/tambahkelas");
+            const response = await updateClass(kelasId, {
+                code_class: formData.kode_kelas,
+                id_subject: formData.matkul,
+                id_academic_period: formData.periode,
+                member_class: parseInt(formData.maks_mahasiswa),
+                day_of_week: parseInt(formData.hari),
+                start_time: formData.jam_mulai.slice(0,5), 
+                end_time: formData.jam_selesai.slice(0,5),
+                is_active: formData.is_active
+            });
+            if (response.status === 'success') {
+                setUpdatedSuccess("Data kelas berhasil diperbarui!");
+                setCurrentMaksMahasiswa(parseInt(formData.maks_mahasiswa));
+                setCurrentJadwalKelas({
+                    hari: parseInt(formData.hari),
+                    jam_mulai: formData.jam_mulai,
+                    jam_selesai: formData.jam_selesai
+                });
+                setAssignedMatkul(matkulOptions.find(m => m.id_subject === formData.matkul));
+            } else {
+                newErrors.form = "Gagal memperbarui data: " + response.message;
+            }
         } catch (error) {
-            alert("Gagal memperbarui data: " + error.message);
+            newErrors.form = "Gagal memperbarui data: " + error.message;
         } finally {
-            setIsLoading(false);
+            setErrors(prev => ({...prev, ...newErrors}));
+            setIsSubmitting(false);
         }
     };
     
@@ -496,7 +542,7 @@ export default function DetailKelas() {
                 Mahasiswa
             </h3>
             <p className="text-3xl font-bold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                {assignedMahasiswa.length}/{formData.maks_mahasiswa}
+                {assignedMahasiswa.length}/{currentMaksMahasiswa}
             </p>
             <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
@@ -541,10 +587,10 @@ export default function DetailKelas() {
                 Jadwal
             </h3>
             <p className="text-lg font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                {hariOptions.find(h => h.key === formData.hari).label}
+                {hariOptions.find(h => h.key === currentJadwalKelas.hari).label}
             </p>
             <p className="text-sm text-gray-600" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                {`${formData.jam_mulai?.slice(0,5)} - ${formData.jam_selesai?.slice(0,5)}`}
+                {`${currentJadwalKelas.jam_mulai?.slice(0,5)} - ${currentJadwalKelas.jam_selesai?.slice(0,5)}`}
             </p>
             </div>
         </div>
@@ -746,13 +792,22 @@ export default function DetailKelas() {
                     </label>
                     </div>
 
+                    {/* Success Message */}
+                    {updatedSuccess && (
+                        <SuccessMessageBox message={updatedSuccess} />
+                    )}
+                    {/* Error Message */}
+                    {errors.form && (
+                        <ErrorMessageBox message={errors.form} />
+                    )}
+
                     {/* Action Buttons */}
                     <div className="flex justify-end gap-4 mt-6">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={() => router.push("/adminpage/tambahkelas")}
-                        disabled={isLoading}
+                        disabled={isSubmitting || isLoading}
                     >
                         Batal
                     </Button>
@@ -761,7 +816,7 @@ export default function DetailKelas() {
                         disabled={isLoading}
                         className="min-w-[200px]"
                     >
-                        {isLoading ? (
+                        {isSubmitting ? (
                         <>
                             <span className="animate-spin mr-2">⏳</span>
                             Menyimpan...

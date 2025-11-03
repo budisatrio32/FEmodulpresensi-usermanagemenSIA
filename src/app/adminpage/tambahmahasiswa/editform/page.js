@@ -115,7 +115,7 @@ export default function EditMahasiswaForm() {
       }
     }
     
-    setErrors(newErrors);
+    setErrors(prev => ({...prev, ...newErrors}));
     return Object.keys(newErrors).length === 0;
   };
 

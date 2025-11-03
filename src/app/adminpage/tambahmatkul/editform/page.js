@@ -67,7 +67,7 @@ export default function EditMatkulForm() {
       newErrors.sks = "SKS harus antara 1-6";
     }
     
-    setErrors(newErrors);
+    setErrors(prev => ({...prev, ...newErrors}));
     return Object.keys(newErrors).length === 0;
   };
 
@@ -146,7 +146,7 @@ export default function EditMatkulForm() {
       newErrors.form = 'Gagal mengupdate data: ' + (error.message || 'Terjadi kesalahan'); 
     } finally {
       setIsLoading(false);
-      setErrors(newErrors);
+      setErrors(prev => ({...prev, ...newErrors}));
     }
   };
 

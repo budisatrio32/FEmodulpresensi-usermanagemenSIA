@@ -161,7 +161,7 @@ export default function EditKelasForm() {
       }
     }
     
-    setErrors(newErrors);
+    setErrors(prev => ({...prev, ...newErrors}));
     return Object.keys(newErrors).length === 0;
   };
 
