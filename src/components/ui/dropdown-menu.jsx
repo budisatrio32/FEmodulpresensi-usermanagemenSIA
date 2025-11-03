@@ -60,22 +60,32 @@ function DropdownMenuItem({
   variant = "default",
   ...props
 }) {
+  const isDestructive = variant === "destructive";
+  const textColor = isDestructive ? '#BE0414' : '#015023';
+  const bgColor = isDestructive ? '#BE0414' : '#015023';
+  
   return (
     <DropdownMenuPrimitive.Item
       data-slot="dropdown-menu-item"
       data-inset={inset}
       data-variant={variant}
       className={cn(
-        "relative flex cursor-default items-center gap-2 px-3 py-2.5 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:pl-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 transition-colors",
-        "hover:bg-opacity-10 focus:bg-opacity-10",
-        variant === "destructive" 
-          ? "text-[#BE0414] hover:bg-[#BE0414] focus:bg-[#BE0414] [&_svg]:text-[#BE0414]"
-          : "text-[#015023] hover:bg-[#015023] focus:bg-[#015023] [&_svg]:text-[#015023]",
+        "relative flex cursor-default items-center gap-2 px-3 py-2.5 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:pl-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 transition-all duration-200",
         className
       )}
       style={{
         borderRadius: '8px',
-        fontFamily: 'Urbanist, sans-serif'
+        fontFamily: 'Urbanist, sans-serif',
+        color: textColor,
+        '--hover-bg': bgColor,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = `${bgColor}1A`; // 10% opacity
+        e.currentTarget.style.color = textColor;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'transparent';
+        e.currentTarget.style.color = textColor;
       }}
       {...props} />
   );
