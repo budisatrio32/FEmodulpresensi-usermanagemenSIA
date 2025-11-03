@@ -18,6 +18,19 @@ export const getAllClasses = async () => {
     }
 };
 
+/** 
+ * Toggle status aktif/non-aktif kelas
+ */
+export const toggleClassStatus = async (classId) => {
+    try {
+        const response = await api.patch(`manager/classes/${classId}/toggle-status`);
+        return response.data;
+    } catch (error) {
+        console.error("Error toggling class status:", error);
+        throw (error.response?.data ?? error);
+    }
+};
+
 export default {
     getAllClasses,
 };

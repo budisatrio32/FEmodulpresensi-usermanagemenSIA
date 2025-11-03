@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Calendar, Search, X, ArrowLeft } from 'lucide-react';
 import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
-import { getAllClasses } from '@/lib/ClassApi';
+import { getAllClasses, toggleClassStatus } from '@/lib/ClassApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 
 export default function KelasDashboard() {
@@ -15,6 +15,7 @@ export default function KelasDashboard() {
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(null);
   const [kelas, setKelas] = useState([]);
+  const [isTogglingStatus, setIsTogglingStatus] = useState(null);
 
   // ambil data kelas dari API
   const indexKelas = async () => {
@@ -126,30 +127,35 @@ export default function KelasDashboard() {
     router.push(`/adminpage/tambahkelas/detail?id=${kelasItem.id_class}`);
   };
 
-  // Handle delete action
+  // Handle toggle status active/inactive
   const handleActivate = async (kelasItem, index) => {
-    if (window.confirm(`Apakah Anda yakin ingin mengaktifkan kelas "${kelasItem.id_class}"?`)) {
-      try {
-        // TODO: Replace with actual API call
-        // const response = await fetch(`/api/kelas/${kelasItem.id}`, {
-        //   method: 'DELETE',
-        //   headers: {
-        //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-        //   }
-        // });
-        
-        // if (!response.ok) throw new Error('Gagal menghapus data');
-        
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Remove kelas from state
-        setKelas(prevKelas => prevKelas.filter((_, i) => i !== index));
-        
-        alert(`Kelas "${kelasItem.id_class}" berhasil dihapus!`);
-      } catch (error) {
-        alert("Gagal menghapus data: " + error.message);
-      }
+    const newStatus = !kelasItem.is_active ? 'Aktif' : 'Non-Aktif';
+
+    if (!window.confirm(`Apakah Anda yakin ingin mengubah status kelas "${kelasItem.code_class}" menjadi ${newStatus}?`)) {
+      return;
+    }
+
+    setIsTogglingStatus(kelasItem.id_class);
+
+    try {
+      const response = await toggleClassStatus(kelasItem.id_class);
+
+      if (response.status === 'success') {
+        // Update local state
+        setKelas(kelas.map(k => 
+          k.id_class === kelasItem.id_class
+            ? { ...k, is_active: response.data.is_active }
+            : k
+        ));
+
+        alert(`Status kelas berhasil diubah menjadi ${response.data.is_active ? 'Aktif' : 'Non-Aktif'}`);
+      } 
+
+    } catch (error) {
+      console.error("Error toggling status:", error);
+      alert("Gagal mengubah status kelas: " + (error.message || 'Unknown error'));
+    } finally {
+      setIsTogglingStatus(null);
     }
   };
 
@@ -240,6 +246,7 @@ export default function KelasDashboard() {
             onDetail={handleDetail}
             onActivate={handleActivate}
             customRender={customRender}
+            isActionLoading={isTogglingStatus}
           />
         )}
       </div>
