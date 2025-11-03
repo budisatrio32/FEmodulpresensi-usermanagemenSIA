@@ -5,6 +5,7 @@ import { LogOut } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import Cookies from 'js-cookie';
 import { logout } from '@/lib/sessionApi';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 const AdminNavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
 <div 
@@ -83,11 +84,18 @@ return (
     <div className="container mx-auto px-4 sm:px-6">
       <div className="flex justify-between items-center h-16 sm:h-20">
         <AdminNavbarBrand />
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <AdminNavbarTitle title={title} />
+          
+          {/* Avatar Profile */}
+          <Avatar className="size-10 sm:size-12">
+            <AvatarImage src="/profile-placeholder.jpg" alt="Admin Profile" />
+            <AvatarFallback>AD</AvatarFallback>
+          </Avatar>
+
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all hover:opacity-80 cursor-pointer"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-medium transition-all hover:opacity-80 cursor-pointer"
             style={{
               backgroundColor: '#BE0414',
               color: '#FFFFFF',

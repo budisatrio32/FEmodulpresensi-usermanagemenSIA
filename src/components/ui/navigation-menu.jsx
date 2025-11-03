@@ -1,8 +1,22 @@
+"use client"
+
 import * as React from "react"
 import Link from 'next/link'
 import Image from 'next/image'
-import { Bell, User } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Bell, User, UserCog, LogOut } from 'lucide-react'
 import { cn } from "@/lib/utils"
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import Cookies from 'js-cookie'
+import { logout } from '@/lib/sessionApi'
 
 const NavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
   <Link 
@@ -83,20 +97,81 @@ const NavbarNotification = React.forwardRef(({ className, ...props }, ref) => (
   </Link>
 ))
 
-const NavbarProfile = React.forwardRef(({ className, ...props }, ref) => (
-  <Link 
-    href="/profile"
-    ref={ref}
-    className={cn(
-      "bg-brand-yellow hover:opacity-90 text-brand-green p-2 sm:p-2.5 rounded-full transition-all duration-200 hover:scale-105",
-      className
-    )}
-    style={{backgroundColor: '#DABC4E', color: '#015023'}}
-    {...props}
-  >
-    <User className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2.5} />
-  </Link>
-))
+const NavbarProfile = React.forwardRef(({ className, userName = "User", userImage, ...props }, ref) => {
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    if (confirm('Apakah Anda yakin ingin logout?')) {
+      let serverMessage = '';
+      try {
+        const response = await logout();
+        if (response.status !== 'success') {
+          serverMessage = response.message || '';
+        }
+      } catch (error) {
+        console.error('Error saat logout:', error);
+        serverMessage = error?.message || error?.response?.data?.message || '';
+      } finally {
+        Cookies.remove('token');
+        Cookies.remove('roles');
+        if (serverMessage) {
+          console.warn('Logout info:', serverMessage);
+        }
+        router.push('/loginpage');
+      }
+    }
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button 
+          ref={ref}
+          className={cn(
+            "transition-all duration-200 hover:scale-105 hover:opacity-90 cursor-pointer focus:outline-none",
+            className
+          )}
+          {...props}
+        >
+          <Avatar className="size-9 sm:size-10">
+            <AvatarImage src={userImage} alt={userName} />
+            <AvatarFallback>
+              {userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+            </AvatarFallback>
+          </Avatar>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+              {userName}
+            </p>
+            <p className="text-xs" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
+              Akun Pengguna
+            </p>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/profile" className="flex items-center cursor-pointer">
+            <UserCog className="mr-2 h-4 w-4" />
+            <span>Profile Management</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem 
+          variant="destructive" 
+          onClick={handleLogout}
+          className="cursor-pointer"
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Logout</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+})
 
 const Navbar = React.forwardRef(({ className, ...props }, ref) => (
   <nav 
