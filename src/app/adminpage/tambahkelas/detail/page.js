@@ -716,6 +716,9 @@ export default function DetailKelas() {
                         }}
                         disabled={isLoading}
                     />
+                    {errors.maks_mahasiswa && ( 
+                        <p className="text-red-500 text-sm mt-1">{errors.maks_mahasiswa}</p>
+                    )}
                     </div>
 
                     {/* Hari */}
@@ -745,6 +748,9 @@ export default function DetailKelas() {
                         <option key={hari.key} value={hari.key}>{hari.label}</option>
                         ))}
                     </select>
+                    {errors.hari && (
+                        <p className="text-red-500 text-sm mt-1">{errors.hari}</p>
+                    )}
                     </div>
 
                     {/* Jam Mulai & Selesai */}
@@ -767,6 +773,9 @@ export default function DetailKelas() {
                         }}
                         disabled={isLoading}
                         />
+                    {errors.jam_mulai && (
+                        <p className="text-red-500 text-sm mt-1">{errors.jam_mulai}</p>
+                    )}
                     </div>
                     <div>
                         <label className="block text-sm font-semibold mb-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
@@ -786,6 +795,9 @@ export default function DetailKelas() {
                         }}
                         disabled={isLoading}
                         />
+                    {errors.jam_selesai && (
+                        <p className="text-red-500 text-sm mt-1">{errors.jam_selesai}</p>
+                    )}
                     </div>
                     </div>
 
