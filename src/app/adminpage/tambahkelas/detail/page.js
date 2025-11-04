@@ -34,7 +34,6 @@ export default function DetailKelas() {
     const [formData, setFormData] = useState({
         kode_kelas: "",
         matkul: "",
-        jumlah_mahasiswa: "0",
         maks_mahasiswa: "",
         hari: "",
         jam_mulai: "",
@@ -123,7 +122,6 @@ export default function DetailKelas() {
                     kode_kelas: response.data.code_class,
                     matkul: response.data.id_subject,
                     periode: response.data.id_academic_period,
-                    jumlah_mahasiswa: response.data.jumlah_mahasiswa,
                     maks_mahasiswa: response.data.member_class,
                     hari: response.data.day_of_week,
                     jam_mulai: response.data.start_time,
@@ -294,14 +292,14 @@ export default function DetailKelas() {
             const combinedMahasiswa = [...assignedMahasiswa];
 
             newMahasiswa.forEach(mahasiswa => {
-            if (!combinedMahasiswa.find(m => m.id === mahasiswa.id)) {
+            if (!combinedMahasiswa.find(m => m.id === mahasiswa.id_user_si)) {
                 combinedMahasiswa.push(mahasiswa);
             }
             });
 
             // Check capacity
-            if (combinedMahasiswa.length > parseInt(formData.maks_mahasiswa)) {
-            alert(`Kapasitas maksimal ${formData.maks_mahasiswa} mahasiswa. Tidak dapat menambah lebih banyak.`);
+            if (combinedMahasiswa.length > parseInt(currentMaksMahasiswa)) {
+            alert(`Kapasitas maksimal ${currentMaksMahasiswa} mahasiswa. Tidak dapat menambah lebih banyak.`);
             setIsLoading(false);
             return;
             }
@@ -487,7 +485,7 @@ export default function DetailKelas() {
         );
     }
 
-    const percentage = (parseInt(assignedMahasiswa.length) / parseInt(formData.maks_mahasiswa)) * 100;
+    const percentage = (parseInt(assignedMahasiswa.length) / parseInt(currentMaksMahasiswa)) * 100;
 
     return (
     <div className="min-h-screen bg-brand-light-sage">
@@ -881,9 +879,12 @@ export default function DetailKelas() {
                         Belum ada dosen pengampu
                     </p>
                     ) : (
-                    assignedDosen.map(dosen => (
+                    dosenOptions.
+                    filter(d => assignedDosen.find(ad => (ad.id_user_si) === (d.id_user_si))
+                    ).map(dosen => (
+                        
                         <div 
-                        key={dosen.id_user_si || dosen.id} 
+                        key={dosen.id_user_si} 
                         className="flex items-center justify-between p-3 border"
                         style={{ borderRadius: '8px', borderColor: '#E5E7EB' }}
                         >
@@ -897,7 +898,7 @@ export default function DetailKelas() {
                         </div>
                         <button
                             type="button"
-                            onClick={() => handleRemoveDosen(dosen.id_user_si || dosen.id)}
+                            onClick={() => handleRemoveDosen(dosen.id_user_si)}
                             className="text-white p-2 hover:opacity-80 transition"
                             style={{ backgroundColor: '#BE0414', borderRadius: '8px' }}
                         >
@@ -920,7 +921,7 @@ export default function DetailKelas() {
                     onClick={() => setShowMahasiswaModal(true)}
                     className="text-white px-4 py-2 text-sm font-medium transition shadow-md hover:opacity-90 cursor-pointer"
                     style={{ backgroundColor: '#015023', borderRadius: '12px' }}
-                    disabled={parseInt(formData.jumlah_mahasiswa) >= parseInt(formData.maks_mahasiswa)}
+                    disabled={assignedMahasiswa.length >= parseInt(currentMaksMahasiswa)}
                     >
                     <Plus className="w-4 h-4 inline mr-1" />
                     Tambah
@@ -933,9 +934,11 @@ export default function DetailKelas() {
                         Belum ada mahasiswa terdaftar
                     </p>
                     ) : (
-                    assignedMahasiswa.map(mahasiswa => (
-                        <div 
-                        key={mahasiswa.id} 
+                    mahasiswaOptions
+                    .filter(m => assignedMahasiswa.find(am => am.id_user_si === m.id_user_si))
+                    .map(mahasiswa => (
+                        <div
+                        key={mahasiswa.id_user_si}
                         className="flex items-center justify-between p-3 border"
                         style={{ borderRadius: '8px', borderColor: '#E5E7EB' }}
                         >
@@ -949,7 +952,7 @@ export default function DetailKelas() {
                         </div>
                         <button
                             type="button"
-                            onClick={() => handleRemoveMahasiswa(mahasiswa.id)}
+                            onClick={() => handleRemoveMahasiswa(mahasiswa.id_user_si)}
                             className="text-white p-2 hover:opacity-80 transition"
                             style={{ backgroundColor: '#BE0414', borderRadius: '8px' }}
                         >
@@ -963,70 +966,70 @@ export default function DetailKelas() {
             </div>
             </div>
 
-            {/* Jadwal Kelas Section */}
-            <div className="bg-white border-2 p-6 shadow-lg my-5" style={{ borderColor: '#015023', borderRadius: '12px', cursor: 'default' }}>
-                <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                    Daftar Jadwal Kelas
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setShowGenerateJadwalModal(true)}
-                  className="text-white px-4 py-2 text-sm font-medium transition shadow-md hover:opacity-90 cursor-pointer"
-                  style={{ backgroundColor: '#DABC4E', color: '#015023', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
-                >
-                  <Calendar className="w-4 h-4 inline mr-1" />
-                  Generate Jadwal
-                </button>
-              </div>
-
-                {jadwalList.length === 0 ? (
-                <p className="text-gray-500 text-center py-4" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                  Belum ada jadwal kelas. Klik "Generate Jadwal" untuk membuat jadwal otomatis.
-                </p>
-                ) : (
-                <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                    <thead>
-                        <tr style={{ backgroundColor: '#015023' }}>
-                        <th className="px-4 py-3 text-center text-white font-bold" style={{ fontFamily: 'Urbanist, sans-serif', borderRadius: '12px 0 0 0' }}>
-                            Pertemuan Ke
-                        </th>
-                        <th className="px-4 py-3 text-center text-white font-bold" style={{ fontFamily: 'Urbanist, sans-serif', borderRadius: '0 12px 0 0' }}>
-                          Tanggal
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                        {jadwalList.map((jadwal, index) => (
-                        <tr 
-                            key={jadwal.id}
-                            className="border-b hover:bg-gray-50 transition"
-                            style={{ borderColor: '#E5E7EB' }}
-                        >
-                            <td className="px-4 py-3 text-center" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                            <div 
-                                className="inline-flex items-center justify-center w-10 h-10 rounded-full font-bold"
-                                style={{ backgroundColor: '#015023', color: '#FFFFFF' }}
-                            >
-                                {jadwal.pertemuan}
-                            </div>
-                            </td>
-                            <td className="px-4 py-3 text-center font-medium" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                            {new Date(jadwal.tanggal).toLocaleDateString('id-ID', { 
-                                weekday: 'long',
-                                year: 'numeric', 
-                                month: 'long', 
-                                day: 'numeric' 
-                            })}
-                            </td>
-                        </tr>
-                        ))}
-                    </tbody>
-                    </table>
-                </div>
-                )}
+        {/* Jadwal Kelas Section */}
+        <div className="bg-white border-2 p-6 shadow-lg my-5" style={{ borderColor: '#015023', borderRadius: '12px', cursor: 'default' }}>
+            <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                Daftar Jadwal Kelas
+            </h2>
+            <button
+                type="button"
+                onClick={() => setShowGenerateJadwalModal(true)}
+                className="text-white px-4 py-2 text-sm font-medium transition shadow-md hover:opacity-90 cursor-pointer"
+                style={{ backgroundColor: '#DABC4E', color: '#015023', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
+            >
+                <Calendar className="w-4 h-4 inline mr-1" />
+                Generate Jadwal
+            </button>
             </div>
+
+            {jadwalList.length === 0 ? (
+            <p className="text-gray-500 text-center py-4" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                Belum ada jadwal kelas. Klik "Generate Jadwal" untuk membuat jadwal otomatis.
+            </p>
+            ) : (
+            <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                <thead>
+                    <tr style={{ backgroundColor: '#015023' }}>
+                    <th className="px-4 py-3 text-center text-white font-bold" style={{ fontFamily: 'Urbanist, sans-serif', borderRadius: '12px 0 0 0' }}>
+                        Pertemuan Ke
+                    </th>
+                    <th className="px-4 py-3 text-center text-white font-bold" style={{ fontFamily: 'Urbanist, sans-serif', borderRadius: '0 12px 0 0' }}>
+                        Tanggal
+                    </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {jadwalList.map((jadwal, index) => (
+                    <tr 
+                        key={jadwal.id}
+                        className="border-b hover:bg-gray-50 transition"
+                        style={{ borderColor: '#E5E7EB' }}
+                    >
+                        <td className="px-4 py-3 text-center" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                        <div 
+                            className="inline-flex items-center justify-center w-10 h-10 rounded-full font-bold"
+                            style={{ backgroundColor: '#015023', color: '#FFFFFF' }}
+                        >
+                            {jadwal.pertemuan}
+                        </div>
+                        </td>
+                        <td className="px-4 py-3 text-center font-medium" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                        {new Date(jadwal.tanggal).toLocaleDateString('id-ID', { 
+                            weekday: 'long',
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                        })}
+                        </td>
+                    </tr>
+                    ))}
+                </tbody>
+                </table>
+            </div>
+            )}
+        </div>
         </div>
 
         {/* Modal Tambah Dosen */}
@@ -1084,13 +1087,13 @@ export default function DetailKelas() {
             <div className="flex-1 overflow-y-auto mb-4 border-2 p-2" style={{ borderRadius: '12px', borderColor: '#E5E7EB' }}>
                 <div className="space-y-2">
                 {dosenOptions
-                    .filter(d => !assignedDosen.find(ad => (ad.id_user_si || ad.id) === (d.id_user_si || d.id)))
+                    .filter(d => !assignedDosen.find(ad => (ad.id_user_si) === (d.id_user_si)))
                     .filter(d => 
                     d.name.toLowerCase().includes(searchDosen.toLowerCase()) ||
                     d.email.toLowerCase().includes(searchDosen.toLowerCase())
                     )
                     .map(dosen => {
-                    const dosenId = dosen.id_user_si || dosen.id;
+                    const dosenId = dosen.id_user_si;
                     return (
                     <div
                         key={dosenId}
@@ -1124,12 +1127,12 @@ export default function DetailKelas() {
                     </div>
                     );
                     })}
-                {dosenOptions.filter(d => !assignedDosen.find(ad => (ad.id_user_si || ad.id) === (d.id_user_si || d.id))).length === 0 && (
+                {dosenOptions.filter(d => !assignedDosen.find(ad => (ad.id_user_si) === (d.id_user_si))).length === 0 && (
                     <p className="text-center text-gray-500 py-8" style={{ fontFamily: 'Urbanist, sans-serif' }}>
                     Semua dosen sudah ditambahkan
                     </p>
                 )}
-                {dosenOptions.filter(d => !assignedDosen.find(ad => ad.id === d.id))
+                {dosenOptions.filter(d => !assignedDosen.find(ad => ad.id_user_si === d.id_user_si))
                     .filter(d => 
                     d.name.toLowerCase().includes(searchDosen.toLowerCase()) ||
                     d.email.toLowerCase().includes(searchDosen.toLowerCase())
@@ -1231,10 +1234,10 @@ export default function DetailKelas() {
             </div>
 
             {/* Capacity Warning */}
-            {parseInt(formData.jumlah_mahasiswa) + selectedMahasiswaIds.length > parseInt(formData.maks_mahasiswa) && (
+            {selectedMahasiswaIds.length > parseInt(currentMaksMahasiswa) && (
                 <div className="mb-3 px-4 py-3 text-sm font-semibold flex items-center gap-2" style={{ backgroundColor: '#FEE', borderRadius: '8px', color: '#BE0414', border: '2px solid #BE0414' }}>
                 <span>⚠️</span>
-                <span>Kapasitas kelas akan terlampaui! ({parseInt(formData.jumlah_mahasiswa) + selectedMahasiswaIds.length}/{formData.maks_mahasiswa})</span>
+                <span>Kapasitas kelas akan terlampaui! ({selectedMahasiswaIds.length}/{currentMaksMahasiswa})</span>
                 </div>
             )}
 
@@ -1242,7 +1245,7 @@ export default function DetailKelas() {
             {selectedMahasiswaIds.length > 0 && (
                 <div className="mb-3 px-4 py-2 text-sm font-semibold flex items-center justify-between" style={{ backgroundColor: '#DABC4E', borderRadius: '8px', color: '#015023' }}>
                 <span>{selectedMahasiswaIds.length} mahasiswa dipilih</span>
-                <span>Kapasitas: {parseInt(formData.jumlah_mahasiswa) + selectedMahasiswaIds.length}/{formData.maks_mahasiswa}</span>
+                <span>Kapasitas: {selectedMahasiswaIds.length}/{currentMaksMahasiswa}</span>
                 </div>
             )}
 
@@ -1250,7 +1253,7 @@ export default function DetailKelas() {
             <div className="flex-1 overflow-y-auto mb-4 border-2 p-2" style={{ borderRadius: '12px', borderColor: '#E5E7EB' }}>
                 <div className="space-y-2">
                 {mahasiswaOptions
-                    .filter(m => !assignedMahasiswa.find(am => am.id === m.id))
+                    .filter(m => !assignedMahasiswa.find(am => am.id_user_si === m.id_user_si))
                     .filter(m => 
                     m.name.toLowerCase().includes(searchMahasiswa.toLowerCase()) ||
                     m.nim.toLowerCase().includes(searchMahasiswa.toLowerCase()) ||
@@ -1259,21 +1262,21 @@ export default function DetailKelas() {
                     .map(mahasiswa => (
                     <div
                         key={mahasiswa.id}
-                        onClick={() => handleToggleMahasiswa(mahasiswa.id)}
+                        onClick={() => handleToggleMahasiswa(mahasiswa.id_user_si)}
                         className={`p-4 border-2 cursor-pointer transition hover:shadow-md ${
-                        selectedMahasiswaIds.includes(mahasiswa.id) ? 'border-opacity-100' : 'border-opacity-30'
+                        selectedMahasiswaIds.includes(mahasiswa.id_user_si) ? 'border-opacity-100' : 'border-opacity-30'
                         }`}
                         style={{
                         borderRadius: '12px',
-                        borderColor: selectedMahasiswaIds.includes(mahasiswa.id) ? '#015023' : '#E5E7EB',
-                        backgroundColor: selectedMahasiswaIds.includes(mahasiswa.id) ? '#F0F9F4' : 'white'
+                        borderColor: selectedMahasiswaIds.includes(mahasiswa.id_user_si) ? '#015023' : '#E5E7EB',
+                        backgroundColor: selectedMahasiswaIds.includes(mahasiswa.id_user_si) ? '#F0F9F4' : 'white'
                         }}
                     >
                         <div className="flex items-center gap-3">
                         <input
                             type="checkbox"
-                            checked={selectedMahasiswaIds.includes(mahasiswa.id)}
-                            onChange={() => handleToggleMahasiswa(mahasiswa.id)}
+                            checked={selectedMahasiswaIds.includes(mahasiswa.id_user_si)}
+                            onChange={() => handleToggleMahasiswa(mahasiswa.id_user_si)}
                             className="w-5 h-5 cursor-pointer"
                             style={{ accentColor: '#015023' }}
                         />
@@ -1293,7 +1296,7 @@ export default function DetailKelas() {
                                 {mahasiswa.email}
                             </p>
                         </div>
-                        {selectedMahasiswaIds.includes(mahasiswa.id) && (
+                        {selectedMahasiswaIds.includes(mahasiswa.id_user_si) && (
                             <div 
                             className="px-3 py-1 text-xs font-bold rounded-full text-white"
                             style={{ backgroundColor: '#16874B' }}
