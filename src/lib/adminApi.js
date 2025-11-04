@@ -169,6 +169,66 @@ export const updateClass = async (classId, classData) => {
 };
 
 /**
+ * Assign lecturers to class
+ * @param {number} classId - ID kelas
+ * @param {Array} lecturerIds - Array of lecturer IDs to assign
+ * @returns {Promise} Response hasil assign
+ */
+export const assignLecturersToClass = async (classId, lecturerIds) => {
+  try {
+    const response = await api.post(`/manager/classes/${classId}/lecturers`, lecturerIds);
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error);
+  }
+};
+
+/**
+ * Assign students to class
+ * @param {number} classId - ID kelas
+ * @param {Array} studentIds - Array of student IDs to assign
+ * @returns {Promise} Response hasil assign
+ */
+export const assignStudentsToClass = async (classId, studentIds) => {
+  try {
+    const response = await api.post(`/manager/classes/${classId}/students`, studentIds);
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error);
+  }
+};
+
+/**
+ * Remove lecturer from class
+ * @param {number} classId - ID kelas
+ * @param {number} lecturerId - ID dosen yang akan dihapus dari kelas
+ * @returns {Promise} Response hasil remove
+ */
+export const removeLecturerFromClass = async (classId, lecturerId) => {
+  try {
+    const response = await api.delete(`/manager/classes/${classId}/lecturers/${lecturerId}`);
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error);
+  }
+};
+
+/**
+ * Remove student from class
+ * @param {number} classId - ID kelas
+ * @param {number} studentId - ID mahasiswa yang akan dihapus dari kelas
+ * @returns {Promise} Response hasil remove
+ */
+export const removeStudentFromClass = async (classId, studentId) => {
+  try {
+    const response = await api.delete(`/manager/classes/${classId}/students/${studentId}`);
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error);
+  }
+};
+
+/**
  * Get all managers
  * @returns {Promise} Response dengan data managers
  */

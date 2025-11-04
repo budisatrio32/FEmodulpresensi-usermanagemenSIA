@@ -13,8 +13,8 @@ export default function ProfilePage() {
   // Function to render appropriate profile component based on role
   const renderProfileComponent = () => {
     switch (userRole) {
-      // case 'mahasiswa':
-      //   return <ProfileMahasiswa />;
+      case 'mahasiswa':
+        return <ProfileMahasiswa />;
       
       case 'dosen':
       case 'manager':

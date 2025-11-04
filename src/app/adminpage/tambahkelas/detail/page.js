@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import LoadingEffect from "@/components/ui/loading-effect";
 import { getClassById, getAcademicPeriods, getSubjects, getMahasiswa, getDosen, updateClass } from "@/lib/adminApi";
 import { ErrorMessageBoxWithButton, SuccessMessageBox, ErrorMessageBox } from "@/components/ui/message-box";
+import { assignStudentsToClass } from "@/lib/adminApi";
 
 export default function DetailKelas() {
     const router = useRouter();
@@ -29,6 +30,10 @@ export default function DetailKelas() {
     const [updatedSuccess, setUpdatedSuccess] = useState('');
     const [isFetching, setIsFetching] = useState(true);
     const [errors, setErrors] = useState({});
+    const [assignSuccess, setAssignSuccess] = useState({});
+    const [assignErrors, setAssignErrors] = useState({});
+    const [removeSuccess, setRemoveSuccess] = useState({});
+    const [removeErrors, setRemoveErrors] = useState({});
 
     // Data kelas
     const [formData, setFormData] = useState({
@@ -217,6 +222,13 @@ export default function DetailKelas() {
         }
     };
 
+    const handleSetErrorsAndSuccessAssignToNull = () => {
+        setAssignErrors({});
+        setAssignSuccess({});
+        setRemoveErrors({});
+        setRemoveSuccess({});
+    };
+
     const handleToggleDosen = (dosenId) => {
     setSelectedDosenIds(prev => {
         if (prev.includes(dosenId)) {
@@ -284,44 +296,49 @@ export default function DetailKelas() {
             alert("Pilih minimal 1 mahasiswa");
             return;
         }
-
+        handleSetErrorsAndSuccessAssignToNull();
+        setIsLoading(true);
         try {
-            setIsLoading(true);
-
-            const newMahasiswa = mahasiswaOptions.filter(m => selectedMahasiswaIds.includes(m.id));
+            const newMahasiswa = mahasiswaOptions.filter(m => selectedMahasiswaIds.includes(m.id_user_si));
             const combinedMahasiswa = [...assignedMahasiswa];
 
-            newMahasiswa.forEach(mahasiswa => {
-            if (!combinedMahasiswa.find(m => m.id === mahasiswa.id_user_si)) {
-                combinedMahasiswa.push(mahasiswa);
-            }
-            });
-
             // Check capacity
-            if (combinedMahasiswa.length > parseInt(currentMaksMahasiswa)) {
+            if ((selectedMahasiswaIds.length + assignedMahasiswa.length) > parseInt(currentMaksMahasiswa)) {
             alert(`Kapasitas maksimal ${currentMaksMahasiswa} mahasiswa. Tidak dapat menambah lebih banyak.`);
             setIsLoading(false);
             return;
             }
 
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // TODO: API call to save mahasiswa data
-            console.log("Saving mahasiswa data:", combinedMahasiswa);
-
-            setAssignedMahasiswa(combinedMahasiswa);
-            setFormData(prev => ({
-            ...prev,
-            jumlah_mahasiswa: combinedMahasiswa.length.toString()
-            }));
-            setSelectedMahasiswaIds([]);
-            setSearchMahasiswa("");
-            setShowMahasiswaModal(false);
-            
-            alert(`Berhasil menyimpan ${newMahasiswa.length} mahasiswa!`);
+            // Kirim satu per satu
+            let gagal = [];
+            for (const m of newMahasiswa) {
+                const response = await assignStudentsToClass(kelasId, {
+                    id_user_si: m.id_user_si
+                });
+                if (response.status !== 'success') {
+                    gagal.push({mahasiswa: m, message: response.message});
+                } else {
+                    // Tambahkan ke assigned jika sukses
+                    if (!combinedMahasiswa.find(cm => cm.id_user_si === m.id_user_si)) {
+                        combinedMahasiswa.push(m);
+                    }
+                }
+            }
+            if (gagal.length === 0) {
+                setAssignedMahasiswa(combinedMahasiswa);
+                setFormData(prev => ({
+                    ...prev,
+                    jumlah_mahasiswa: combinedMahasiswa.length.toString()
+                }));
+                setSelectedMahasiswaIds([]);
+                setSearchMahasiswa("");
+                setShowMahasiswaModal(false);
+                setAssignSuccess({mahasiswa: `Berhasil menyimpan ${newMahasiswa.length} mahasiswa!`});
+            } else {
+                setAssignErrors({mahasiswa: `Sebagian mahasiswa gagal disimpan:\n` + gagal.map(g => `${g.mahasiswa.name}: ${g.message}`).join('\n')});
+            }
         } catch (error) {
-            alert("Gagal menyimpan data mahasiswa: " + error.message);
+            setAssignErrors({mahasiswa: "Gagal menyimpan data mahasiswa: " + error.message});
         } finally {
             setIsLoading(false);
         }
@@ -864,7 +881,7 @@ export default function DetailKelas() {
                     </h2>
                     <button
                     type="button"
-                    onClick={() => setShowDosenModal(true)}
+                    onClick={() => { setShowDosenModal(true); handleSetErrorsAndSuccessAssignToNull(); }}
                     className="text-white px-4 py-2 text-sm font-medium transition shadow-md hover:opacity-90 cursor-pointer"
                     style={{ backgroundColor: '#015023', borderRadius: '12px' }}
                     >
@@ -872,6 +889,17 @@ export default function DetailKelas() {
                     Tambah
                     </button>
                 </div>
+
+                {/* Pesan sukses atau error */}
+                {assignSuccess.dosen && (
+                    <SuccessMessageBox message={assignSuccess.dosen} />
+                )}
+                {removeSuccess.dosen && (
+                    <SuccessMessageBox message={removeSuccess.dosen} />
+                )}
+                {removeErrors.dosen && (
+                    <ErrorMessageBox message={removeErrors.dosen} />
+                )}
 
                 <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '280px' }}>
                     {assignedDosen.length === 0 ? (
@@ -918,7 +946,7 @@ export default function DetailKelas() {
                     </h2>
                     <button
                     type="button"
-                    onClick={() => setShowMahasiswaModal(true)}
+                    onClick={() => { setShowMahasiswaModal(true); handleSetErrorsAndSuccessAssignToNull(); }}
                     className="text-white px-4 py-2 text-sm font-medium transition shadow-md hover:opacity-90 cursor-pointer"
                     style={{ backgroundColor: '#015023', borderRadius: '12px' }}
                     disabled={assignedMahasiswa.length >= parseInt(currentMaksMahasiswa)}
@@ -927,6 +955,16 @@ export default function DetailKelas() {
                     Tambah
                     </button>
                 </div>
+
+                {assignSuccess.mahasiswa && (
+                    <SuccessMessageBox message={assignSuccess.mahasiswa} />
+                )}
+                {removeSuccess.mahasiswa && (
+                    <SuccessMessageBox message={removeSuccess.mahasiswa} />
+                )}
+                {removeErrors.mahasiswa && (
+                    <ErrorMessageBox message={removeErrors.mahasiswa} />
+                )}
 
                 <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '280px' }}>
                     {assignedMahasiswa.length === 0 ? (
@@ -1050,6 +1088,7 @@ export default function DetailKelas() {
                     setShowDosenModal(false);
                     setSelectedDosenIds([]);
                     setSearchDosen("");
+                    handleSetErrorsAndSuccessAssignToNull();
                 }}
                 className="text-gray-500 hover:text-gray-700 transition"
                 >
@@ -1207,6 +1246,7 @@ export default function DetailKelas() {
                     setShowMahasiswaModal(false);
                     setSelectedMahasiswaIds([]);
                     setSearchMahasiswa("");
+                    handleSetErrorsAndSuccessAssignToNull();
                 }}
                 className="text-gray-500 hover:text-gray-700 transition"
                 >
@@ -1324,6 +1364,16 @@ export default function DetailKelas() {
                 )}
                 </div>
             </div>
+
+            {/* Error Messages */}
+            {assignErrors.mahasiswa && (
+                <ErrorMessageBox message={assignErrors.mahasiswa} />
+            )}
+
+            {/* Success Messages */}
+            {assignSuccess.mahasiswa && (
+                <SuccessMessageBox message={assignSuccess.mahasiswa} />
+            )}
 
             {/* Action Buttons */}
             <div className="flex gap-3">
