@@ -222,7 +222,7 @@ export default function DetailKelas() {
         }
     };
 
-    const handleSetErrorsAndSuccessAssignToNull = () => {
+    const handleSetErrorsAndSuccessAssignOrRemoveToNull = () => {
         setAssignErrors({});
         setAssignSuccess({});
         setRemoveErrors({});
@@ -244,7 +244,7 @@ export default function DetailKelas() {
             alert("Pilih minimal 1 dosen");
             return;
         }
-        handleSetErrorsAndSuccessAssignToNull();
+        handleSetErrorsAndSuccessAssignOrRemoveToNull();
         setIsLoading(true);
         try {
             const newDosen = dosenOptions.filter(d => selectedDosenIds.includes(d.id_user_si));
@@ -281,8 +281,22 @@ export default function DetailKelas() {
         }
     };
 
-    const handleRemoveDosen = (dosenId) => {
-    setAssignedDosen(assignedDosen.filter(d => (d.id_user_si || d.id) !== dosenId));
+    const handleRemoveDosen = async (dosenId) => {
+        handleSetErrorsAndSuccessAssignOrRemoveToNull();
+        setIsLoading(true);
+        try {
+            const response = await removeLecturerFromClass(kelasId, dosenId);
+            if (response.status !== 'success') {
+                setRemoveErrors({dosen: "Gagal menghapus dosen: " + response.message});
+            } else {
+                setRemoveSuccess({dosen: "Berhasil menghapus dosen dari kelas"});
+                setAssignedDosen(assignedDosen.filter(d => (d.id_user_si) !== dosenId));
+            }
+        } catch (error) {
+            setRemoveErrors({dosen: "Gagal menghapus dosen: " + error.message});
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleToggleMahasiswa = (mahasiswaId) => {
@@ -300,7 +314,7 @@ export default function DetailKelas() {
             alert("Pilih minimal 1 mahasiswa");
             return;
         }
-        handleSetErrorsAndSuccessAssignToNull();
+        handleSetErrorsAndSuccessAssignOrRemoveToNull();
         setIsLoading(true);
         try {
             const newMahasiswa = mahasiswaOptions.filter(m => selectedMahasiswaIds.includes(m.id_user_si));
@@ -344,12 +358,22 @@ export default function DetailKelas() {
         }
     };
 
-    const handleRemoveMahasiswa = (mahasiswaId) => {
-        setAssignedMahasiswa(assignedMahasiswa.filter(m => m.id !== mahasiswaId));
-        setFormData(prev => ({
-            ...prev,
-            jumlah_mahasiswa: (assignedMahasiswa.length - 1).toString()
-        }));
+    const handleRemoveMahasiswa = async (mahasiswaId) => {
+        handleSetErrorsAndSuccessAssignOrRemoveToNull();
+        setIsLoading(true);
+        try {
+            const response = await removeStudentFromClass(kelasId, mahasiswaId);
+            if (response.status === 'success') {
+                setRemoveSuccess({mahasiswa: "Berhasil menghapus mahasiswa dari kelas"});
+                setAssignedMahasiswa(assignedMahasiswa.filter(m => m.id_user_si !== mahasiswaId));
+            } else {
+                setRemoveErrors({mahasiswa: "Gagal menghapus mahasiswa: " + response.message});
+            }
+        } catch (error) {
+            setRemoveErrors({mahasiswa: "Gagal menghapus mahasiswa: " + error.message});
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleGenerateJadwal = async () => {
@@ -881,7 +905,7 @@ export default function DetailKelas() {
                     </h2>
                     <button
                     type="button"
-                    onClick={() => { setShowDosenModal(true); handleSetErrorsAndSuccessAssignToNull(); }}
+                    onClick={() => { setShowDosenModal(true); handleSetErrorsAndSuccessAssignOrRemoveToNull(); }}
                     className="text-white px-4 py-2 text-sm font-medium transition shadow-md hover:opacity-90 cursor-pointer"
                     style={{ backgroundColor: '#015023', borderRadius: '12px' }}
                     >
@@ -946,7 +970,7 @@ export default function DetailKelas() {
                     </h2>
                     <button
                     type="button"
-                    onClick={() => { setShowMahasiswaModal(true); handleSetErrorsAndSuccessAssignToNull(); }}
+                    onClick={() => { setShowMahasiswaModal(true); handleSetErrorsAndSuccessAssignOrRemoveToNull(); }}
                     className="text-white px-4 py-2 text-sm font-medium transition shadow-md hover:opacity-90 cursor-pointer"
                     style={{ backgroundColor: '#015023', borderRadius: '12px' }}
                     disabled={assignedMahasiswa.length >= parseInt(currentMaksMahasiswa)}
@@ -1088,7 +1112,7 @@ export default function DetailKelas() {
                     setShowDosenModal(false);
                     setSelectedDosenIds([]);
                     setSearchDosen("");
-                    handleSetErrorsAndSuccessAssignToNull();
+                    handleSetErrorsAndSuccessAssignOrRemoveToNull();
                 }}
                 className="text-gray-500 hover:text-gray-700 transition"
                 >
@@ -1255,7 +1279,7 @@ export default function DetailKelas() {
                     setShowMahasiswaModal(false);
                     setSelectedMahasiswaIds([]);
                     setSearchMahasiswa("");
-                    handleSetErrorsAndSuccessAssignToNull();
+                    handleSetErrorsAndSuccessAssignOrRemoveToNull();
                 }}
                 className="text-gray-500 hover:text-gray-700 transition"
                 >
