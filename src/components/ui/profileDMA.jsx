@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, User, Eye, EyeOff, Upload, X } from 'lucide-react';
+import { ArrowLeft, Save, User, Eye, EyeOff, Upload, X, Lock } from 'lucide-react';
 import { Field, FieldLabel, FieldContent, FieldDescription, FieldError } from '@/components/ui/field';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -11,6 +11,7 @@ export default function ProfileDMA() {
 const router = useRouter();
 const [isLoading, setIsLoading] = useState(false);
 const [errors, setErrors] = useState({});
+const [showOldPassword, setShowOldPassword] = useState(false);
 const [showPassword, setShowPassword] = useState(false);
 const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 const [imagePreview, setImagePreview] = useState(null);
@@ -21,6 +22,7 @@ const [profileData, setProfileData] = useState({
 full_name: 'Dr. Ahmad Wijaya',
 username: 'ahmad.wijaya',
 email: 'ahmad.wijaya@university.ac.id',
+old_password: '',
 password: '',
 confirm_password: '',
 profile_image: null,
@@ -117,8 +119,13 @@ if (!profileData.email?.trim()) {
 }
 
 // Validasi password (opsional, hanya jika diisi)
-if (profileData.password) {
-    if (profileData.password.length < 6) {
+if (profileData.password || profileData.old_password) {
+    // Jika mengisi password baru, harus mengisi password lama
+    if (profileData.password && !profileData.old_password) {
+    newErrors.old_password = 'Password lama wajib diisi untuk mengubah password';
+    }
+    
+    if (profileData.password && profileData.password.length < 6) {
     newErrors.password = 'Password minimal 6 karakter';
     }
     
@@ -171,6 +178,7 @@ try {
     // Clear password fields after successful update
     setProfileData(prev => ({
     ...prev,
+    old_password: '',
     password: '',
     confirm_password: ''
     }));
@@ -510,7 +518,7 @@ return (
             className="p-3 rounded-xl"
             style={{ backgroundColor: '#015023' }}
             >
-            <User className="w-6 h-6 text-white" />
+            <Lock className="w-6 h-6 text-white" />
             </div>
             <div>
             <h2 
@@ -529,7 +537,48 @@ return (
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Password */}
+            {/* Password Lama */}
+            <Field className="md:col-span-2">
+            <FieldLabel htmlFor="old_password">
+                Password Lama
+            </FieldLabel>
+            <FieldDescription>
+                Wajib diisi jika ingin mengubah password
+            </FieldDescription>
+            <FieldContent>
+                <div className="relative">
+                <input
+                    type={showOldPassword ? "text" : "password"}
+                    id="old_password"
+                    name="old_password"
+                    value={profileData.old_password}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 pr-12 border-2 focus:outline-none focus:border-opacity-100"
+                    style={{
+                    fontFamily: 'Urbanist, sans-serif',
+                    borderColor: errors.old_password ? '#BE0414' : '#015023',
+                    borderRadius: '12px',
+                    opacity: errors.old_password ? 1 : 0.7
+                    }}
+                    disabled={isLoading}
+                    placeholder="Masukkan password lama"
+                />
+                <button
+                    type="button"
+                    onClick={() => setShowOldPassword(!showOldPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition"
+                    style={{ color: '#015023' }}
+                >
+                    {showOldPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+                </div>
+            </FieldContent>
+            {errors.old_password && (
+                <FieldError>{errors.old_password}</FieldError>
+            )}
+            </Field>
+
+            {/* Password Baru */}
             <Field>
             <FieldLabel htmlFor="password">
                 Password Baru

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, User, MapPin, Users, Eye, EyeOff, Upload, X } from 'lucide-react';
+import { ArrowLeft, Save, User, MapPin, Users, Eye, EyeOff, Upload, X, Lock } from 'lucide-react';
 import { Field, FieldLabel, FieldContent, FieldDescription, FieldError } from '@/components/ui/field';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -11,6 +11,7 @@ export default function ProfileMahasiswa() {
 const router = useRouter();
 const [isLoading, setIsLoading] = useState(false);
 const [errors, setErrors] = useState({});
+const [showOldPassword, setShowOldPassword] = useState(false);
 const [showPassword, setShowPassword] = useState(false);
 const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 const [imagePreview, setImagePreview] = useState(null);
@@ -22,6 +23,7 @@ registration_number: '2021110001',
 full_name: 'John Doe',
 username: 'john.doe',
 email: 'john.doe@student.ugn.ac.id',
+old_password: '',
 password: '',
 confirm_password: '',
 profile_image: null,
@@ -137,8 +139,13 @@ if (!profileData.email?.trim()) {
 }
 
 // Validasi password (opsional, hanya jika diisi)
-if (profileData.password) {
-    if (profileData.password.length < 6) {
+if (profileData.password || profileData.old_password) {
+    // Jika mengisi password baru, harus mengisi password lama
+    if (profileData.password && !profileData.old_password) {
+    newErrors.old_password = 'Password lama wajib diisi untuk mengubah password';
+    }
+    
+    if (profileData.password && profileData.password.length < 6) {
     newErrors.password = 'Password minimal 6 karakter';
     }
     
@@ -207,6 +214,7 @@ try {
     // Clear password fields after successful submit
     setProfileData(prev => ({
         ...prev,
+        old_password: '',
         password: '',
         confirm_password: ''
     }));
@@ -1035,16 +1043,72 @@ return (
     {/* Section 4: Ubah Password */}
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
         <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-        </div>
-        <h3 className="text-xl font-semibold text-brand-primary">Ubah Password</h3>
+            <div 
+            className="p-3 rounded-xl"
+            style={{ backgroundColor: '#015023' }}
+            >
+            <Lock className="w-6 h-6 text-white" />
+            </div>
+            <div>
+            <h2 
+                className="text-xl font-bold"
+                style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}
+            >
+                Ubah Password
+            </h2>
+            <p 
+                className="text-sm"
+                style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}
+            >
+                Kosongkan jika tidak ingin mengubah password
+            </p>
+            </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Password */}
+        {/* Password Lama */}
+        <Field className="space-y-2 md:col-span-2">
+            <FieldLabel className="text-sm font-medium text-gray-700">
+            Password Lama
+            <span className="text-xs text-gray-500 ml-2">(Wajib diisi jika ingin mengubah password)</span>
+            </FieldLabel>
+            <FieldContent className="relative">
+            <input
+                type={showOldPassword ? "text" : "password"}
+                name="old_password"
+                placeholder="Masukkan password lama"
+                value={profileData.old_password}
+                onChange={handleChange}
+                className={`
+                w-full px-4 py-2.5 pr-12
+                border ${errors.old_password ? 'border-brand-danger' : 'border-gray-200'}
+                rounded-xl
+                text-gray-900 placeholder-gray-400
+                focus:outline-none focus:ring-2 
+                ${errors.old_password ? 'focus:ring-brand-danger' : 'focus:ring-brand-primary'}
+                transition-all
+                disabled:bg-gray-50 disabled:cursor-not-allowed
+                `}
+                disabled={isLoading}
+            />
+            <button
+                type="button"
+                onClick={() => setShowOldPassword(!showOldPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+                {showOldPassword ? (
+                <EyeOff className="w-5 h-5" />
+                ) : (
+                <Eye className="w-5 h-5" />
+                )}
+            </button>
+            {errors.old_password && (
+                <p className="text-brand-danger text-xs mt-1">{errors.old_password}</p>
+            )}
+            </FieldContent>
+        </Field>
+
+        {/* Password Baru */}
         <Field className="space-y-2">
             <FieldLabel className="text-sm font-medium text-gray-700">
             Password Baru
@@ -1131,7 +1195,7 @@ return (
         {/* Info Text */}
         <div className="md:col-span-2">
             <p className="text-sm text-gray-500">
-            <span className="font-medium">Catatan:</span> Kosongkan field password jika tidak ingin mengubah password. Password minimal 6 karakter.
+            <span className="font-medium">Catatan:</span> Untuk mengubah password, Anda harus mengisi password lama terlebih dahulu. Kosongkan semua field password jika tidak ingin mengubah password. Password baru minimal 6 karakter.
             </p>
         </div>
         </div>
