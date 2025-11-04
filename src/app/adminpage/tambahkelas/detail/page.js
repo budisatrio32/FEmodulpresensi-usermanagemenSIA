@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import LoadingEffect from "@/components/ui/loading-effect";
 import { getClassById, getAcademicPeriods, getSubjects, getMahasiswa, getDosen, updateClass } from "@/lib/adminApi";
 import { ErrorMessageBoxWithButton, SuccessMessageBox, ErrorMessageBox } from "@/components/ui/message-box";
-import { assignStudentsToClass } from "@/lib/adminApi";
+import { assignStudentsToClass, assignLecturersToClass, removeLecturerFromClass, removeStudentFromClass } from "@/lib/adminApi";
 
 export default function DetailKelas() {
     const router = useRouter();
@@ -240,41 +240,45 @@ export default function DetailKelas() {
     };
 
     const handleAddDosen = async () => {
-    if (selectedDosenIds.length === 0) {
-        alert("Pilih minimal 1 dosen");
-        return;
-    }
-
-    try {
-        setIsLoading(true);
-
-        const newDosen = dosenOptions.filter(d => selectedDosenIds.includes(d.id_user_si || d.id));
-        const combinedDosen = [...assignedDosen];
-
-        newDosen.forEach(dosen => {
-        const dosenId = dosen.id_user_si || dosen.id;
-        if (!combinedDosen.find(d => (d.id_user_si || d.id) === dosenId)) {
-            combinedDosen.push(dosen);
+        if (selectedDosenIds.length === 0) {
+            alert("Pilih minimal 1 dosen");
+            return;
         }
-        });
+        handleSetErrorsAndSuccessAssignToNull();
+        setIsLoading(true);
+        try {
+            const newDosen = dosenOptions.filter(d => selectedDosenIds.includes(d.id_user_si));
+            const combinedDosen = [...assignedDosen];
 
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // TODO: API call to save dosen data
-        console.log("Saving dosen data:", combinedDosen);
-
-        setAssignedDosen(combinedDosen);
-        setSelectedDosenIds([]);
-        setSearchDosen("");
-        setShowDosenModal(false);
-        
-        alert(`Berhasil menyimpan ${newDosen.length} dosen pengampu!`);
-    } catch (error) {
-        alert("Gagal menyimpan data dosen: " + error.message);
-    } finally {
-        setIsLoading(false);
-    }
+            // kirim satu per satu
+            let gagal = [];
+            for (const dosen of newDosen) {
+                const response = await assignLecturersToClass(kelasId, {
+                    id_user_si: dosen.id_user_si
+                });
+                if (response.status !== 'success') {
+                    gagal.push({dosen, message: response.message});
+                } else {
+                    // Tambahkan ke assigned jika sukses
+                    if (!combinedDosen.find(cd => cd.id_user_si === dosen.id_user_si)) {
+                        combinedDosen.push(dosen);
+                    }
+                }
+            }
+            if (gagal.length === 0) {
+                setAssignedDosen(combinedDosen);
+                setSelectedDosenIds([]);
+                setSearchDosen("");
+                setShowDosenModal(false);
+                setAssignSuccess({dosen: `Berhasil menyimpan ${newDosen.length} dosen pengampu!`});
+            } else {
+                setAssignErrors({dosen: `Sebagian dosen gagal disimpan:\n` + gagal.map(g => `${g.dosen.name}: ${g.message}`).join('\n')});
+            }
+        } catch (error) {
+            setAssignErrors({dosen: "Gagal menyimpan data dosen: " + error.message});
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleRemoveDosen = (dosenId) => {
@@ -304,8 +308,8 @@ export default function DetailKelas() {
 
             // Check capacity
             if ((selectedMahasiswaIds.length + assignedMahasiswa.length) > parseInt(currentMaksMahasiswa)) {
-            alert(`Kapasitas maksimal ${currentMaksMahasiswa} mahasiswa. Tidak dapat menambah lebih banyak.`);
-            setIsLoading(false);
+                setAssignErrors({mahasiswa: `Kapasitas maksimal ${currentMaksMahasiswa} mahasiswa. Tidak dapat menambah lebih banyak.`});
+                setIsLoading(false);
             return;
             }
 
@@ -326,10 +330,6 @@ export default function DetailKelas() {
             }
             if (gagal.length === 0) {
                 setAssignedMahasiswa(combinedMahasiswa);
-                setFormData(prev => ({
-                    ...prev,
-                    jumlah_mahasiswa: combinedMahasiswa.length.toString()
-                }));
                 setSelectedMahasiswaIds([]);
                 setSearchMahasiswa("");
                 setShowMahasiswaModal(false);
@@ -1182,6 +1182,15 @@ export default function DetailKelas() {
                 )}
                 </div>
             </div>
+
+            {/* Error Messsage */}
+            {assignErrors.dosen && (
+                <ErrorMessageBox message={assignErrors.dosen} />
+            )}
+            {/* Success Message */}
+            {assignSuccess.dosen && (
+                <SuccessMessageBox message={assignSuccess.dosen} />
+            )}
 
             {/* Action Buttons */}
             <div className="flex gap-3">
