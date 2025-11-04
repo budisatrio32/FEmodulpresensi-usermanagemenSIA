@@ -154,7 +154,7 @@ const NavbarProfile = React.forwardRef(({ className, userName = "User", userImag
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/profile" className="flex items-center cursor-pointer">
+          <Link href="/profilepage" className="flex items-center cursor-pointer">
             <UserCog className="mr-2 h-4 w-4" />
             <span>Profile Management</span>
           </Link>
