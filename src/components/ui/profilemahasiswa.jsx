@@ -203,6 +203,13 @@ try {
     // if (!response.ok) throw new Error('Gagal memperbarui profile');
 
     alert('Profile berhasil diperbarui!');
+    
+    // Clear password fields after successful submit
+    setProfileData(prev => ({
+        ...prev,
+        password: '',
+        confirm_password: ''
+    }));
 } catch (error) {
     alert('Gagal memperbarui profile: ' + error.message);
 } finally {
@@ -237,7 +244,7 @@ return (
     <div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ borderRadius: '16px' }}>
     <div className="flex items-center gap-6">
         <Avatar className="size-24 sm:size-28">
-        <AvatarImage src="/profile-placeholder.jpg" alt={profileData.full_name} />
+        <AvatarImage src={imagePreview || "/profile-placeholder.jpg"} alt={profileData.full_name} />
         <AvatarFallback className="text-2xl">
             {profileData.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
         </AvatarFallback>
@@ -1022,6 +1029,111 @@ return (
             />
             </FieldContent>
         </Field>
+        </div>
+    </div>
+
+    {/* Section 4: Ubah Password */}
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
+        <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+        </div>
+        <h3 className="text-xl font-semibold text-brand-primary">Ubah Password</h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Password */}
+        <Field className="space-y-2">
+            <FieldLabel className="text-sm font-medium text-gray-700">
+            Password Baru
+            <span className="text-xs text-gray-500 ml-2">(Opsional)</span>
+            </FieldLabel>
+            <FieldContent className="relative">
+            <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Masukkan password baru"
+                value={profileData.password}
+                onChange={handleChange}
+                className={`
+                w-full px-4 py-2.5 pr-12
+                border ${errors.password ? 'border-brand-danger' : 'border-gray-200'}
+                rounded-xl
+                text-gray-900 placeholder-gray-400
+                focus:outline-none focus:ring-2 
+                ${errors.password ? 'focus:ring-brand-danger' : 'focus:ring-brand-primary'}
+                transition-all
+                disabled:bg-gray-50 disabled:cursor-not-allowed
+                `}
+                disabled={isLoading}
+            />
+            <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+                {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+                ) : (
+                <Eye className="w-5 h-5" />
+                )}
+            </button>
+            {errors.password && (
+                <p className="text-brand-danger text-xs mt-1">{errors.password}</p>
+            )}
+            </FieldContent>
+        </Field>
+
+        {/* Confirm Password */}
+        <Field className="space-y-2">
+            <FieldLabel className="text-sm font-medium text-gray-700">
+            Konfirmasi Password
+            <span className="text-xs text-gray-500 ml-2">(Opsional)</span>
+            </FieldLabel>
+            <FieldContent className="relative">
+            <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirm_password"
+                placeholder="Konfirmasi password baru"
+                value={profileData.confirm_password}
+                onChange={handleChange}
+                className={`
+                w-full px-4 py-2.5 pr-12
+                border ${errors.confirm_password ? 'border-brand-danger' : 'border-gray-200'}
+                rounded-xl
+                text-gray-900 placeholder-gray-400
+                focus:outline-none focus:ring-2 
+                ${errors.confirm_password ? 'focus:ring-brand-danger' : 'focus:ring-brand-primary'}
+                transition-all
+                disabled:bg-gray-50 disabled:cursor-not-allowed
+                `}
+                disabled={isLoading}
+            />
+            <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+                {showConfirmPassword ? (
+                <EyeOff className="w-5 h-5" />
+                ) : (
+                <Eye className="w-5 h-5" />
+                )}
+            </button>
+            {errors.confirm_password && (
+                <p className="text-brand-danger text-xs mt-1">{errors.confirm_password}</p>
+            )}
+            </FieldContent>
+        </Field>
+
+        {/* Info Text */}
+        <div className="md:col-span-2">
+            <p className="text-sm text-gray-500">
+            <span className="font-medium">Catatan:</span> Kosongkan field password jika tidak ingin mengubah password. Password minimal 6 karakter.
+            </p>
+        </div>
         </div>
     </div>
 
