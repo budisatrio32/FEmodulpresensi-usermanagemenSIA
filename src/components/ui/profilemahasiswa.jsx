@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, User, MapPin, Users } from 'lucide-react';
+import { ArrowLeft, Save, User, MapPin, Users, Eye, EyeOff, Upload, X } from 'lucide-react';
 import { Field, FieldLabel, FieldContent, FieldDescription, FieldError } from '@/components/ui/field';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -11,12 +11,20 @@ export default function ProfileMahasiswa() {
 const router = useRouter();
 const [isLoading, setIsLoading] = useState(false);
 const [errors, setErrors] = useState({});
+const [showPassword, setShowPassword] = useState(false);
+const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+const [imagePreview, setImagePreview] = useState(null);
 
 // State untuk data profile mahasiswa
 const [profileData, setProfileData] = useState({
 // Data yang bisa edit dan dilihat
 registration_number: '2021110001',
 full_name: 'John Doe',
+username: 'john.doe',
+email: 'john.doe@student.ugn.ac.id',
+password: '',
+confirm_password: '',
+profile_image: null,
 alamat: 'Jl. Mawar No. 123',
 dusun: 'Dusun Makmur',
 kelurahan: 'Kelurahan Sejahtera',
@@ -53,6 +61,57 @@ if (errors[name]) {
 }
 };
 
+const handleImageChange = (e) => {
+const file = e.target.files[0];
+if (file) {
+    // Validasi ukuran file (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+    setErrors(prev => ({
+        ...prev,
+        profile_image: 'Ukuran file maksimal 2MB'
+    }));
+    return;
+    }
+
+    // Validasi tipe file
+    if (!file.type.startsWith('image/')) {
+    setErrors(prev => ({
+        ...prev,
+        profile_image: 'File harus berupa gambar'
+    }));
+    return;
+    }
+
+    setProfileData(prev => ({
+    ...prev,
+    profile_image: file
+    }));
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+    setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+
+    // Clear error
+    if (errors.profile_image) {
+    setErrors(prev => ({
+        ...prev,
+        profile_image: ''
+    }));
+    }
+}
+};
+
+const handleRemoveImage = () => {
+setProfileData(prev => ({
+    ...prev,
+    profile_image: null
+}));
+setImagePreview(null);
+};
+
 const validateForm = () => {
 const newErrors = {};
 
@@ -63,6 +122,29 @@ if (!profileData.registration_number?.trim()) {
 
 if (!profileData.full_name?.trim()) {
     newErrors.full_name = 'Nama Lengkap wajib diisi';
+}
+
+if (!profileData.username?.trim()) {
+    newErrors.username = 'Username wajib diisi';
+} else if (profileData.username.length < 3) {
+    newErrors.username = 'Username minimal 3 karakter';
+}
+
+if (!profileData.email?.trim()) {
+    newErrors.email = 'Email wajib diisi';
+} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileData.email)) {
+    newErrors.email = 'Format email tidak valid';
+}
+
+// Validasi password (opsional, hanya jika diisi)
+if (profileData.password) {
+    if (profileData.password.length < 6) {
+    newErrors.password = 'Password minimal 6 karakter';
+    }
+    
+    if (profileData.password !== profileData.confirm_password) {
+    newErrors.confirm_password = 'Password tidak cocok';
+    }
 }
 
 if (!profileData.alamat?.trim()) {
@@ -271,6 +353,121 @@ return (
             </FieldContent>
             {errors.full_name && (
             <FieldError>{errors.full_name}</FieldError>
+            )}
+        </Field>
+
+        {/* Username */}
+        <Field>
+            <FieldLabel htmlFor="username">
+            Username <span className="text-red-500">*</span>
+            </FieldLabel>
+            <FieldDescription>
+            Username untuk login (min. 3 karakter)
+            </FieldDescription>
+            <FieldContent>
+            <input
+                type="text"
+                id="username"
+                name="username"
+                value={profileData.username}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
+                style={{
+                fontFamily: 'Urbanist, sans-serif',
+                borderColor: errors.username ? '#BE0414' : '#015023',
+                borderRadius: '12px',
+                opacity: errors.username ? 1 : 0.7
+                }}
+                disabled={isLoading}
+            />
+            </FieldContent>
+            {errors.username && (
+            <FieldError>{errors.username}</FieldError>
+            )}
+        </Field>
+
+        {/* Email */}
+        <Field>
+            <FieldLabel htmlFor="email">
+            Email <span className="text-red-500">*</span>
+            </FieldLabel>
+            <FieldDescription>
+            Email aktif untuk komunikasi
+            </FieldDescription>
+            <FieldContent>
+            <input
+                type="email"
+                id="email"
+                name="email"
+                value={profileData.email}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
+                style={{
+                fontFamily: 'Urbanist, sans-serif',
+                borderColor: errors.email ? '#BE0414' : '#015023',
+                borderRadius: '12px',
+                opacity: errors.email ? 1 : 0.7
+                }}
+                disabled={isLoading}
+            />
+            </FieldContent>
+            {errors.email && (
+            <FieldError>{errors.email}</FieldError>
+            )}
+        </Field>
+
+        {/* Profile Image */}
+        <Field className="md:col-span-2">
+            <FieldLabel htmlFor="profile_image">
+            Foto Profil
+            </FieldLabel>
+            <FieldDescription>
+            Upload foto profil (max. 2MB, format: JPG, PNG, JPEG)
+            </FieldDescription>
+            <FieldContent>
+            <div className="flex items-center gap-4">
+                {imagePreview && (
+                <div className="relative">
+                    <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    className="w-20 h-20 rounded-full object-cover border-2"
+                    style={{ borderColor: '#015023' }}
+                    />
+                    <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="absolute -top-2 -right-2 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
+                    >
+                    <X className="w-4 h-4" />
+                    </button>
+                </div>
+                )}
+                <label
+                htmlFor="profile_image"
+                className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
+                style={{
+                    backgroundColor: '#015023',
+                    color: 'white',
+                    fontFamily: 'Urbanist, sans-serif'
+                }}
+                >
+                <Upload className="w-5 h-5" />
+                {imagePreview ? 'Ganti Foto' : 'Upload Foto'}
+                </label>
+                <input
+                type="file"
+                id="profile_image"
+                name="profile_image"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+                disabled={isLoading}
+                />
+            </div>
+            </FieldContent>
+            {errors.profile_image && (
+            <FieldError>{errors.profile_image}</FieldError>
             )}
         </Field>
 
