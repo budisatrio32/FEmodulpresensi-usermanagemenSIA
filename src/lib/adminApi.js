@@ -229,6 +229,21 @@ export const removeStudentFromClass = async (classId, studentId) => {
 };
 
 /**
+ * Generate schedule for a class
+ * @param {number} classId - ID kelas
+ * @param {Object} scheduleData - Data jadwal yang akan dibuat
+ * @returns {Promise} Response hasil generate
+ */
+export const generateSchedule = async (classId, scheduleData) => {
+  try {
+    const response = await api.post(`/manager/classes/${classId}/generate-schedule`, scheduleData);
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error);
+  }
+};
+
+/**
  * Get all managers
  * @returns {Promise} Response dengan data managers
  */
@@ -374,4 +389,13 @@ export default {
   storeMahasiswa,
   toggleUserStatus,
   toggleManagerStatus,
+  getAcademicPeriods,
+  storeClass,
+  getClassById,
+  updateClass,
+  assignLecturersToClass,
+  assignStudentsToClass,
+  removeLecturerFromClass,
+  removeStudentFromClass,
+  generateSchedule,
 };
