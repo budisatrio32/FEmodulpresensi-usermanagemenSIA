@@ -117,6 +117,14 @@ export default function DetailKelas() {
     }, [generateSuccess]);
 
     useEffect(() => {
+        if (!generateErrors.form) return;
+        const timer = setTimeout(() => {
+            setGenerateErrors(prev => ({...prev, form: null}));
+        }, 5000);
+        return () => clearTimeout(timer);
+    }, [generateErrors.form]);
+
+    useEffect(() => {
         if (!assignSuccess) return;
         const timer = setTimeout(() => {
             setAssignSuccess({});
