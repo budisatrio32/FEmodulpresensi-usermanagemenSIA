@@ -3,12 +3,13 @@
 import Navbar from '@/components/ui/navigation-menu';
 import ProfileMahasiswa from '@/components/ui/profilemahasiswa';
 import ProfileDMA from '@/components/ui/profileDMA';
+import Cookies from 'js-cookie';
 
 export default function ProfilePage() {
   // TODO: Get user role from cookies/context
   // For now, hardcoded to 'dosen' to preview ProfileDMA
   // const userRole = Cookies.get('roles') || 'mahasiswa';
-  const userRole = 'mahasiswa';
+  const userRole = Cookies.get('roles');
 
   // Function to render appropriate profile component based on role
   const renderProfileComponent = () => {

@@ -252,7 +252,7 @@ return (
     <div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ borderRadius: '16px' }}>
     <div className="flex items-center gap-6">
         <Avatar className="size-24 sm:size-28">
-        <AvatarImage src={imagePreview || "/profile-placeholder.jpg"} alt={profileData.full_name} />
+        <AvatarImage src={imagePreview} alt={profileData.full_name} />
         <AvatarFallback className="text-2xl">
             {profileData.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
         </AvatarFallback>

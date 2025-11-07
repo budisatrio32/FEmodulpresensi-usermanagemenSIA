@@ -213,7 +213,7 @@ return (
         <div className="flex items-center gap-6">
         <Avatar className="size-24 sm:size-28">
             <AvatarImage 
-            src={imagePreview || "/profile-placeholder.jpg"} 
+            src={imagePreview} 
             alt={profileData.full_name} 
             />
             <AvatarFallback className="text-2xl">

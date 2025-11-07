@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
@@ -8,14 +8,38 @@ import { SecondaryButton } from './button';
 import sessionApi from '@/lib/sessionApi';
 import Cookies from 'js-cookie';
 import { ErrorMessageBox } from './message-box';
+import LoadingEffect from './loading-effect';
 
 export default function LoginForm() {
 const router = useRouter();
 const [showPassword, setShowPassword] = useState(false);
 const [email, setEmail] = useState('');
 const [password, setPassword] = useState('');
-const [isLoading, setIsLoading] = useState(false);
+const [isLoading, setIsLoading] = useState(true);
 const [error, setError] = useState(null);
+
+//cek sudah login blm
+const checkLoggedIn = async () => {
+  setIsLoading(true);
+  try {
+    const token = Cookies.get('token'); 
+    const roles = Cookies.get('roles');
+    if (token && roles) {
+      if (roles == 'admin' || roles == 'manager') {
+      router.push('/adminpage');
+      } else if (roles == 'mahasiswa' || roles == 'dosen') {
+        router.push('/landingpage');
+      }
+    }
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+// Panggil cek login saat komponen dimount
+useEffect(() => {
+  checkLoggedIn();
+}, []);
 
 const handleSubmit = async (e) => {
   e.preventDefault();
@@ -54,6 +78,10 @@ const handleSubmit = async (e) => {
     setIsLoading(false);
   }
 };
+
+if (isLoading) {
+  return <LoadingEffect />;
+}
 
 return (
 <main className="min-h-screen flex items-center justify-center py-12 px-4 font-urbanist">
