@@ -46,9 +46,9 @@ const NavbarMenu = React.forwardRef(({ className, ...props }, ref) => (
     className={cn("hidden md:flex items-center gap-4 lg:gap-6", className)}
     {...props}
   >
-    <NavbarMenuItem href="/jadwal">Jadwal</NavbarMenuItem>
-    <NavbarMenuItem href="/presensi">Presensi</NavbarMenuItem>
     <NavbarMenuItem href="/akademik">Akademik</NavbarMenuItem>
+    <NavbarMenuItem href="/kehadiran">Kehadiran</NavbarMenuItem>
+    <NavbarMenuItem href="/hasil-studi">Hasil Studi</NavbarMenuItem>
   </div>
 ))
 

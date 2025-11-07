@@ -246,45 +246,6 @@ export default function EditMatkulForm() {
             />
           </div>
 
-          {/* Error Message */}
-          {errors.form && (
-            <div 
-              className="mb-6 p-4 border-2 flex items-start gap-3"
-              style={{
-                backgroundColor: '#FEE2E2',
-                borderColor: '#BE0414',
-                borderRadius: '12px'
-              }}
-            >
-              <div 
-                className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: '#BE0414' }}
-              >
-                <span className="text-white text-sm font-bold">!</span>
-              </div>
-              <div>
-                <p 
-                  className="font-semibold mb-1"
-                  style={{ 
-                    fontFamily: 'Urbanist, sans-serif',
-                    color: '#BE0414'
-                  }}
-                >
-                  Error
-                </p>
-                <p 
-                  className="text-sm"
-                  style={{ 
-                    fontFamily: 'Urbanist, sans-serif',
-                    color: '#BE0414'
-                  }}
-                >
-                  {errors.form}
-                </p>
-              </div>
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Name Subject Field */}
             <Field>

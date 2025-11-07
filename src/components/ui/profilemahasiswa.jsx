@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, User, MapPin, Users } from 'lucide-react';
+import { ArrowLeft, Save, User, MapPin, Users, Eye, EyeOff, Upload, X, Lock } from 'lucide-react';
 import { Field, FieldLabel, FieldContent, FieldDescription, FieldError } from '@/components/ui/field';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -11,12 +11,22 @@ export default function ProfileMahasiswa() {
 const router = useRouter();
 const [isLoading, setIsLoading] = useState(false);
 const [errors, setErrors] = useState({});
+const [showOldPassword, setShowOldPassword] = useState(false);
+const [showPassword, setShowPassword] = useState(false);
+const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+const [imagePreview, setImagePreview] = useState(null);
 
 // State untuk data profile mahasiswa
 const [profileData, setProfileData] = useState({
 // Data yang bisa edit dan dilihat
 registration_number: '2021110001',
 full_name: 'John Doe',
+username: 'john.doe',
+email: 'john.doe@student.ugn.ac.id',
+old_password: '',
+password: '',
+confirm_password: '',
+profile_image: null,
 alamat: 'Jl. Mawar No. 123',
 dusun: 'Dusun Makmur',
 kelurahan: 'Kelurahan Sejahtera',
@@ -53,6 +63,57 @@ if (errors[name]) {
 }
 };
 
+const handleImageChange = (e) => {
+const file = e.target.files[0];
+if (file) {
+    // Validasi ukuran file (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+    setErrors(prev => ({
+        ...prev,
+        profile_image: 'Ukuran file maksimal 2MB'
+    }));
+    return;
+    }
+
+    // Validasi tipe file
+    if (!file.type.startsWith('image/')) {
+    setErrors(prev => ({
+        ...prev,
+        profile_image: 'File harus berupa gambar'
+    }));
+    return;
+    }
+
+    setProfileData(prev => ({
+    ...prev,
+    profile_image: file
+    }));
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+    setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+
+    // Clear error
+    if (errors.profile_image) {
+    setErrors(prev => ({
+        ...prev,
+        profile_image: ''
+    }));
+    }
+}
+};
+
+const handleRemoveImage = () => {
+setProfileData(prev => ({
+    ...prev,
+    profile_image: null
+}));
+setImagePreview(null);
+};
+
 const validateForm = () => {
 const newErrors = {};
 
@@ -63,6 +124,34 @@ if (!profileData.registration_number?.trim()) {
 
 if (!profileData.full_name?.trim()) {
     newErrors.full_name = 'Nama Lengkap wajib diisi';
+}
+
+if (!profileData.username?.trim()) {
+    newErrors.username = 'Username wajib diisi';
+} else if (profileData.username.length < 3) {
+    newErrors.username = 'Username minimal 3 karakter';
+}
+
+if (!profileData.email?.trim()) {
+    newErrors.email = 'Email wajib diisi';
+} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileData.email)) {
+    newErrors.email = 'Format email tidak valid';
+}
+
+// Validasi password (opsional, hanya jika diisi)
+if (profileData.password || profileData.old_password) {
+    // Jika mengisi password baru, harus mengisi password lama
+    if (profileData.password && !profileData.old_password) {
+    newErrors.old_password = 'Password lama wajib diisi untuk mengubah password';
+    }
+    
+    if (profileData.password && profileData.password.length < 6) {
+    newErrors.password = 'Password minimal 6 karakter';
+    }
+    
+    if (profileData.password !== profileData.confirm_password) {
+    newErrors.confirm_password = 'Password tidak cocok';
+    }
 }
 
 if (!profileData.alamat?.trim()) {
@@ -121,6 +210,14 @@ try {
     // if (!response.ok) throw new Error('Gagal memperbarui profile');
 
     alert('Profile berhasil diperbarui!');
+    
+    // Clear password fields after successful submit
+    setProfileData(prev => ({
+        ...prev,
+        old_password: '',
+        password: '',
+        confirm_password: ''
+    }));
 } catch (error) {
     alert('Gagal memperbarui profile: ' + error.message);
 } finally {
@@ -155,7 +252,7 @@ return (
     <div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ borderRadius: '16px' }}>
     <div className="flex items-center gap-6">
         <Avatar className="size-24 sm:size-28">
-        <AvatarImage src="/profile-placeholder.jpg" alt={profileData.full_name} />
+        <AvatarImage src={imagePreview || "/profile-placeholder.jpg"} alt={profileData.full_name} />
         <AvatarFallback className="text-2xl">
             {profileData.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
         </AvatarFallback>
@@ -271,6 +368,121 @@ return (
             </FieldContent>
             {errors.full_name && (
             <FieldError>{errors.full_name}</FieldError>
+            )}
+        </Field>
+
+        {/* Username */}
+        <Field>
+            <FieldLabel htmlFor="username">
+            Username <span className="text-red-500">*</span>
+            </FieldLabel>
+            <FieldDescription>
+            Username untuk login (min. 3 karakter)
+            </FieldDescription>
+            <FieldContent>
+            <input
+                type="text"
+                id="username"
+                name="username"
+                value={profileData.username}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
+                style={{
+                fontFamily: 'Urbanist, sans-serif',
+                borderColor: errors.username ? '#BE0414' : '#015023',
+                borderRadius: '12px',
+                opacity: errors.username ? 1 : 0.7
+                }}
+                disabled={isLoading}
+            />
+            </FieldContent>
+            {errors.username && (
+            <FieldError>{errors.username}</FieldError>
+            )}
+        </Field>
+
+        {/* Email */}
+        <Field>
+            <FieldLabel htmlFor="email">
+            Email <span className="text-red-500">*</span>
+            </FieldLabel>
+            <FieldDescription>
+            Email aktif untuk komunikasi
+            </FieldDescription>
+            <FieldContent>
+            <input
+                type="email"
+                id="email"
+                name="email"
+                value={profileData.email}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
+                style={{
+                fontFamily: 'Urbanist, sans-serif',
+                borderColor: errors.email ? '#BE0414' : '#015023',
+                borderRadius: '12px',
+                opacity: errors.email ? 1 : 0.7
+                }}
+                disabled={isLoading}
+            />
+            </FieldContent>
+            {errors.email && (
+            <FieldError>{errors.email}</FieldError>
+            )}
+        </Field>
+
+        {/* Profile Image */}
+        <Field className="md:col-span-2">
+            <FieldLabel htmlFor="profile_image">
+            Foto Profil
+            </FieldLabel>
+            <FieldDescription>
+            Upload foto profil (max. 2MB, format: JPG, PNG, JPEG)
+            </FieldDescription>
+            <FieldContent>
+            <div className="flex items-center gap-4">
+                {imagePreview && (
+                <div className="relative">
+                    <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    className="w-20 h-20 rounded-full object-cover border-2"
+                    style={{ borderColor: '#015023' }}
+                    />
+                    <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="absolute -top-2 -right-2 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
+                    >
+                    <X className="w-4 h-4" />
+                    </button>
+                </div>
+                )}
+                <label
+                htmlFor="profile_image"
+                className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
+                style={{
+                    backgroundColor: '#015023',
+                    color: 'white',
+                    fontFamily: 'Urbanist, sans-serif'
+                }}
+                >
+                <Upload className="w-5 h-5" />
+                {imagePreview ? 'Ganti Foto' : 'Upload Foto'}
+                </label>
+                <input
+                type="file"
+                id="profile_image"
+                name="profile_image"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+                disabled={isLoading}
+                />
+            </div>
+            </FieldContent>
+            {errors.profile_image && (
+            <FieldError>{errors.profile_image}</FieldError>
             )}
         </Field>
 
@@ -825,6 +1037,167 @@ return (
             />
             </FieldContent>
         </Field>
+        </div>
+    </div>
+
+    {/* Section 4: Ubah Password */}
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
+        <div className="flex items-center gap-3 mb-6">
+            <div 
+            className="p-3 rounded-xl"
+            style={{ backgroundColor: '#015023' }}
+            >
+            <Lock className="w-6 h-6 text-white" />
+            </div>
+            <div>
+            <h2 
+                className="text-xl font-bold"
+                style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}
+            >
+                Ubah Password
+            </h2>
+            <p 
+                className="text-sm"
+                style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}
+            >
+                Kosongkan jika tidak ingin mengubah password
+            </p>
+            </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Password Lama */}
+        <Field className="space-y-2 md:col-span-2">
+            <FieldLabel className="text-sm font-medium text-gray-700">
+            Password Lama
+            <span className="text-xs text-gray-500 ml-2">(Wajib diisi jika ingin mengubah password)</span>
+            </FieldLabel>
+            <FieldContent className="relative">
+            <input
+                type={showOldPassword ? "text" : "password"}
+                name="old_password"
+                placeholder="Masukkan password lama"
+                value={profileData.old_password}
+                onChange={handleChange}
+                className={`
+                w-full px-4 py-2.5 pr-12
+                border ${errors.old_password ? 'border-brand-danger' : 'border-gray-200'}
+                rounded-xl
+                text-gray-900 placeholder-gray-400
+                focus:outline-none focus:ring-2 
+                ${errors.old_password ? 'focus:ring-brand-danger' : 'focus:ring-brand-primary'}
+                transition-all
+                disabled:bg-gray-50 disabled:cursor-not-allowed
+                `}
+                disabled={isLoading}
+            />
+            <button
+                type="button"
+                onClick={() => setShowOldPassword(!showOldPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+                {showOldPassword ? (
+                <EyeOff className="w-5 h-5" />
+                ) : (
+                <Eye className="w-5 h-5" />
+                )}
+            </button>
+            {errors.old_password && (
+                <p className="text-brand-danger text-xs mt-1">{errors.old_password}</p>
+            )}
+            </FieldContent>
+        </Field>
+
+        {/* Password Baru */}
+        <Field className="space-y-2">
+            <FieldLabel className="text-sm font-medium text-gray-700">
+            Password Baru
+            <span className="text-xs text-gray-500 ml-2">(Opsional)</span>
+            </FieldLabel>
+            <FieldContent className="relative">
+            <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Masukkan password baru"
+                value={profileData.password}
+                onChange={handleChange}
+                className={`
+                w-full px-4 py-2.5 pr-12
+                border ${errors.password ? 'border-brand-danger' : 'border-gray-200'}
+                rounded-xl
+                text-gray-900 placeholder-gray-400
+                focus:outline-none focus:ring-2 
+                ${errors.password ? 'focus:ring-brand-danger' : 'focus:ring-brand-primary'}
+                transition-all
+                disabled:bg-gray-50 disabled:cursor-not-allowed
+                `}
+                disabled={isLoading}
+            />
+            <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+                {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+                ) : (
+                <Eye className="w-5 h-5" />
+                )}
+            </button>
+            {errors.password && (
+                <p className="text-brand-danger text-xs mt-1">{errors.password}</p>
+            )}
+            </FieldContent>
+        </Field>
+
+        {/* Confirm Password */}
+        <Field className="space-y-2">
+            <FieldLabel className="text-sm font-medium text-gray-700">
+            Konfirmasi Password
+            <span className="text-xs text-gray-500 ml-2">(Opsional)</span>
+            </FieldLabel>
+            <FieldContent className="relative">
+            <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirm_password"
+                placeholder="Konfirmasi password baru"
+                value={profileData.confirm_password}
+                onChange={handleChange}
+                className={`
+                w-full px-4 py-2.5 pr-12
+                border ${errors.confirm_password ? 'border-brand-danger' : 'border-gray-200'}
+                rounded-xl
+                text-gray-900 placeholder-gray-400
+                focus:outline-none focus:ring-2 
+                ${errors.confirm_password ? 'focus:ring-brand-danger' : 'focus:ring-brand-primary'}
+                transition-all
+                disabled:bg-gray-50 disabled:cursor-not-allowed
+                `}
+                disabled={isLoading}
+            />
+            <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+                {showConfirmPassword ? (
+                <EyeOff className="w-5 h-5" />
+                ) : (
+                <Eye className="w-5 h-5" />
+                )}
+            </button>
+            {errors.confirm_password && (
+                <p className="text-brand-danger text-xs mt-1">{errors.confirm_password}</p>
+            )}
+            </FieldContent>
+        </Field>
+
+        {/* Info Text */}
+        <div className="md:col-span-2">
+            <p className="text-sm text-gray-500">
+            <span className="font-medium">Catatan:</span> Untuk mengubah password, Anda harus mengisi password lama terlebih dahulu. Kosongkan semua field password jika tidak ingin mengubah password. Password baru minimal 6 karakter.
+            </p>
+        </div>
         </div>
     </div>
 

@@ -1,11 +1,22 @@
+"use client"
+
 import * as React from "react"
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { LogOut } from 'lucide-react'
+import { LogOut, UserCog } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import Cookies from 'js-cookie';
 import { logout } from '@/lib/sessionApi';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const AdminNavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
 <div 
@@ -46,7 +57,7 @@ className={cn("text-right", className)}
 </div>
 ))
 
-const AdminNavbar = React.forwardRef(({ className, title, ...props }, ref) => {
+const AdminNavbar = React.forwardRef(({ className, title, userName = "Admin", ...props }, ref) => {
 const router = useRouter()
 
 const handleLogout = async () => {
@@ -87,24 +98,49 @@ return (
         <div className="flex items-center gap-3 sm:gap-4">
           <AdminNavbarTitle title={title} />
           
-          {/* Avatar Profile */}
-          <Avatar className="size-10 sm:size-12">
-            <AvatarImage src="/profile-placeholder.jpg" alt="Admin Profile" />
-            <AvatarFallback>AD</AvatarFallback>
-          </Avatar>
-
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-medium transition-all hover:opacity-80 cursor-pointer"
-            style={{
-              backgroundColor: '#BE0414',
-              color: '#FFFFFF',
-              fontFamily: 'Urbanist, sans-serif'
-            }}
-          >
-            <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="hidden sm:inline text-sm sm:text-base">Logout</span>
-          </button>
+          {/* Avatar Profile with Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button 
+                className="transition-all duration-200 hover:scale-105 hover:opacity-90 cursor-pointer focus:outline-none"
+              >
+                <Avatar className="size-10 sm:size-12">
+                  <AvatarImage src="/profile-placeholder.jpg" alt="Admin Profile" />
+                  <AvatarFallback>
+                    {userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                    {userName}
+                  </p>
+                  <p className="text-xs" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
+                    Akun Admin
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/profilepage" className="flex items-center cursor-pointer">
+                  <UserCog className="mr-2 h-4 w-4" />
+                  <span>Profile Management</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                variant="destructive" 
+                onClick={handleLogout}
+                className="cursor-pointer"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Logout</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>  

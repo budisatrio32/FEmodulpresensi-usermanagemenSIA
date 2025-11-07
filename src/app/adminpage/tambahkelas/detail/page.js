@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
 ArrowLeft, 
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import LoadingEffect from "@/components/ui/loading-effect";
 import { getClassById, getAcademicPeriods, getSubjects, getMahasiswa, getDosen, updateClass } from "@/lib/adminApi";
 import { ErrorMessageBoxWithButton, SuccessMessageBox, ErrorMessageBox } from "@/components/ui/message-box";
+import { assignStudentsToClass, assignLecturersToClass, removeLecturerFromClass, removeStudentFromClass, generateSchedule } from "@/lib/adminApi";
 
 export default function DetailKelas() {
     const router = useRouter();
@@ -29,6 +30,13 @@ export default function DetailKelas() {
     const [updatedSuccess, setUpdatedSuccess] = useState('');
     const [isFetching, setIsFetching] = useState(true);
     const [errors, setErrors] = useState({});
+    const [assignSuccess, setAssignSuccess] = useState({});
+    const [assignErrors, setAssignErrors] = useState({});
+    const [removeSuccess, setRemoveSuccess] = useState({});
+    const [removeErrors, setRemoveErrors] = useState({});
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [generateSuccess, setGenerateSuccess] = useState('');
+    const [generateErrors, setGenerateErrors] = useState({});
 
     // Data kelas
     const [formData, setFormData] = useState({
@@ -99,6 +107,54 @@ export default function DetailKelas() {
         fetchAll();
     }
     }, [kelasId]);
+
+    useEffect(() => {
+        if (!generateSuccess) return;
+        const timer = setTimeout(() => {
+            setGenerateSuccess('');
+        }, 10000);
+        return () => clearTimeout(timer);
+    }, [generateSuccess]);
+
+    useEffect(() => {
+        if (!generateErrors.form) return;
+        const timer = setTimeout(() => {
+            setGenerateErrors(prev => ({...prev, form: null}));
+        }, 5000);
+        return () => clearTimeout(timer);
+    }, [generateErrors.form]);
+
+    useEffect(() => {
+        if (!assignSuccess) return;
+        const timer = setTimeout(() => {
+            setAssignSuccess({});
+        }, 10000);
+        return () => clearTimeout(timer);
+    }, [assignSuccess]);
+
+    useEffect(() => {
+        if (!removeErrors) return;
+        const timer = setTimeout(() => {
+            setRemoveErrors({});
+        }, 10000);
+        return () => clearTimeout(timer);
+    }, [removeErrors]);
+
+    useEffect(() => {
+        if (!removeSuccess) return;
+        const timer = setTimeout(() => {
+            setRemoveSuccess({});
+        }, 10000);
+        return () => clearTimeout(timer);
+    }, [removeSuccess]);
+
+    useEffect(() => {
+        if (!updatedSuccess) return;
+        const timer = setTimeout(() => {
+            setUpdatedSuccess('');
+        }, 10000);
+        return () => clearTimeout(timer);
+    }, [updatedSuccess]);
 
     const fetchAll = async () => {
         setErrors(prev => ({...prev, fetch: null}));
@@ -217,6 +273,13 @@ export default function DetailKelas() {
         }
     };
 
+    const handleSetErrorsAndSuccessAssignOrRemoveToNull = () => {
+        setAssignErrors({});
+        setAssignSuccess({});
+        setRemoveErrors({});
+        setRemoveSuccess({});
+    };
+
     const handleToggleDosen = (dosenId) => {
     setSelectedDosenIds(prev => {
         if (prev.includes(dosenId)) {
@@ -228,45 +291,63 @@ export default function DetailKelas() {
     };
 
     const handleAddDosen = async () => {
-    if (selectedDosenIds.length === 0) {
-        alert("Pilih minimal 1 dosen");
-        return;
-    }
-
-    try {
-        setIsLoading(true);
-
-        const newDosen = dosenOptions.filter(d => selectedDosenIds.includes(d.id_user_si || d.id));
-        const combinedDosen = [...assignedDosen];
-
-        newDosen.forEach(dosen => {
-        const dosenId = dosen.id_user_si || dosen.id;
-        if (!combinedDosen.find(d => (d.id_user_si || d.id) === dosenId)) {
-            combinedDosen.push(dosen);
+        if (selectedDosenIds.length === 0) {
+            setAssignErrors({dosen: "Pilih minimal 1 dosen"});
+            return;
         }
-        });
+        handleSetErrorsAndSuccessAssignOrRemoveToNull();
+        setIsLoading(true);
+        try {
+            const newDosen = dosenOptions.filter(d => selectedDosenIds.includes(d.id_user_si));
+            const combinedDosen = [...assignedDosen];
 
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // TODO: API call to save dosen data
-        console.log("Saving dosen data:", combinedDosen);
-
-        setAssignedDosen(combinedDosen);
-        setSelectedDosenIds([]);
-        setSearchDosen("");
-        setShowDosenModal(false);
-        
-        alert(`Berhasil menyimpan ${newDosen.length} dosen pengampu!`);
-    } catch (error) {
-        alert("Gagal menyimpan data dosen: " + error.message);
-    } finally {
-        setIsLoading(false);
-    }
+            // kirim satu per satu
+            let gagal = [];
+            for (const dosen of newDosen) {
+                const response = await assignLecturersToClass(kelasId, {
+                    id_user_si: dosen.id_user_si
+                });
+                if (response.status !== 'success') {
+                    gagal.push({dosen, message: response.message});
+                } else {
+                    // Tambahkan ke assigned jika sukses
+                    if (!combinedDosen.find(cd => cd.id_user_si === dosen.id_user_si)) {
+                        combinedDosen.push(dosen);
+                    }
+                }
+            }
+            if (gagal.length === 0) {
+                setAssignedDosen(combinedDosen);
+                setSelectedDosenIds([]);
+                setSearchDosen("");
+                setShowDosenModal(false);
+                setAssignSuccess({dosen: `Berhasil menyimpan ${newDosen.length} dosen pengampu!`});
+            } else {
+                setAssignErrors({dosen: `Sebagian dosen gagal disimpan:\n` + gagal.map(g => `${g.dosen.name}: ${g.message}`).join('\n')});
+            }
+        } catch (error) {
+            setAssignErrors({dosen: "Gagal menyimpan data dosen: " + error.message});
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleRemoveDosen = (dosenId) => {
-    setAssignedDosen(assignedDosen.filter(d => (d.id_user_si || d.id) !== dosenId));
+    const handleRemoveDosen = async (dosenId) => {
+        handleSetErrorsAndSuccessAssignOrRemoveToNull();
+        setIsLoading(true);
+        try {
+            const response = await removeLecturerFromClass(kelasId, dosenId);
+            if (response.status !== 'success') {
+                setRemoveErrors({dosen: "Gagal menghapus dosen: " + response.message});
+            } else {
+                setRemoveSuccess({dosen: "Berhasil menghapus dosen dari kelas"});
+                setAssignedDosen(assignedDosen.filter(d => (d.id_user_si) !== dosenId));
+            }
+        } catch (error) {
+            setRemoveErrors({dosen: "Gagal menghapus dosen: " + error.message});
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleToggleMahasiswa = (mahasiswaId) => {
@@ -281,104 +362,104 @@ export default function DetailKelas() {
 
     const handleAddMahasiswa = async () => {
         if (selectedMahasiswaIds.length === 0) {
-            alert("Pilih minimal 1 mahasiswa");
+            setAssignErrors({mahasiswa: "Pilih minimal 1 mahasiswa"});
             return;
         }
-
+        handleSetErrorsAndSuccessAssignOrRemoveToNull();
+        setIsLoading(true);
         try {
-            setIsLoading(true);
-
-            const newMahasiswa = mahasiswaOptions.filter(m => selectedMahasiswaIds.includes(m.id));
+            const newMahasiswa = mahasiswaOptions.filter(m => selectedMahasiswaIds.includes(m.id_user_si));
             const combinedMahasiswa = [...assignedMahasiswa];
 
-            newMahasiswa.forEach(mahasiswa => {
-            if (!combinedMahasiswa.find(m => m.id === mahasiswa.id_user_si)) {
-                combinedMahasiswa.push(mahasiswa);
-            }
-            });
-
             // Check capacity
-            if (combinedMahasiswa.length > parseInt(currentMaksMahasiswa)) {
-            alert(`Kapasitas maksimal ${currentMaksMahasiswa} mahasiswa. Tidak dapat menambah lebih banyak.`);
-            setIsLoading(false);
+            if ((selectedMahasiswaIds.length + assignedMahasiswa.length) > parseInt(currentMaksMahasiswa)) {
+                setAssignErrors({mahasiswa: `Kapasitas maksimal ${currentMaksMahasiswa} mahasiswa. Tidak dapat menambah lebih banyak.`});
+                setIsLoading(false);
             return;
             }
 
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // TODO: API call to save mahasiswa data
-            console.log("Saving mahasiswa data:", combinedMahasiswa);
-
-            setAssignedMahasiswa(combinedMahasiswa);
-            setFormData(prev => ({
-            ...prev,
-            jumlah_mahasiswa: combinedMahasiswa.length.toString()
-            }));
-            setSelectedMahasiswaIds([]);
-            setSearchMahasiswa("");
-            setShowMahasiswaModal(false);
-            
-            alert(`Berhasil menyimpan ${newMahasiswa.length} mahasiswa!`);
+            // Kirim satu per satu
+            let gagal = [];
+            for (const m of newMahasiswa) {
+                const response = await assignStudentsToClass(kelasId, {
+                    id_user_si: m.id_user_si
+                });
+                if (response.status !== 'success') {
+                    gagal.push({mahasiswa: m, message: response.message});
+                } else {
+                    // Tambahkan ke assigned jika sukses
+                    if (!combinedMahasiswa.find(cm => cm.id_user_si === m.id_user_si)) {
+                        combinedMahasiswa.push(m);
+                    }
+                }
+            }
+            if (gagal.length === 0) {
+                setAssignedMahasiswa(combinedMahasiswa);
+                setSelectedMahasiswaIds([]);
+                setSearchMahasiswa("");
+                setShowMahasiswaModal(false);
+                setAssignSuccess({mahasiswa: `Berhasil menyimpan ${newMahasiswa.length} mahasiswa!`});
+            } else {
+                setAssignErrors({mahasiswa: `Sebagian mahasiswa gagal disimpan:\n` + gagal.map(g => `${g.mahasiswa.name}: ${g.message}`).join('\n')});
+            }
         } catch (error) {
-            alert("Gagal menyimpan data mahasiswa: " + error.message);
+            setAssignErrors({mahasiswa: "Gagal menyimpan data mahasiswa: " + error.message});
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleRemoveMahasiswa = (mahasiswaId) => {
-        setAssignedMahasiswa(assignedMahasiswa.filter(m => m.id !== mahasiswaId));
-        setFormData(prev => ({
-            ...prev,
-            jumlah_mahasiswa: (assignedMahasiswa.length - 1).toString()
-        }));
+    const handleRemoveMahasiswa = async (mahasiswaId) => {
+        handleSetErrorsAndSuccessAssignOrRemoveToNull();
+        setIsLoading(true);
+        try {
+            const response = await removeStudentFromClass(kelasId, mahasiswaId);
+            if (response.status === 'success') {
+                setRemoveSuccess({mahasiswa: "Berhasil menghapus mahasiswa dari kelas"});
+                setAssignedMahasiswa(assignedMahasiswa.filter(m => m.id_user_si !== mahasiswaId));
+            } else {
+                setRemoveErrors({mahasiswa: "Gagal menghapus mahasiswa: " + response.message});
+            }
+        } catch (error) {
+            setRemoveErrors({mahasiswa: "Gagal menghapus mahasiswa: " + error.message});
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleGenerateJadwal = async () => {
+        setGenerateErrors({});
         const jumlah = parseInt(generateJadwalForm.jumlahPertemuan);
         
         if (isNaN(jumlah) || jumlah < 1 || jumlah > 20) {
-            alert("Jumlah pertemuan harus antara 1-20");
+            setGenerateErrors(prev => ({...prev, jumlahPertemuan: "Jumlah pertemuan harus antara 1-20"}));
             return;
         }
 
         if (!generateJadwalForm.tanggalMulai) {
-            alert("Pilih tanggal mulai pertemuan");
+            setGenerateErrors(prev => ({...prev, tanggalMulai: "Pilih tanggal mulai pertemuan"}));
             return;
         }
-
+        setIsGenerating(true);
         try {
-            setIsLoading(true);
-            
             // Tanggal mulai dari form input
             const startDate = new Date(generateJadwalForm.tanggalMulai);
-            const generatedJadwal = [];
 
-            for (let i = 0; i < jumlah; i++) {
-            const pertemuanDate = new Date(startDate);
-            pertemuanDate.setDate(startDate.getDate() + (i * 7)); // +7 hari per pertemuan
-
-            generatedJadwal.push({
-                id: i + 1,
-                pertemuan: i + 1,
-                tanggal: pertemuanDate.toISOString().split('T')[0]
+            const response = await generateSchedule(kelasId, {
+                start_date: startDate,
+                jumlah_pertemuan: jumlah
             });
+            if (response.status === 'success') {
+                setJadwalList(response.data.schedules);
+                setShowGenerateJadwalModal(false);
+                setGenerateSuccess(`Berhasil generate ${jumlah} jadwal pertemuan!`);
+            } else {
+                setGenerateErrors(prev => ({...prev, form: "Gagal generate jadwal: " + response.message}));
             }
-
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // TODO: API call to save jadwal
-            console.log("Generated jadwal:", generatedJadwal);
-
-            setJadwalList(generatedJadwal);
-            setShowGenerateJadwalModal(false);
-            alert(`Berhasil generate ${jumlah} jadwal pertemuan!`);
         } catch (error) {
-            alert("Gagal generate jadwal: " + error.message);
+            setGenerateErrors(prev => ({...prev, form: "Gagal generate jadwal: " + error.message}));
         } finally {
-            setIsLoading(false);
+            setIsGenerating(false);
         }
     };
 
@@ -864,7 +945,7 @@ export default function DetailKelas() {
                     </h2>
                     <button
                     type="button"
-                    onClick={() => setShowDosenModal(true)}
+                    onClick={() => { setShowDosenModal(true); handleSetErrorsAndSuccessAssignOrRemoveToNull(); }}
                     className="text-white px-4 py-2 text-sm font-medium transition shadow-md hover:opacity-90 cursor-pointer"
                     style={{ backgroundColor: '#015023', borderRadius: '12px' }}
                     >
@@ -872,6 +953,17 @@ export default function DetailKelas() {
                     Tambah
                     </button>
                 </div>
+
+                {/* Pesan sukses atau error */}
+                {assignSuccess.dosen && (
+                    <SuccessMessageBox message={assignSuccess.dosen} />
+                )}
+                {removeSuccess.dosen && (
+                    <SuccessMessageBox message={removeSuccess.dosen} />
+                )}
+                {removeErrors.dosen && (
+                    <ErrorMessageBox message={removeErrors.dosen} />
+                )}
 
                 <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '280px' }}>
                     {assignedDosen.length === 0 ? (
@@ -918,7 +1010,7 @@ export default function DetailKelas() {
                     </h2>
                     <button
                     type="button"
-                    onClick={() => setShowMahasiswaModal(true)}
+                    onClick={() => { setShowMahasiswaModal(true); handleSetErrorsAndSuccessAssignOrRemoveToNull(); }}
                     className="text-white px-4 py-2 text-sm font-medium transition shadow-md hover:opacity-90 cursor-pointer"
                     style={{ backgroundColor: '#015023', borderRadius: '12px' }}
                     disabled={assignedMahasiswa.length >= parseInt(currentMaksMahasiswa)}
@@ -927,6 +1019,16 @@ export default function DetailKelas() {
                     Tambah
                     </button>
                 </div>
+
+                {assignSuccess.mahasiswa && (
+                    <SuccessMessageBox message={assignSuccess.mahasiswa} />
+                )}
+                {removeSuccess.mahasiswa && (
+                    <SuccessMessageBox message={removeSuccess.mahasiswa} />
+                )}
+                {removeErrors.mahasiswa && (
+                    <ErrorMessageBox message={removeErrors.mahasiswa} />
+                )}
 
                 <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '280px' }}>
                     {assignedMahasiswa.length === 0 ? (
@@ -983,6 +1085,11 @@ export default function DetailKelas() {
             </button>
             </div>
 
+            {/* success message */}
+            {generateSuccess && (
+                <SuccessMessageBox message={generateSuccess} />
+            )}
+
             {jadwalList.length === 0 ? (
             <p className="text-gray-500 text-center py-4" style={{ fontFamily: 'Urbanist, sans-serif' }}>
                 Belum ada jadwal kelas. Klik "Generate Jadwal" untuk membuat jadwal otomatis.
@@ -1003,7 +1110,7 @@ export default function DetailKelas() {
                 <tbody>
                     {jadwalList.map((jadwal, index) => (
                     <tr 
-                        key={jadwal.id}
+                        key={jadwal.id_shedule}
                         className="border-b hover:bg-gray-50 transition"
                         style={{ borderColor: '#E5E7EB' }}
                     >
@@ -1012,11 +1119,11 @@ export default function DetailKelas() {
                             className="inline-flex items-center justify-center w-10 h-10 rounded-full font-bold"
                             style={{ backgroundColor: '#015023', color: '#FFFFFF' }}
                         >
-                            {jadwal.pertemuan}
+                            {index+1}
                         </div>
                         </td>
                         <td className="px-4 py-3 text-center font-medium" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                        {new Date(jadwal.tanggal).toLocaleDateString('id-ID', { 
+                        {new Date(jadwal.date).toLocaleDateString('id-ID', { 
                             weekday: 'long',
                             year: 'numeric', 
                             month: 'long', 
@@ -1050,6 +1157,7 @@ export default function DetailKelas() {
                     setShowDosenModal(false);
                     setSelectedDosenIds([]);
                     setSearchDosen("");
+                    handleSetErrorsAndSuccessAssignOrRemoveToNull();
                 }}
                 className="text-gray-500 hover:text-gray-700 transition"
                 >
@@ -1144,6 +1252,15 @@ export default function DetailKelas() {
                 </div>
             </div>
 
+            {/* Error Messsage */}
+            {assignErrors.dosen && (
+                <ErrorMessageBox message={assignErrors.dosen} />
+            )}
+            {/* Success Message */}
+            {assignSuccess.dosen && (
+                <SuccessMessageBox message={assignSuccess.dosen} />
+            )}
+
             {/* Action Buttons */}
             <div className="flex gap-3">
                 <button
@@ -1207,6 +1324,7 @@ export default function DetailKelas() {
                     setShowMahasiswaModal(false);
                     setSelectedMahasiswaIds([]);
                     setSearchMahasiswa("");
+                    handleSetErrorsAndSuccessAssignOrRemoveToNull();
                 }}
                 className="text-gray-500 hover:text-gray-700 transition"
                 >
@@ -1325,6 +1443,16 @@ export default function DetailKelas() {
                 </div>
             </div>
 
+            {/* Error Messages */}
+            {assignErrors.mahasiswa && (
+                <ErrorMessageBox message={assignErrors.mahasiswa} />
+            )}
+
+            {/* Success Messages */}
+            {assignSuccess.mahasiswa && (
+                <SuccessMessageBox message={assignSuccess.mahasiswa} />
+            )}
+
             {/* Action Buttons */}
             <div className="flex gap-3">
                 <button
@@ -1386,9 +1514,28 @@ export default function DetailKelas() {
                 <button
                 onClick={() => {
                     setShowGenerateJadwalModal(false);
+                    setGenerateErrors('');
+                    setGenerateSuccess('');
                     setGenerateJadwalForm({ 
                         jumlahPertemuan: "14",
-                        tanggalMulai: new Date().toISOString().split('T')[0]
+                        tanggalMulai: (() => {
+                            // Cari tanggal ke depan yang harinya sama dengan currentJadwalKelas.hari
+                            const targetDay = Number(currentJadwalKelas.hari);
+                            if (!targetDay || targetDay < 1 || targetDay > 7) {
+                                // fallback hari ini
+                                return new Date().toISOString().split('T')[0];
+                            }
+                            const today = new Date();
+                            // JS: 0=Sunday, 1=Monday, ..., 6=Saturday
+                            // ISO: 1=Monday, ..., 7=Sunday
+                            const todayIso = today.getDay() === 0 ? 7 : today.getDay();
+                            let diff = targetDay - todayIso;
+                            if (diff < 0) diff += 7;
+                            if (diff === 0) diff = 7; // always next week if today is the same day
+                            const nextDate = new Date(today);
+                            nextDate.setDate(today.getDate() + diff);
+                            return nextDate.toISOString().split('T')[0];
+                        })()
                     });
                 }}
                 className="text-gray-500 hover:text-gray-700 transition"
@@ -1413,14 +1560,19 @@ export default function DetailKelas() {
                     className="w-full px-4 py-3 border-2 focus:outline-none"
                     style={{
                     fontFamily: 'Urbanist, sans-serif',
-                    borderColor: '#015023',
+                    borderColor: generateErrors.jumlahPertemuan ? '#BE0414' : '#015023',
                     borderRadius: '12px'
                     }}
                     placeholder="Masukkan jumlah pertemuan (1-16)"
                 />
                 <p className="text-xs text-gray-500 mt-1" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                    Maksimal 16 pertemuan per semester
+                    Maksimal 20 pertemuan per semester
                 </p>
+                {generateErrors.jumlahPertemuan && (
+                    <p className="text-xs text-red-500 mt-1" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                    {generateErrors.jumlahPertemuan}
+                    </p>
+                )}
                 </div>
 
                 {/* Tanggal Mulai Pertemuan */}
@@ -1435,13 +1587,21 @@ export default function DetailKelas() {
                     className="w-full px-4 py-3 border-2 focus:outline-none"
                     style={{
                     fontFamily: 'Urbanist, sans-serif',
-                    borderColor: '#015023',
+                    borderColor: generateErrors.tanggalMulai ? '#BE0414' : '#015023',
                     borderRadius: '12px'
                     }}
                 />
                 <p className="text-xs text-gray-500 mt-1" style={{ fontFamily: 'Urbanist, sans-serif' }}>
                     Pertemuan selanjutnya akan ditambahkan setiap +7 hari
                 </p>
+                <p className="text-xs text-red-500 mt-1" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                    *hari harus sesuai dengan hari kelas
+                </p>
+                {generateErrors.tanggalMulai && (
+                    <p className="text-xs text-red-500 mt-1" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                    {generateErrors.tanggalMulai}
+                    </p>
+                )}
                 </div>
 
                 {/* Info Preview */}
@@ -1472,6 +1632,15 @@ export default function DetailKelas() {
                 })()}
             </div>
 
+            {/* Error Messages */}
+            {generateErrors.form && (
+                <ErrorMessageBox message={generateErrors.form} />
+            )}
+            {/* Success Messages */}
+            {generateSuccess && (
+                <SuccessMessageBox message={generateSuccess} />
+            )}
+
             {/* Action Buttons */}
             <div className="flex gap-3">
                 <button
@@ -1494,7 +1663,7 @@ export default function DetailKelas() {
                 </button>
                 <button
                 onClick={handleGenerateJadwal}
-                disabled={!generateJadwalForm.jumlahPertemuan || !generateJadwalForm.tanggalMulai || isLoading}
+                disabled={!generateJadwalForm.jumlahPertemuan || !generateJadwalForm.tanggalMulai || isGenerating}
                 className="flex-1 px-6 py-3 text-white font-semibold transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                     backgroundColor: '#DABC4E',
@@ -1503,7 +1672,7 @@ export default function DetailKelas() {
                     fontFamily: 'Urbanist, sans-serif'
                 }}
                 >
-                {isLoading ? (
+                {isGenerating ? (
                     <>
                     <span className="animate-spin mr-2">⏳</span>
                     Generating...

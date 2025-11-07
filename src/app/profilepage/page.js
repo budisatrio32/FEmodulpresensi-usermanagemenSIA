@@ -8,13 +8,13 @@ export default function ProfilePage() {
   // TODO: Get user role from cookies/context
   // For now, hardcoded to 'dosen' to preview ProfileDMA
   // const userRole = Cookies.get('roles') || 'mahasiswa';
-  const userRole = 'dosen';
+  const userRole = 'mahasiswa';
 
   // Function to render appropriate profile component based on role
   const renderProfileComponent = () => {
     switch (userRole) {
-      // case 'mahasiswa':
-      //   return <ProfileMahasiswa />;
+      case 'mahasiswa':
+        return <ProfileMahasiswa />;
       
       case 'dosen':
       case 'manager':
