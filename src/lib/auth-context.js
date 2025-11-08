@@ -1,61 +1,61 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import Cookies from 'js-cookie';
-import api from './axios';
-import { getProfileNav } from './ProfileApi';
+import { getProfile } from './ProfileApi';
 import { buildImageUrl } from './utils';
 
 // Bentuk data user minimal; kini termasuk avatar/image apabila tersedia.
-const defaultUser = { name: null, roles: [], image: null, loading: true };
+const defaultUser = { username: null, roles: null, image: null, loading: true, name: null };
 
 const AuthContext = createContext({
-  user: defaultUser,
-  setUser: () => {},
-  refreshUser: async () => {},
-  logoutLocal: () => {},
+    user: defaultUser,
+    setUser: () => {},
+    refreshUser: async () => {},
+    logoutLocal: () => {},
 });
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(defaultUser);
+    const [user, setUser] = useState(defaultUser);
 
-  const fetchProfile = useCallback(async () => {
-    // Jika tidak ada token -> anggap belum login
-    const token = Cookies.get('token');
-    if (!token) {
-        setUser({ name: null, roles: [], image: null, loading: false });
-      return;
-    }
-    try {
-      const response = await getProfileNav();
-      const image = buildImageUrl(response.image || response.avatar_url || null);
-      setUser({ name: response.name || 'User', roles: response.roles, image, loading: false });
-      if (response.name) {
-        Cookies.set('name', response.name);
-      }
-    } catch (e) {
-      console.warn('Gagal fetch profil:', e?.response?.data || e.message);
-      setUser({ name: null, roles: [], image: null, loading: false });
-    }
-  }, []);
+    const fetchProfile = useCallback(async () => {
+        // Jika tidak ada token -> anggap belum login
+        console.log('Fetching profile in AuthProvider...');
+        const token = Cookies.get('token');
+        if (!token) {
+            setUser({ username: null, roles: null, image: null, loading: false, name: null });
+        return;
+        }
+        try {
+        const response = await getProfile();
+        const image = buildImageUrl(response.data.profile_image);
+        setUser({ username: response.data.username, roles: response.data.role, image, loading: false, name: response.data.name });
+        if (response.data.username) {
+            Cookies.set('name', response.data.username);
+        }
+        } catch (e) {
+        console.warn('Gagal fetch profil:', e?.response?.data || e.message);
+        setUser({ username: null, roles: null, image: null, loading: false, name: null });
+        }
+    }, []);
 
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+    useEffect(() => {
+        fetchProfile();
+    }, [fetchProfile]);
 
-  const refreshUser = fetchProfile;
+    const refreshUser = fetchProfile;
 
-  const logoutLocal = () => {
-    Cookies.remove('token');
-    Cookies.remove('roles');
-    Cookies.remove('name');
-  setUser({ name: null, roles: [], image: null, loading: false });
-  };
+    const logoutLocal = () => {
+        Cookies.remove('token');
+        Cookies.remove('roles');
+        Cookies.remove('name');
+    setUser({ name: null, roles: [], image: null, loading: false });
+    };
 
-  return (
-    <AuthContext.Provider value={{ user, setUser, refreshUser, logoutLocal }}>
-      {children}
-    </AuthContext.Provider>
-  );
+    return (
+        <AuthContext.Provider value={{ user, setUser, refreshUser, logoutLocal }}>
+            {children}
+        </AuthContext.Provider>
+    );
 };
 
 export const useAuth = () => useContext(AuthContext);

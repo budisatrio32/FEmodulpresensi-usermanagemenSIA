@@ -97,10 +97,11 @@ const NavbarNotification = React.forwardRef(({ className, ...props }, ref) => (
   </Link>
 ))
 
-const NavbarProfile = React.forwardRef(({ className, userName, userImage, ...props }, ref) => {
+const NavbarProfile = React.forwardRef(({ className, userName, userImage, Name, ...props }, ref) => {
   const router = useRouter()
   const { user, logoutLocal } = useAuth();
-  const displayName = userName || user.name || 'User';
+  const displayuserName = userName || user.username || '...';
+  const displayName = Name || user.name || '...';
   const displayImage = userImage || user.image;
 
   const handleLogout = async () => {
@@ -134,7 +135,7 @@ const NavbarProfile = React.forwardRef(({ className, userName, userImage, ...pro
           {...props}
         >
           <Avatar className="size-9 sm:size-10">
-            <AvatarImage src={displayImage} alt={displayName} />
+            <AvatarImage src={displayImage} alt={displayuserName} />
             <AvatarFallback>
               {displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
             </AvatarFallback>
@@ -145,10 +146,10 @@ const NavbarProfile = React.forwardRef(({ className, userName, userImage, ...pro
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-              {displayName}
+              {displayuserName}
             </p>
             <p className="text-xs" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
-              Akun Pengguna
+              {displayName || 'Akun Pengguna'}
             </p>
           </div>
         </DropdownMenuLabel>

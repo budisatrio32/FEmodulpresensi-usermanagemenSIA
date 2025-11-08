@@ -79,10 +79,6 @@ const handleSubmit = async (e) => {
   }
 };
 
-if (isLoading) {
-  return <LoadingEffect />;
-}
-
 return (
 <main className="min-h-screen flex items-center justify-center py-12 px-4 font-urbanist">
 <article className="w-full max-w-5xl flex rounded-2xl shadow-2xl hover:shadow-3xl transition-shadow duration-300 overflow-hidden bg-white/95 backdrop-blur-sm">
