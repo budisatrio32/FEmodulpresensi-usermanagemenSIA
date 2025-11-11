@@ -13,12 +13,15 @@ import { useAuth } from '@/lib/auth-context';
 
 export default function LoginForm() {
 const router = useRouter();
+// Panggil hook di level atas komponen, bukan di dalam fungsi event
+const { refreshUser } = useAuth();
 const [showPassword, setShowPassword] = useState(false);
 const [email, setEmail] = useState('');
 const [password, setPassword] = useState('');
 const [isLoading, setIsLoading] = useState(true);
 const [error, setError] = useState(null);
 const [isLoggedIn, setIsLoggedIn] = useState(false);
+const [isSubmitting, setIsSubmitting] = useState(false);
 
 //cek sudah login blm
 const checkLoggedIn = async () => {
@@ -27,12 +30,12 @@ const checkLoggedIn = async () => {
     const token = Cookies.get('token'); 
     const roles = Cookies.get('roles');
     if (token && roles) {
+      setIsLoggedIn(true);
       if (roles == 'admin' || roles == 'manager') {
       router.push('/adminpage');
       } else if (roles == 'mahasiswa' || roles == 'dosen') {
         router.push('/landingpage');
       }
-      setIsLoggedIn(true);
     }
   } finally {
     setIsLoading(false);
@@ -46,7 +49,7 @@ useEffect(() => {
 
 const handleSubmit = async (e) => {
   e.preventDefault();
-  setIsLoading(true);
+  setIsSubmitting(true);
   try {
     setError(null);
     // Pastikan tidak ada token lama yang nyangkut sebelum login
@@ -62,11 +65,10 @@ const handleSubmit = async (e) => {
       Cookies.set('token', token, { expires: 3 }); // expires in 3 days
       Cookies.set('roles', roles, { expires: 3 });
 
-      setIsLoggedIn(true);
-
-      // Ambil data user dari auth-context
-      const { user, refreshUser } = useAuth();
+      // Refresh data user di context
       await refreshUser();
+
+      setIsLoggedIn(true);
 
       // redirect sesuai role
       if (roles == 'admin' || roles == 'manager') {
@@ -84,7 +86,7 @@ const handleSubmit = async (e) => {
     console.error('error di login:', error);
   } finally {
     // Hentikan loading
-    setIsLoading(false);
+    setIsSubmitting(false);
   }
 };
 
@@ -223,7 +225,7 @@ return (
           disabled={isLoading}
           className="text-lg w-full py-3 px-4 shadow-md font-urbanist"
         >
-          {isLoading ? 'Signing in...' : 'Sign In'}
+          {isSubmitting ? 'Signing in...' : 'Sign In'}
         </SecondaryButton>
 </form>
     {/* Error Message */}

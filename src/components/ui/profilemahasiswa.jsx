@@ -1,15 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, User, MapPin, Users, Eye, EyeOff, Upload, X, Lock } from 'lucide-react';
 import { Field, FieldLabel, FieldContent, FieldDescription, FieldError } from '@/components/ui/field';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { getStudentProfile, getStudentAddress, getStudentFamilyEducation } from '@/lib/profileApi';
 
 export default function ProfileMahasiswa() {
 const router = useRouter();
 const [isLoading, setIsLoading] = useState(false);
+const [isFetching, setIsFetching] = useState(false);
 const [errors, setErrors] = useState({});
 const [showOldPassword, setShowOldPassword] = useState(false);
 const [showPassword, setShowPassword] = useState(false);
@@ -18,49 +20,230 @@ const [imagePreview, setImagePreview] = useState(null);
 
 // State untuk data profile mahasiswa
 const [profileData, setProfileData] = useState({
-// Data yang bisa edit dan dilihat
-registration_number: '2021110001',
-full_name: 'John Doe',
-username: 'john.doe',
-email: 'john.doe@student.ugn.ac.id',
-old_password: '',
-password: '',
-confirm_password: '',
-profile_image: null,
-alamat: 'Jl. Mawar No. 123',
-dusun: 'Dusun Makmur',
-kelurahan: 'Kelurahan Sejahtera',
-kecamatan: 'Kecamatan Bahagia',
-city_regency: 'Kota Jakarta',
-provinsi: 'DKI Jakarta',
-kode_pos: '12345',
+    // Data yang bisa edit dan dilihat
+    // profile umum
+    registration_number: '',
+    full_name: '',
+    username: '',
+    email: '',
+    program: '', 
 
-// Data yang bisa edit dan dilihat
-gender: 'Laki-laki',
-religion: 'Islam',
-tanggal_lahir: '2000-01-15',
-tempat_lahir: 'Jakarta',
-nik: '3201010101000001',
-nomor_kartu_keluarga: '3201010101000001',
-citizenship: 'WNI',
-birth_order: '1',
-jumlah_saudara: '2',
-sekolah_asal: 'SMA Negeri 1 Jakarta',
+    //
+    old_password: '',
+    password: '',
+    confirm_password: '',
+    profile_image: null,
+    alamat: '',
+    dusun: '',
+    kelurahan: '',
+    kecamatan: '',
+    city_regency: '',
+    provinsi: '',
+    kode_pos: '',
+
+    // Data yang bisa edit dan dilihat
+    gender: '',
+    religion: '',
+    tanggal_lahir: '',
+    tempat_lahir: '',
+    nik: '',
+    nomor_kartu_keluarga: '',
+    citizenship: '',
+    birth_order: '',
+    jumlah_saudara: '',
+    sekolah_asal: '',
 });
 
+const [oldData, setOldData] = useState({
+    // Data yang bisa edit dan dilihat
+    // profile umum
+    registration_number: '',
+    full_name: '',
+    username: '',
+    email: '',
+    program: '',
+
+    //
+    old_password: '',
+    password: '',
+    confirm_password: '',
+    profile_image: null,
+    alamat: '',
+    dusun: '',
+    kelurahan: '',
+    kecamatan: '',
+    city_regency: '',
+    provinsi: '',
+    kode_pos: '',
+
+    // Data yang bisa edit dan dilihat
+    gender: '',
+    religion: '',
+    tanggal_lahir: '',
+    tempat_lahir: '',
+    nik: '',
+    nomor_kartu_keluarga: '',
+    citizenship: '',
+    birth_order: '',
+    jumlah_saudara: '',
+    sekolah_asal: '',
+});
+
+const [editableData, setEditableData] = useState({
+    // Data yang bisa edit opsional kalo data di database null
+    gender: false,
+    tanggal_lahir: false,
+    tempat_lahir: false,
+    nik: false,
+    nomor_kartu_keluarga: false,
+    citizenship: false,
+    birth_order: false,
+    sekolah_asal: false,
+});
+
+useEffect(() => {
+    fetchAll();
+}, []);
+
+const fetchAll = async () => {
+    setErrors(prev => ({...prev, fetch: null}));
+    setIsFetching(true);
+    await Promise.all([
+        FetchProfileData(),
+        FetchAddressData(),
+        FetchFamilyEducationData(),
+    ]);
+    setIsFetching(false);
+};
+
+const FetchProfileData = async () => {
+    // alert('Debug: FetchProfileData dipanggil');
+    try {
+        const response = await getStudentProfile()
+        if (response.status === 'success') {
+            setProfileData(prev => ({
+                ...prev, 
+                registration_number: response.data.registration_number,
+                full_name: response.data.name,
+                username: response.data.username,
+                email: response.data.email,
+                profile_image: response.data.profile_image,
+                program: response.data.program_name,
+                gender: response.data.gender,
+                religion: response.data.religion,
+                tanggal_lahir: response.data.birth_date ? response.data.birth_date.slice(0, 10) : '',
+                tempat_lahir: response.data.birth_place,
+                nik: response.data.nik,
+                nomor_kartu_keluarga: response.data.no_kk,
+                citizenship: response.data.citizenship,
+            }));
+            setOldData(prev => ({
+                ...prev,
+                registration_number: response.data.registration_number,
+                full_name: response.data.name,
+                username: response.data.username,
+                email: response.data.email,
+                profile_image: response.data.profile_image,
+                program: response.data.program_name,
+                gender: response.data.gender,
+                religion: response.data.religion,
+                tanggal_lahir: response.data.birth_date ? response.data.birth_date.slice(0, 10) : '',
+                tempat_lahir: response.data.birth_place,
+                nik: response.data.nik,
+                nomor_kartu_keluarga: response.data.no_kk,
+                citizenship: response.data.citizenship,
+            }));
+            setEditableData(prev => ({
+                ...prev,
+                gender: response.data.editable_fields.gender,
+                tanggal_lahir: response.data.editable_fields.birth_date,
+                tempat_lahir: response.data.editable_fields.birth_place,
+                nik: response.data.editable_fields.nik,
+                nomor_kartu_keluarga: response.data.editable_fields.no_kk,
+                citizenship: response.data.editable_fields.citizenship,
+            }))
+        } else {
+            setErrors(prev => ({...prev, fetch: 'Gagal mengambil data profile: ' + response.message}));
+        }
+    } catch (error) {
+        setErrors(prev => ({...prev, fetch: 'Gagal mengambil data profile: ' + error.message}));
+    }
+};
+
+const FetchAddressData = async () => {
+    try {
+        const response = await getStudentAddress()
+        if (response.status === 'success') {
+            setProfileData(prev => ({
+                ...prev,
+                alamat: response.data.full_address,
+                dusun: response.data.dusun,
+                kelurahan: response.data.kelurahan,
+                kecamatan: response.data.kecamatan,
+                city_regency: response.data.city_regency,
+                provinsi: response.data.provinsi,
+                kode_pos: response.data.postal_code,
+            }));
+            setOldData(prev => ({
+                ...prev,
+                alamat: response.data.full_address,
+                dusun: response.data.dusun,
+                kelurahan: response.data.kelurahan,
+                kecamatan: response.data.kecamatan,
+                city_regency: response.data.city_regency,
+                provinsi: response.data.provinsi,
+                kode_pos: response.data.postal_code,
+            }));
+        } else {
+            setErrors(prev => ({...prev, fetch: 'Gagal mengambil data alamat: ' + response.message}));
+        }
+    } catch (error) {
+        setErrors(prev => ({...prev, fetch: 'Gagal mengambil data alamat: ' + error.message}));
+    }
+};
+
+const FetchFamilyEducationData = async () => {
+    try {
+        const response = await getStudentFamilyEducation()
+        if (response.status === 'success') {
+            setProfileData(prev => ({
+                ...prev,
+                birth_order: response.data.birth_order,
+                jumlah_saudara: response.data.number_of_siblings,
+                sekolah_asal: response.data.previous_school,
+            }));
+            setOldData(prev => ({
+                ...prev,
+                birth_order: response.data.birth_order,
+                jumlah_saudara: response.data.number_of_siblings,
+                sekolah_asal: response.data.previous_school,
+            }));
+            setEditableData(prev => ({
+                ...prev,
+                birth_order: response.data.editable_fields.birth_order,
+                sekolah_asal: response.data.editable_fields.previous_school,
+            }))
+        } else {
+            setErrors(prev => ({...prev, fetch: 'Gagal mengambil data edukasi: ' + response.message}));
+        }
+    } catch (error) {
+        setErrors(prev => ({...prev,  fetch: 'Gagal mengambil data edukasi: ' + error.message}))
+    }
+};
+
 const handleChange = (e) => {
-const { name, value } = e.target;
-setProfileData(prev => ({
-    ...prev,
-    [name]: value
-}));
-// Clear error untuk field ini
-if (errors[name]) {
-    setErrors(prev => ({
-    ...prev,
-    [name]: ''
+    const { name, value } = e.target;
+    setProfileData(prev => ({
+        ...prev,
+        [name]: value
     }));
-}
+    // Clear error untuk field ini
+    if (errors[name]) {
+        setErrors(prev => ({
+        ...prev,
+        [name]: ''
+        }));
+    }
 };
 
 const handleImageChange = (e) => {
@@ -1041,7 +1224,10 @@ return (
     </div>
 
     {/* Section 4: Ubah Password */}
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
+    <div 
+        className="bg-white rounded-2xl shadow-lg p-6"
+        style={{ borderRadius: '16px' }}
+        >
         <div className="flex items-center gap-3 mb-6">
             <div 
             className="p-3 rounded-xl"
@@ -1066,140 +1252,130 @@ return (
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Password Lama */}
-        <Field className="space-y-2 md:col-span-2">
-            <FieldLabel className="text-sm font-medium text-gray-700">
-            Password Lama
-            <span className="text-xs text-gray-500 ml-2">(Wajib diisi jika ingin mengubah password)</span>
+            {/* Password Lama */}
+            <Field className="md:col-span-2">
+            <FieldLabel htmlFor="old_password">
+                Password Lama
             </FieldLabel>
-            <FieldContent className="relative">
-            <input
-                type={showOldPassword ? "text" : "password"}
-                name="old_password"
-                placeholder="Masukkan password lama"
-                value={profileData.old_password}
-                onChange={handleChange}
-                className={`
-                w-full px-4 py-2.5 pr-12
-                border ${errors.old_password ? 'border-brand-danger' : 'border-gray-200'}
-                rounded-xl
-                text-gray-900 placeholder-gray-400
-                focus:outline-none focus:ring-2 
-                ${errors.old_password ? 'focus:ring-brand-danger' : 'focus:ring-brand-primary'}
-                transition-all
-                disabled:bg-gray-50 disabled:cursor-not-allowed
-                `}
-                disabled={isLoading}
-            />
-            <button
-                type="button"
-                onClick={() => setShowOldPassword(!showOldPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-                {showOldPassword ? (
-                <EyeOff className="w-5 h-5" />
-                ) : (
-                <Eye className="w-5 h-5" />
-                )}
-            </button>
+            <FieldDescription>
+                Wajib diisi jika ingin mengubah password
+            </FieldDescription>
+            <FieldContent>
+                <div className="relative">
+                <input
+                    type={showOldPassword ? "text" : "password"}
+                    id="old_password"
+                    name="old_password"
+                    value={profileData.old_password}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 pr-12 border-2 focus:outline-none focus:border-opacity-100"
+                    style={{
+                    fontFamily: 'Urbanist, sans-serif',
+                    borderColor: errors.old_password ? '#BE0414' : '#015023',
+                    borderRadius: '12px',
+                    opacity: errors.old_password ? 1 : 0.7
+                    }}
+                    disabled={isLoading}
+                    placeholder="Masukkan password lama"
+                />
+                <button
+                    type="button"
+                    onClick={() => setShowOldPassword(!showOldPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition"
+                    style={{ color: '#015023' }}
+                >
+                    {showOldPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+                </div>
+            </FieldContent>
             {errors.old_password && (
-                <p className="text-brand-danger text-xs mt-1">{errors.old_password}</p>
+                <FieldError>{errors.old_password}</FieldError>
             )}
-            </FieldContent>
-        </Field>
+            </Field>
 
-        {/* Password Baru */}
-        <Field className="space-y-2">
-            <FieldLabel className="text-sm font-medium text-gray-700">
-            Password Baru
-            <span className="text-xs text-gray-500 ml-2">(Opsional)</span>
+            {/* Password Baru */}
+            <Field>
+            <FieldLabel htmlFor="password">
+                Password Baru
             </FieldLabel>
-            <FieldContent className="relative">
-            <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                placeholder="Masukkan password baru"
-                value={profileData.password}
-                onChange={handleChange}
-                className={`
-                w-full px-4 py-2.5 pr-12
-                border ${errors.password ? 'border-brand-danger' : 'border-gray-200'}
-                rounded-xl
-                text-gray-900 placeholder-gray-400
-                focus:outline-none focus:ring-2 
-                ${errors.password ? 'focus:ring-brand-danger' : 'focus:ring-brand-primary'}
-                transition-all
-                disabled:bg-gray-50 disabled:cursor-not-allowed
-                `}
-                disabled={isLoading}
-            />
-            <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-                {showPassword ? (
-                <EyeOff className="w-5 h-5" />
-                ) : (
-                <Eye className="w-5 h-5" />
-                )}
-            </button>
+            <FieldDescription>
+                Minimal 6 karakter
+            </FieldDescription>
+            <FieldContent>
+                <div className="relative">
+                <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    name="password"
+                    value={profileData.password}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 pr-12 border-2 focus:outline-none focus:border-opacity-100"
+                    style={{
+                    fontFamily: 'Urbanist, sans-serif',
+                    borderColor: errors.password ? '#BE0414' : '#015023',
+                    borderRadius: '12px',
+                    opacity: errors.password ? 1 : 0.7
+                    }}
+                    disabled={isLoading}
+                    placeholder="Masukkan password baru"
+                />
+                <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition"
+                    style={{ color: '#015023' }}
+                >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+                </div>
+            </FieldContent>
             {errors.password && (
-                <p className="text-brand-danger text-xs mt-1">{errors.password}</p>
+                <FieldError>{errors.password}</FieldError>
             )}
-            </FieldContent>
-        </Field>
+            </Field>
 
-        {/* Confirm Password */}
-        <Field className="space-y-2">
-            <FieldLabel className="text-sm font-medium text-gray-700">
-            Konfirmasi Password
-            <span className="text-xs text-gray-500 ml-2">(Opsional)</span>
+            {/* Confirm Password */}
+            <Field>
+            <FieldLabel htmlFor="confirm_password">
+                Konfirmasi Password Baru
             </FieldLabel>
-            <FieldContent className="relative">
-            <input
-                type={showConfirmPassword ? "text" : "password"}
-                name="confirm_password"
-                placeholder="Konfirmasi password baru"
-                value={profileData.confirm_password}
-                onChange={handleChange}
-                className={`
-                w-full px-4 py-2.5 pr-12
-                border ${errors.confirm_password ? 'border-brand-danger' : 'border-gray-200'}
-                rounded-xl
-                text-gray-900 placeholder-gray-400
-                focus:outline-none focus:ring-2 
-                ${errors.confirm_password ? 'focus:ring-brand-danger' : 'focus:ring-brand-primary'}
-                transition-all
-                disabled:bg-gray-50 disabled:cursor-not-allowed
-                `}
-                disabled={isLoading}
-            />
-            <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-                {showConfirmPassword ? (
-                <EyeOff className="w-5 h-5" />
-                ) : (
-                <Eye className="w-5 h-5" />
-                )}
-            </button>
-            {errors.confirm_password && (
-                <p className="text-brand-danger text-xs mt-1">{errors.confirm_password}</p>
-            )}
+            <FieldDescription>
+                Masukkan ulang password baru
+            </FieldDescription>
+            <FieldContent>
+                <div className="relative">
+                <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    id="confirm_password"
+                    name="confirm_password"
+                    value={profileData.confirm_password}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 pr-12 border-2 focus:outline-none focus:border-opacity-100"
+                    style={{
+                    fontFamily: 'Urbanist, sans-serif',
+                    borderColor: errors.confirm_password ? '#BE0414' : '#015023',
+                    borderRadius: '12px',
+                    opacity: errors.confirm_password ? 1 : 0.7
+                    }}
+                    disabled={isLoading}
+                    placeholder="Konfirmasi password baru"
+                />
+                <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition"
+                    style={{ color: '#015023' }}
+                >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+                </div>
             </FieldContent>
-        </Field>
-
-        {/* Info Text */}
-        <div className="md:col-span-2">
-            <p className="text-sm text-gray-500">
-            <span className="font-medium">Catatan:</span> Untuk mengubah password, Anda harus mengisi password lama terlebih dahulu. Kosongkan semua field password jika tidak ingin mengubah password. Password baru minimal 6 karakter.
-            </p>
+            {errors.confirm_password && (
+                <FieldError>{errors.confirm_password}</FieldError>
+            )}
+            </Field>
         </div>
         </div>
-    </div>
 
     {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-end">

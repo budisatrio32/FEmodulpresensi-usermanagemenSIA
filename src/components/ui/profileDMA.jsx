@@ -69,7 +69,6 @@ const FetchProfileData = async () => {
     try {
         const response = await getStaffProfile();
         if (response.status === 'success') {
-            // alert('Debug: ' + response.data.name);
             setOldData(prev => ({
                 ...prev,
                 full_name: response.data.name,
@@ -77,9 +76,9 @@ const FetchProfileData = async () => {
                 email: response.data.email,
                 profile_image: response.data.profile_image,
                 employee_id: response.data.staff_data.employee_id_number,
-                position: response.data.staff_data.position
+                position: response.data.staff_data.position,
+                profile_image: response.data.profile_image
             }));
-            // alert('Debug Datalama: ' + oldData.full_name);
             setProfileData(prev => ({
                 ...prev,
                 full_name: response.data.name,
@@ -87,9 +86,9 @@ const FetchProfileData = async () => {
                 email: response.data.email,
                 profile_image: response.data.profile_image,
                 employee_id: response.data.staff_data.employee_id_number,
-                position: response.data.staff_data.position
+                position: response.data.staff_data.position,
+                profile_image: response.data.profile_image
             }));
-            // sehingga avatar langsung menampilkan gambar dari link backend
             if (response.data.profile_image) {
                 setImagePreview(buildImageUrl(response.data.profile_image));
             }
@@ -97,7 +96,6 @@ const FetchProfileData = async () => {
             setErrors(prev => ({...prev, fetch: 'Gagal mengambil data profile: ' + response.message}));
         }
     } catch (error) {
-        alert('Debug: ' + error.message);
         setErrors(prev => ({...prev, fetch: 'Gagal mengambil data profile: ' + error.message}));
     }
 };
