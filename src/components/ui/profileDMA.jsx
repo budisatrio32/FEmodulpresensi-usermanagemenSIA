@@ -1,15 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, User, Eye, EyeOff, Upload, X, Lock } from 'lucide-react';
 import { Field, FieldLabel, FieldContent, FieldDescription, FieldError } from '@/components/ui/field';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { getStaffProfile } from '@/lib/profileApi';
+import LoadingEffect from './loading-effect';
+import { buildImageUrl } from '@/lib/utils';
 
 export default function ProfileDMA() {
 const router = useRouter();
 const [isLoading, setIsLoading] = useState(false);
+const [isFetching, setIsFetching] = useState(false);
 const [errors, setErrors] = useState({});
 const [showOldPassword, setShowOldPassword] = useState(false);
 const [showPassword, setShowPassword] = useState(false);
@@ -18,182 +22,253 @@ const [imagePreview, setImagePreview] = useState(null);
 
 // State untuk data profile DMA (Dosen, Manager, Admin)
 const [profileData, setProfileData] = useState({
-// Data yang bisa edit dan dilihat
-full_name: 'Dr. Ahmad Wijaya',
-username: 'ahmad.wijaya',
-email: 'ahmad.wijaya@university.ac.id',
-old_password: '',
-password: '',
-confirm_password: '',
-profile_image: null,
+    // Data yang bisa edit dan dilihat
+    full_name: '',
+    username: '',
+    email: '',
+    old_password: '',
+    password: '',
+    confirm_password: '',
+    profile_image: null,
 
-// Data yang hanya bisa dilihat (read-only)
-employee_id: 'EMP-2021-001',
-position: 'Dosen', // Dosen / Manager / Admin
+    // Data yang hanya bisa dilihat (read-only)
+    employee_id: '',
+    position: '', // Dosen / Manager / Admin
 });
 
+// State untuk data profile DMA (Dosen, Manager, Admin)
+const [oldData, setOldData] = useState({
+    // Data yang bisa edit dan dilihat
+    full_name: '',
+    username: '',
+    email: '',
+    old_password: '',
+    password: '',
+    confirm_password: '',
+    profile_image: null,
+
+    // Data yang hanya bisa dilihat (read-only)
+    employee_id: '',
+    position: '', // Dosen / Manager / Admin
+});
+
+useEffect(() => {
+    fetchAll();
+}, []);
+
+const fetchAll = async () => {
+    setErrors(prev => ({...prev, fetch: null}));
+    setIsFetching(true);
+    await Promise.all([
+        FetchProfileData()
+    ]);
+    setIsFetching(false);
+};
+
+const FetchProfileData = async () => {
+    try {
+        const response = await getStaffProfile();
+        if (response.status === 'success') {
+            // alert('Debug: ' + response.data.name);
+            setOldData(prev => ({
+                ...prev,
+                full_name: response.data.name,
+                username: response.data.username,
+                email: response.data.email,
+                profile_image: response.data.profile_image,
+                employee_id: response.data.staff_data.employee_id_number,
+                position: response.data.staff_data.position
+            }));
+            // alert('Debug Datalama: ' + oldData.full_name);
+            setProfileData(prev => ({
+                ...prev,
+                full_name: response.data.name,
+                username: response.data.username,
+                email: response.data.email,
+                profile_image: response.data.profile_image,
+                employee_id: response.data.staff_data.employee_id_number,
+                position: response.data.staff_data.position
+            }));
+            // sehingga avatar langsung menampilkan gambar dari link backend
+            if (response.data.profile_image) {
+                setImagePreview(buildImageUrl(response.data.profile_image));
+            }
+        } else {
+            setErrors(prev => ({...prev, fetch: 'Gagal mengambil data profile: ' + response.message}));
+        }
+    } catch (error) {
+        alert('Debug: ' + error.message);
+        setErrors(prev => ({...prev, fetch: 'Gagal mengambil data profile: ' + error.message}));
+    }
+};
+
 const handleChange = (e) => {
-const { name, value } = e.target;
-setProfileData(prev => ({
-    ...prev,
-    [name]: value
-}));
-// Clear error untuk field ini
-if (errors[name]) {
-    setErrors(prev => ({
-    ...prev,
-    [name]: ''
+    const { name, value } = e.target;
+    setProfileData(prev => ({
+        ...prev,
+        [name]: value
     }));
-}
+    // Clear error untuk field ini
+    if (errors[name]) {
+        setErrors(prev => ({
+        ...prev,
+        [name]: ''
+        }));
+    }
 };
 
 const handleImageChange = (e) => {
-const file = e.target.files[0];
-if (file) {
-    // Validasi ukuran file (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-    setErrors(prev => ({
+    const file = e.target.files[0];
+    if (file) {
+        // Validasi ukuran file (max 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+        setErrors(prev => ({
+            ...prev,
+            profile_image: 'Ukuran file maksimal 2MB'
+        }));
+        return;
+        }
+
+        // Validasi tipe file
+        if (!file.type.startsWith('image/')) {
+        setErrors(prev => ({
+            ...prev,
+            profile_image: 'File harus berupa gambar'
+        }));
+        return;
+        }
+
+        setProfileData(prev => ({
         ...prev,
-        profile_image: 'Ukuran file maksimal 2MB'
-    }));
-    return;
+        profile_image: file
+        }));
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+        setImagePreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+
+        // Clear error
+        if (errors.profile_image) {
+        setErrors(prev => ({
+            ...prev,
+            profile_image: ''
+        }));
+        }
     }
-
-    // Validasi tipe file
-    if (!file.type.startsWith('image/')) {
-    setErrors(prev => ({
-        ...prev,
-        profile_image: 'File harus berupa gambar'
-    }));
-    return;
-    }
-
-    setProfileData(prev => ({
-    ...prev,
-    profile_image: file
-    }));
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-    setImagePreview(reader.result);
-    };
-    reader.readAsDataURL(file);
-
-    // Clear error
-    if (errors.profile_image) {
-    setErrors(prev => ({
-        ...prev,
-        profile_image: ''
-    }));
-    }
-}
 };
 
 const handleRemoveImage = () => {
-setProfileData(prev => ({
-    ...prev,
-    profile_image: null
-}));
-setImagePreview(null);
+    setProfileData(prev => ({
+        ...prev,
+        profile_image: null
+    }));
 };
 
 const validateForm = () => {
-const newErrors = {};
+    const newErrors = {};
 
-// Validasi data wajib
-if (!profileData.full_name?.trim()) {
-    newErrors.full_name = 'Nama Lengkap wajib diisi';
-}
-
-if (!profileData.username?.trim()) {
-    newErrors.username = 'Username wajib diisi';
-} else if (profileData.username.length < 3) {
-    newErrors.username = 'Username minimal 3 karakter';
-}
-
-if (!profileData.email?.trim()) {
-    newErrors.email = 'Email wajib diisi';
-} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileData.email)) {
-    newErrors.email = 'Format email tidak valid';
-}
-
-// Validasi password (opsional, hanya jika diisi)
-if (profileData.password || profileData.old_password) {
-    // Jika mengisi password baru, harus mengisi password lama
-    if (profileData.password && !profileData.old_password) {
-    newErrors.old_password = 'Password lama wajib diisi untuk mengubah password';
+    // Validasi data wajib
+    if (!profileData.full_name?.trim()) {
+        newErrors.full_name = 'Nama Lengkap wajib diisi';
     }
-    
-    if (profileData.password && profileData.password.length < 6) {
-    newErrors.password = 'Password minimal 6 karakter';
-    }
-    
-    if (profileData.password !== profileData.confirm_password) {
-    newErrors.confirm_password = 'Password tidak cocok';
-    }
-}
 
-setErrors(newErrors);
-return Object.keys(newErrors).length === 0;
+    if (!profileData.username?.trim()) {
+        newErrors.username = 'Username wajib diisi';
+    } else if (profileData.username.length < 3) {
+        newErrors.username = 'Username minimal 3 karakter';
+    }
+
+    if (!profileData.email?.trim()) {
+        newErrors.email = 'Email wajib diisi';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileData.email)) {
+        newErrors.email = 'Format email tidak valid';
+    }
+
+    // Validasi password (opsional, hanya jika diisi)
+    if (profileData.password || profileData.old_password) {
+        // Jika mengisi password baru, harus mengisi password lama
+        if (profileData.password && !profileData.old_password) {
+        newErrors.old_password = 'Password lama wajib diisi untuk mengubah password';
+        }
+        
+        if (profileData.password && profileData.password.length < 6) {
+        newErrors.password = 'Password minimal 6 karakter';
+        }
+        
+        if (profileData.password !== profileData.confirm_password) {
+        newErrors.confirm_password = 'Password tidak cocok';
+        }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
 };
 
 const handleSubmit = async (e) => {
-e.preventDefault();
+    e.preventDefault();
 
-if (!validateForm()) {
-    return;
-}
+    if (!validateForm()) {
+        return;
+    }
 
-setIsLoading(true);
+    setIsLoading(true);
 
-try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
-    // TODO: Replace with actual API call
-    // const formData = new FormData();
-    // formData.append('full_name', profileData.full_name);
-    // formData.append('username', profileData.username);
-    // formData.append('email', profileData.email);
-    // if (profileData.password) {
-    //   formData.append('password', profileData.password);
-    // }
-    // if (profileData.profile_image) {
-    //   formData.append('profile_image', profileData.profile_image);
-    // }
-    //
-    // const response = await fetch('/api/profile/dma', {
-    //   method: 'PUT',
-    //   headers: {
-    //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-    //   },
-    //   body: formData
-    // });
-    //
-    // if (!response.ok) throw new Error('Gagal memperbarui profile');
+        // TODO: Replace with actual API call
+        // const formData = new FormData();
+        // formData.append('full_name', profileData.full_name);
+        // formData.append('username', profileData.username);
+        // formData.append('email', profileData.email);
+        // if (profileData.password) {
+        //   formData.append('password', profileData.password);
+        // }
+        // if (profileData.profile_image) {
+        //   formData.append('profile_image', profileData.profile_image);
+        // }
+        //
+        // const response = await fetch('/api/profile/dma', {
+        //   method: 'PUT',
+        //   headers: {
+        //     'Authorization': `Bearer ${localStorage.getItem('token')}`
+        //   },
+        //   body: formData
+        // });
+        //
+        // if (!response.ok) throw new Error('Gagal memperbarui profile');
 
-    alert('Profile berhasil diperbarui!');
-    
-    // Clear password fields after successful update
-    setProfileData(prev => ({
-    ...prev,
-    old_password: '',
-    password: '',
-    confirm_password: ''
-    }));
-} catch (error) {
-    alert('Gagal memperbarui profile: ' + error.message);
-} finally {
-    setIsLoading(false);
-}
+        alert('Profile berhasil diperbarui!');
+        
+        // Clear password fields after successful update
+        setProfileData(prev => ({
+            ...prev,
+            old_password: '',
+            password: '',
+            confirm_password: ''
+        }));
+    } catch (error) {
+        alert('Gagal memperbarui profile: ' + error.message);
+    } finally {
+        setIsLoading(false);
+    }
 };
 
 const handleCancel = () => {
-if (window.confirm('Apakah Anda yakin ingin membatalkan perubahan?')) {
-    router.back();
-}
+    if (window.confirm('Apakah Anda yakin ingin membatalkan perubahan?')) {
+        router.back();
+    }
 };
+
+if (isFetching) {
+    return (
+        <LoadingEffect />
+    );
+}
 
 return (
 <div className="min-h-screen bg-brand-light-sage">
@@ -213,7 +288,7 @@ return (
         <div className="flex items-center gap-6">
         <Avatar className="size-24 sm:size-28">
             <AvatarImage 
-            src={imagePreview} 
+            src={(typeof profileData.profile_image === 'string' ? profileData.profile_image : undefined)} 
             alt={profileData.full_name} 
             />
             <AvatarFallback className="text-2xl">
@@ -435,14 +510,15 @@ return (
                     name="email"
                     value={profileData.email}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
+                    className="w-full px-4 py-3 border-2 focus:outline-none cursor-not-allowed bg-gray-50"
                     style={{
-                    fontFamily: 'Urbanist, sans-serif',
-                    borderColor: errors.email ? '#BE0414' : '#015023',
-                    borderRadius: '12px',
-                    opacity: errors.email ? 1 : 0.7
+                        fontFamily: 'Urbanist, sans-serif',
+                        borderColor: errors.email ? '#BE0414' : '#015023',
+                        borderRadius: '12px',
+                        opacity: 0.5
                     }}
-                    disabled={isLoading}
+                    disabled
+                    readOnly
                 />
                 </FieldContent>
                 {errors.email && (

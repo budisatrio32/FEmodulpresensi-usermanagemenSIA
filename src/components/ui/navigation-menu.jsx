@@ -146,10 +146,10 @@ const NavbarProfile = React.forwardRef(({ className, userName, userImage, Name, 
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-              {displayuserName}
+              {displayName}
             </p>
             <p className="text-xs" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
-              {displayName || 'Akun Pengguna'}
+              {displayuserName}
             </p>
           </div>
         </DropdownMenuLabel>

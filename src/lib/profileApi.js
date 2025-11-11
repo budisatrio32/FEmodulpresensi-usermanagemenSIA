@@ -12,6 +12,19 @@ export const getProfile = async () => {
     throw (error.response?.data ?? error)
   }
 };
+/**
+ * ambil data profile staff
+ */
+export const getStaffProfile = async () => {
+  try {
+    const response = await api.get('/profile/staff');
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error)
+  }
+};
+
 export default {
     getProfile,
+    getStaffProfile,
 };
