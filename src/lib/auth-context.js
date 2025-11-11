@@ -1,7 +1,7 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import Cookies from 'js-cookie';
-import { getProfile } from './ProfileApi';
+import { getProfile } from './profileApi';
 import { buildImageUrl } from './utils';
 
 // Bentuk data user minimal; kini termasuk avatar/image apabila tersedia.

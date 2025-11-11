@@ -9,6 +9,7 @@ import sessionApi from '@/lib/sessionApi';
 import Cookies from 'js-cookie';
 import { ErrorMessageBox } from './message-box';
 import LoadingEffect from './loading-effect';
+import { useAuth } from '@/lib/auth-context';
 
 export default function LoginForm() {
 const router = useRouter();
@@ -17,6 +18,7 @@ const [email, setEmail] = useState('');
 const [password, setPassword] = useState('');
 const [isLoading, setIsLoading] = useState(true);
 const [error, setError] = useState(null);
+const [isLoggedIn, setIsLoggedIn] = useState(false);
 
 //cek sudah login blm
 const checkLoggedIn = async () => {
@@ -30,6 +32,7 @@ const checkLoggedIn = async () => {
       } else if (roles == 'mahasiswa' || roles == 'dosen') {
         router.push('/landingpage');
       }
+      setIsLoggedIn(true);
     }
   } finally {
     setIsLoading(false);
@@ -59,6 +62,12 @@ const handleSubmit = async (e) => {
       Cookies.set('token', token, { expires: 3 }); // expires in 3 days
       Cookies.set('roles', roles, { expires: 3 });
 
+      setIsLoggedIn(true);
+
+      // Ambil data user dari auth-context
+      const { user, refreshUser } = useAuth();
+      await refreshUser();
+
       // redirect sesuai role
       if (roles == 'admin' || roles == 'manager') {
         router.push('/adminpage');
@@ -78,6 +87,14 @@ const handleSubmit = async (e) => {
     setIsLoading(false);
   }
 };
+
+if (isLoading) {
+  return <LoadingEffect />;
+}
+
+if (isLoggedIn) {
+  return <LoadingEffect message="Redirecting..." />;
+}
 
 return (
 <main className="min-h-screen flex items-center justify-center py-12 px-4 font-urbanist">
