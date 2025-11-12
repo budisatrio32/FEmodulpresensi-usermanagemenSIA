@@ -78,9 +78,6 @@ const FetchProfileData = async () => {
                 employee_id: response.data.staff_data.employee_id_number,
                 position: response.data.staff_data.position,
             }));
-            if (response.data.profile_image) {
-                setImagePreview(buildImageUrl(response.data.profile_image));
-            }
         } else {
             setErrors(prev => ({...prev, fetch: 'Gagal mengambil data profile: ' + response.message}));
         }
