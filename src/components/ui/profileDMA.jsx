@@ -211,7 +211,7 @@ const handleSubmit = async (e) => {
         const response = await updateStaffProfile({
             name: profileData.full_name,
             username: profileData.username,
-            profile_image: profileData.profile_image
+            profile_image: profileData.profile_image === oldData.profile_image ? null : profileData.profile_image
         });
         if (response.status === 'success') {
             await refreshUser();
