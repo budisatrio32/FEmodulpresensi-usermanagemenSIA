@@ -27,6 +27,37 @@ export const getStaffProfile = async () => {
 };
 
 /**
+ * edit data profile staff
+ * @param {Object} data data profile yang akan diubah
+ * @returns {Promise<*>} data user atau status gagal
+ */
+export const updateStaffProfile = async (data) => {
+  try {
+    let payload = data;
+    if (data && (data.profile_image instanceof File || data.profile_image instanceof Blob)) {
+      const formData = new FormData();
+
+      Object.entries(data).forEach(([key, value]) => {
+        if (value === undefined || value === null) return;
+        if (key === 'profile_image') {
+          if (value instanceof File || value instanceof Blob) {
+            formData.append('profile_image', value);
+          }
+        } else {
+          formData.append(key, value);
+        }
+      });
+
+      payload = formData;
+    }
+    const response = await api.post('/profile/staff', payload);
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error)
+  }
+};
+
+/**
  * ambil data profile umum mahasiswa
  * @returns {Promise<*>} data user atau status gagal
  */
@@ -68,6 +99,7 @@ export const getStudentFamilyEducation = async () => {
 export default {
     getProfile,
     getStaffProfile,
+    updateStaffProfile,
     getStudentProfile,
     getStudentAddress,
     getStudentFamilyEducation,

@@ -410,9 +410,12 @@ try {
 };
 
 const handleCancel = () => {
-if (window.confirm('Apakah Anda yakin ingin membatalkan perubahan?')) {
+    if (window.confirm('Apakah Anda yakin ingin membatalkan perubahan?')) {
+        router.back();
+    }
+};
+const handleBack = () => {
     router.back();
-}
 };
 
 const genderOptions = ['Laki-laki', 'Perempuan'];
@@ -422,6 +425,21 @@ const citizenshipOptions = ['WNI', 'WNA'];
 if (isFetching) {
     return (
         <LoadingEffect />
+    );
+}
+
+if (errors.fetch) {
+    return (
+        <div className="min-h-screen bg-brand-light-sage">
+            <div className="container mx-auto px-4 py-8 max-w-5xl">
+                <ErrorMessageBoxWithButton
+                    message={errors.fetch}
+                    action={fetchAll}
+                    back={true}
+                    actionback={handleBack}
+                />
+            </div>
+        </div>
     );
 }
 

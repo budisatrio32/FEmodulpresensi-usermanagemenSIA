@@ -6,15 +6,20 @@ import { ArrowLeft, Save, User, Eye, EyeOff, Upload, X, Lock } from 'lucide-reac
 import { Field, FieldLabel, FieldContent, FieldDescription, FieldError } from '@/components/ui/field';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { getStaffProfile } from '@/lib/profileApi';
+import { getStaffProfile, updateStaffProfile } from '@/lib/profileApi';
 import LoadingEffect from './loading-effect';
 import { buildImageUrl } from '@/lib/utils';
+import { ErrorMessageBoxWithButton, SuccessMessageBox, ErrorMessageBox } from './message-box';
+import { useAuth } from '@/lib/auth-context';
 
 export default function ProfileDMA() {
 const router = useRouter();
+const { refreshUser } = useAuth();
 const [isLoading, setIsLoading] = useState(false);
 const [isFetching, setIsFetching] = useState(true);
 const [errors, setErrors] = useState({});
+const [successSubmit, setSuccessSubmit] = useState('');
+const [successPassword, setSuccessPassword] = useState('');
 const [showOldPassword, setShowOldPassword] = useState(false);
 const [showPassword, setShowPassword] = useState(false);
 const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -38,18 +43,8 @@ const [profileData, setProfileData] = useState({
 
 // State untuk data profile DMA (Dosen, Manager, Admin)
 const [oldData, setOldData] = useState({
-    // Data yang bisa edit dan dilihat
     full_name: '',
-    username: '',
-    email: '',
-    old_password: '',
-    password: '',
-    confirm_password: '',
     profile_image: null,
-
-    // Data yang hanya bisa dilihat (read-only)
-    employee_id: '',
-    position: '', // Dosen / Manager / Admin
 });
 
 useEffect(() => {
@@ -71,13 +66,8 @@ const FetchProfileData = async () => {
         if (response.status === 'success') {
             setOldData(prev => ({
                 ...prev,
-                full_name: response.data.name,
-                username: response.data.username,
-                email: response.data.email,
                 profile_image: response.data.profile_image,
-                employee_id: response.data.staff_data.employee_id_number,
-                position: response.data.staff_data.position,
-                profile_image: response.data.profile_image
+                full_name: response.data.name,
             }));
             setProfileData(prev => ({
                 ...prev,
@@ -87,7 +77,6 @@ const FetchProfileData = async () => {
                 profile_image: response.data.profile_image,
                 employee_id: response.data.staff_data.employee_id_number,
                 position: response.data.staff_data.position,
-                profile_image: response.data.profile_image
             }));
             if (response.data.profile_image) {
                 setImagePreview(buildImageUrl(response.data.profile_image));
@@ -163,6 +152,7 @@ const handleRemoveImage = () => {
         ...prev,
         profile_image: null
     }));
+    setImagePreview(null);
 };
 
 const validateForm = () => {
@@ -192,8 +182,8 @@ const validateForm = () => {
         newErrors.old_password = 'Password lama wajib diisi untuk mengubah password';
         }
         
-        if (profileData.password && profileData.password.length < 6) {
-        newErrors.password = 'Password minimal 6 karakter';
+        if (profileData.password && profileData.password.length < 8) {
+        newErrors.password = 'Password minimal 8 karakter';
         }
         
         if (profileData.password !== profileData.confirm_password) {
@@ -201,7 +191,7 @@ const validateForm = () => {
         }
     }
 
-    setErrors(newErrors);
+    setErrors(prev => ({ ...prev, ...newErrors }));
     return Object.keys(newErrors).length === 0;
 };
 
@@ -214,34 +204,47 @@ const handleSubmit = async (e) => {
 
     setIsLoading(true);
 
+    setErrors(prev => ({ ...prev, submit: null, submitpassword: null }));
+
+    const newErrors = {};
     try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        const response = await updateStaffProfile({
+            name: profileData.full_name,
+            username: profileData.username,
+            profile_image: profileData.profile_image
+        });
+        if (response.status === 'success') {
+            await refreshUser();
+            setSuccessSubmit('Profile berhasil diperbarui!');
+            setProfileData(prev => ({
+                ...prev,
+                name: profileData.full_name,
+                username: profileData.username,
+                profile_image: response.data.profile_image
+            }));
+            setOldData(prev => ({
+                ...prev,
+                name: profileData.full_name,
+                username: profileData.username,
+                profile_image: response.data.profile_image
+            }));
+        } else {
+            newErrors.submit = 'Gagal memperbarui profile: ' + response.message;
+        }
 
-        // TODO: Replace with actual API call
-        // const formData = new FormData();
-        // formData.append('full_name', profileData.full_name);
-        // formData.append('username', profileData.username);
-        // formData.append('email', profileData.email);
-        // if (profileData.password) {
-        //   formData.append('password', profileData.password);
-        // }
-        // if (profileData.profile_image) {
-        //   formData.append('profile_image', profileData.profile_image);
-        // }
-        //
-        // const response = await fetch('/api/profile/dma', {
-        //   method: 'PUT',
-        //   headers: {
-        //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-        //   },
-        //   body: formData
-        // });
-        //
-        // if (!response.ok) throw new Error('Gagal memperbarui profile');
+        if (profileData.password || profileData.old_password || profileData.confirm_password) {
+            // Jika mengisi password, kirim perubahan password
+            const passwordResponse = await updateStaffProfile({
+                old_password: profileData.old_password,
+                password: profileData.password
+            });
+            if (passwordResponse.status === 'success') {
+                setSuccessPassword('Profile dan password berhasil diperbarui!');
+            } else {
+                newErrors.submitpassword = 'Gagal memperbarui password: ' + passwordResponse.message;
+            }
+        }
 
-        alert('Profile berhasil diperbarui!');
-        
         // Clear password fields after successful update
         setProfileData(prev => ({
             ...prev,
@@ -250,8 +253,9 @@ const handleSubmit = async (e) => {
             confirm_password: ''
         }));
     } catch (error) {
-        alert('Gagal memperbarui profile: ' + error.message);
+        newErrors.submit = 'Gagal memperbarui profile/password: ' + error.message;
     } finally {
+        setErrors(prev => ({ ...prev, ...newErrors }));
         setIsLoading(false);
     }
 };
@@ -262,9 +266,44 @@ const handleCancel = () => {
     }
 };
 
+const handleBack = () => {
+    router.back();
+};
+
+useEffect(() => {
+    if (!successSubmit) return;
+    const timer = setTimeout(() => {
+        setSuccessSubmit(null);
+    }, 10000);
+    return () => clearTimeout(timer);
+}, [successSubmit]);
+
+useEffect(() => {
+    if (!successPassword) return;
+    const timer = setTimeout(() => {
+        setSuccessPassword(null);
+    }, 10000);
+    return () => clearTimeout(timer);
+}, [successPassword]);
+
 if (isFetching) {
     return (
         <LoadingEffect />
+    );
+}
+
+if (errors.fetch) {
+    return (
+        <div className="min-h-screen bg-brand-light-sage">
+            <div className="container mx-auto px-4 py-8 max-w-5xl">
+                <ErrorMessageBoxWithButton
+                    message={errors.fetch}
+                    action={fetchAll}
+                    back={true}
+                    actionback={handleBack}
+                />
+            </div>
+        </div>
     );
 }
 
@@ -286,11 +325,11 @@ return (
         <div className="flex items-center gap-6">
         <Avatar className="size-24 sm:size-28">
             <AvatarImage 
-            src={(typeof profileData.profile_image === 'string' ? profileData.profile_image : undefined)} 
-            alt={profileData.full_name} 
+            src={buildImageUrl(oldData.profile_image)} 
+            alt={oldData.full_name} 
             />
             <AvatarFallback className="text-2xl">
-            {profileData.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+            {oldData.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
             </AvatarFallback>
         </Avatar>
         <div>
@@ -735,6 +774,25 @@ return (
             </Field>
         </div>
         </div>
+
+        {/* success messaaage */}
+        {successSubmit && (
+            <SuccessMessageBox message={successSubmit} />
+        )}
+        {successPassword && (
+            <SuccessMessageBox message={successPassword} />
+        )}
+        {/* error message */}
+        {errors.submit && (
+            <ErrorMessageBox
+                message={errors.submit}
+            />
+        )}
+        {errors.submitpassword && (
+            <ErrorMessageBox
+                message={errors.submitpassword}
+            />
+        )}
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-end">
