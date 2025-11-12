@@ -13,7 +13,7 @@ import { buildImageUrl } from '@/lib/utils';
 export default function ProfileDMA() {
 const router = useRouter();
 const [isLoading, setIsLoading] = useState(false);
-const [isFetching, setIsFetching] = useState(false);
+const [isFetching, setIsFetching] = useState(true);
 const [errors, setErrors] = useState({});
 const [showOldPassword, setShowOldPassword] = useState(false);
 const [showPassword, setShowPassword] = useState(false);
@@ -353,7 +353,7 @@ return (
                 Employee ID
             </FieldLabel>
             <FieldDescription>
-                Nomor induk pegawai
+                Nomor induk pegawai <span className="text-sm text-red-500">(tidak dapat diubah)</span>
             </FieldDescription>
             <FieldContent>
                 <input
@@ -380,7 +380,7 @@ return (
                 Posisi/Jabatan
             </FieldLabel>
             <FieldDescription>
-                Role dalam sistem
+                Role dalam sistem <span className="text-sm text-red-500">(tidak dapat diubah)</span>
             </FieldDescription>
             <FieldContent>
                 <input
@@ -499,7 +499,7 @@ return (
                 Email <span className="text-red-500">*</span>
                 </FieldLabel>
                 <FieldDescription>
-                Email aktif untuk komunikasi
+                Email aktif untuk komunikasi <span className="text-sm text-red-500">(tidak dapat diubah)</span>
                 </FieldDescription>
                 <FieldContent>
                 <input

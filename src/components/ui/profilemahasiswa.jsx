@@ -7,11 +7,12 @@ import { Field, FieldLabel, FieldContent, FieldDescription, FieldError } from '@
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { getStudentProfile, getStudentAddress, getStudentFamilyEducation } from '@/lib/profileApi';
+import LoadingEffect from './loading-effect';
 
 export default function ProfileMahasiswa() {
 const router = useRouter();
 const [isLoading, setIsLoading] = useState(false);
-const [isFetching, setIsFetching] = useState(false);
+const [isFetching, setIsFetching] = useState(true);
 const [errors, setErrors] = useState({});
 const [showOldPassword, setShowOldPassword] = useState(false);
 const [showPassword, setShowPassword] = useState(false);
@@ -418,6 +419,12 @@ const genderOptions = ['Laki-laki', 'Perempuan'];
 const religionOptions = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu'];
 const citizenshipOptions = ['WNI', 'WNA'];
 
+if (isFetching) {
+    return (
+        <LoadingEffect />
+    );
+}
+
 return (
 <div className="min-h-screen bg-brand-light-sage">
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -500,7 +507,7 @@ return (
             Registration Number (NIM) <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            Nomor induk mahasiswa
+            Nomor induk mahasiswa <span className="text-red-500">(tidak dapat diubah)</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -508,15 +515,15 @@ return (
                 id="registration_number"
                 name="registration_number"
                 value={profileData.registration_number}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
+                className="w-full px-4 py-3 border-2 focus:outline-none cursor-not-allowed bg-gray-50"
                 style={{
                 fontFamily: 'Urbanist, sans-serif',
-                borderColor: errors.registration_number ? '#BE0414' : '#015023',
+                borderColor: '#015023',
                 borderRadius: '12px',
-                opacity: errors.registration_number ? 1 : 0.7
+                opacity: 0.5
                 }}
-                disabled={isLoading}
+                disabled
+                readOnly
             />
             </FieldContent>
             {errors.registration_number && (
@@ -590,7 +597,7 @@ return (
             Email <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            Email aktif untuk komunikasi
+            Email aktif untuk komunikasi <span className="text-red-500">(tidak dapat diubah)</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -598,15 +605,15 @@ return (
                 id="email"
                 name="email"
                 value={profileData.email}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
+                className="w-full px-4 py-3 border-2 focus:outline-none cursor-not-allowed bg-gray-50"
                 style={{
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: errors.email ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: errors.email ? 1 : 0.7
+                opacity: 0.5
                 }}
-                disabled={isLoading}
+                disabled
+                readOnly
             />
             </FieldContent>
             {errors.email && (
@@ -675,7 +682,7 @@ return (
             Jenis Kelamin <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            Pilih jenis kelamin
+            Pilih jenis kelamin <span className="text-red-500">{!editableData.gender ? '(tidak dapat diubah)' : ''}</span>
             </FieldDescription>
             <FieldContent>
             <select
@@ -688,15 +695,16 @@ return (
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: errors.gender ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: errors.gender ? 1 : 0.7,
+                opacity: !editableData.gender ? 0.5 : errors.gender ? 1 : 0.7,
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23015023' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
                 backgroundRepeat: 'no-repeat',
                 backgroundPosition: 'right 1rem center',
                 backgroundSize: '1.5rem'
                 }}
-                disabled={isLoading}
+                disabled={!editableData.gender || isLoading}
+                readOnly={!editableData.gender}
             >
-                <option value="">Pilih Jenis Kelamin</option>
+                <option value="" disabled>Pilih Jenis Kelamin</option>
                 {genderOptions.map(option => (
                 <option key={option} value={option}>{option}</option>
                 ))}
@@ -734,7 +742,7 @@ return (
                 }}
                 disabled={isLoading}
             >
-                <option value="">Pilih Agama</option>
+                <option value="" disabled>Pilih Agama</option>
                 {religionOptions.map(option => (
                 <option key={option} value={option}>{option}</option>
                 ))}
@@ -751,7 +759,7 @@ return (
             Tempat Lahir <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            Kota/Kabupaten tempat lahir
+            Kota/Kabupaten tempat lahir <span className="text-red-500">{!editableData.tempat_lahir ? '(tidak dapat diubah)' : ''}</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -765,9 +773,10 @@ return (
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: errors.tempat_lahir ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: errors.tempat_lahir ? 1 : 0.7
+                opacity: !editableData.tempat_lahir ? 0.5 : errors.tempat_lahir ? 1 : 0.7
                 }}
-                disabled={isLoading}
+                disabled={!editableData.tempat_lahir || isLoading}
+                readOnly={!editableData.tempat_lahir}
             />
             </FieldContent>
             {errors.tempat_lahir && (
@@ -781,7 +790,7 @@ return (
             Tanggal Lahir <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            Format: DD/MM/YYYY
+            Format: DD/MM/YYYY <span className="text-red-500">{!editableData.tanggal_lahir ? '(tidak dapat diubah)' : ''}</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -795,9 +804,10 @@ return (
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: errors.tanggal_lahir ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: errors.tanggal_lahir ? 1 : 0.7
+                opacity: !editableData.tanggal_lahir ? 0.5 : errors.tanggal_lahir ? 1 : 0.7
                 }}
-                disabled={isLoading}
+                disabled={!editableData.tanggal_lahir || isLoading}
+                readOnly={!editableData.tanggal_lahir}
             />
             </FieldContent>
             {errors.tanggal_lahir && (
@@ -811,7 +821,7 @@ return (
             NIK (Nomor Induk Kependudukan) <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            16 digit NIK sesuai KTP
+            16 digit NIK sesuai KTP <span className="text-red-500">{!editableData.nik ? '(tidak dapat diubah)' : ''}</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -826,9 +836,10 @@ return (
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: errors.nik ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: errors.nik ? 1 : 0.7
+                opacity: !editableData.nik ? 0.5 : errors.nik ? 1 : 0.7
                 }}
-                disabled={isLoading}
+                disabled={!editableData.nik || isLoading}
+                readOnly={!editableData.nik}
             />
             </FieldContent>
             {errors.nik && (
@@ -842,7 +853,7 @@ return (
             Nomor Kartu Keluarga
             </FieldLabel>
             <FieldDescription>
-            16 digit nomor KK
+            16 digit nomor KK <span className="text-red-500">{!editableData.nomor_kartu_keluarga ? '(tidak dapat diubah)' : ''}</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -857,9 +868,10 @@ return (
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: '#015023',
                 borderRadius: '12px',
-                opacity: 0.7
+                opacity: !editableData.nomor_kartu_keluarga ? 0.5 : 0.7
                 }}
-                disabled={isLoading}
+                disabled={!editableData.nomor_kartu_keluarga || isLoading}
+                readOnly={!editableData.nomor_kartu_keluarga}
             />
             </FieldContent>
         </Field>
@@ -870,7 +882,7 @@ return (
             Kewarganegaraan
             </FieldLabel>
             <FieldDescription>
-            WNI atau WNA
+            WNI atau WNA <span className="text-red-500">{!editableData.citizenship ? '(tidak dapat diubah)' : ''}</span>
             </FieldDescription>
             <FieldContent>
             <select
@@ -883,15 +895,16 @@ return (
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: '#015023',
                 borderRadius: '12px',
-                opacity: 0.7,
+                opacity: !editableData.citizenship ? 0.5 : 0.7,
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23015023' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
                 backgroundRepeat: 'no-repeat',
                 backgroundPosition: 'right 1rem center',
                 backgroundSize: '1.5rem'
                 }}
-                disabled={isLoading}
+                disabled={!editableData.citizenship || isLoading}
+                readOnly={!editableData.citizenship}
             >
-                <option value="">Pilih Kewarganegaraan</option>
+                <option value="" disabled>Pilih Kewarganegaraan</option>
                 {citizenshipOptions.map(option => (
                 <option key={option} value={option}>{option}</option>
                 ))}
@@ -1144,7 +1157,7 @@ return (
             Anak Ke-
             </FieldLabel>
             <FieldDescription>
-            Urutan kelahiran dalam keluarga
+            Urutan kelahiran dalam keluarga (1, 2, 3, dst.) <span className="text-red-500">{!editableData.birth_order ? '(tidak dapat diubah)' : ''}</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -1159,9 +1172,10 @@ return (
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: '#015023',
                 borderRadius: '12px',
-                opacity: 0.7
+                opacity: !editableData.birth_order ? 0.5 : 0.7
                 }}
-                disabled={isLoading}
+                disabled={!editableData.birth_order || isLoading}
+                readOnly={!editableData.birth_order}
             />
             </FieldContent>
         </Field>
@@ -1200,7 +1214,7 @@ return (
             Sekolah Asal
             </FieldLabel>
             <FieldDescription>
-            Nama sekolah menengah atas terakhir
+            Nama sekolah menengah atas terakhir <span className="text-red-500">{!editableData.sekolah_asal ? '(tidak dapat diubah)' : ''}</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -1214,9 +1228,10 @@ return (
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: '#015023',
                 borderRadius: '12px',
-                opacity: 0.7
+                opacity: !editableData.sekolah_asal ? 0.5 : 0.7
                 }}
-                disabled={isLoading}
+                disabled={!editableData.sekolah_asal || isLoading}
+                readOnly={!editableData.sekolah_asal}
             />
             </FieldContent>
         </Field>
