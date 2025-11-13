@@ -6,7 +6,7 @@ import { ArrowLeft, Save, User, Eye, EyeOff, Upload, X, Lock } from 'lucide-reac
 import { Field, FieldLabel, FieldContent, FieldDescription, FieldError } from '@/components/ui/field';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { getStaffProfile, updateStaffProfile } from '@/lib/profileApi';
+import { changePassword, getStaffProfile, updateStaffProfile } from '@/lib/profileApi';
 import LoadingEffect from './loading-effect';
 import { buildImageUrl } from '@/lib/utils';
 import { ErrorMessageBoxWithButton, SuccessMessageBox, ErrorMessageBox } from './message-box';
@@ -43,8 +43,18 @@ const [profileData, setProfileData] = useState({
 
 // State untuk data profile DMA (Dosen, Manager, Admin)
 const [oldData, setOldData] = useState({
+    // Data yang bisa edit dan dilihat
     full_name: '',
+    username: '',
+    email: '',
+    old_password: '',
+    password: '',
+    confirm_password: '',
     profile_image: null,
+
+    // Data yang hanya bisa dilihat (read-only)
+    employee_id: '',
+    position: '', // Dosen / Manager / Admin
 });
 
 useEffect(() => {
@@ -66,8 +76,12 @@ const FetchProfileData = async () => {
         if (response.status === 'success') {
             setOldData(prev => ({
                 ...prev,
-                profile_image: response.data.profile_image,
                 full_name: response.data.name,
+                username: response.data.username,
+                email: response.data.email,
+                profile_image: response.data.profile_image,
+                employee_id: response.data.staff_data.employee_id_number,
+                position: response.data.staff_data.position,
             }));
             setProfileData(prev => ({
                 ...prev,
@@ -97,6 +111,14 @@ const handleChange = (e) => {
         setErrors(prev => ({
         ...prev,
         [name]: ''
+        }));
+    }
+    // Clear submit error
+    if (errors.submit || errors.submitpassword) {
+        setErrors(prev => ({
+        ...prev,
+        submit: null,
+        submitpassword: null
         }));
     }
 };
@@ -173,10 +195,15 @@ const validateForm = () => {
     }
 
     // Validasi password (opsional, hanya jika diisi)
-    if (profileData.password || profileData.old_password) {
+    if (profileData.password || profileData.old_password || profileData.confirm_password) {
         // Jika mengisi password baru, harus mengisi password lama
-        if (profileData.password && !profileData.old_password) {
+        if ((profileData.password || profileData.confirm_password) && !profileData.old_password) {
         newErrors.old_password = 'Password lama wajib diisi untuk mengubah password';
+        }
+
+        if (profileData.old_password && (!profileData.password || !profileData.confirm_password)) {
+        newErrors.password = 'Password baru wajib diisi';
+        newErrors.confirm_password = 'Konfirmasi password wajib diisi';
         }
         
         if (profileData.password && profileData.password.length < 8) {
@@ -196,6 +223,10 @@ const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
+        setErrors(prev => ({
+            ...prev,
+            submit: 'Data tidak valid, silakan periksa kembali form di atas',
+        }));
         return;
     }
 
@@ -213,32 +244,29 @@ const handleSubmit = async (e) => {
         if (response.status === 'success') {
             await refreshUser();
             setSuccessSubmit('Profile berhasil diperbarui!');
-            setProfileData(prev => ({
-                ...prev,
-                name: profileData.full_name,
-                username: profileData.username,
-                profile_image: response.data.profile_image
-            }));
             setOldData(prev => ({
                 ...prev,
-                name: profileData.full_name,
-                username: profileData.username,
+                name: response.data.name,
+                username: response.data.username,
                 profile_image: response.data.profile_image
             }));
         } else {
             newErrors.submit = 'Gagal memperbarui profile: ' + response.message;
+            return;
         }
 
-        if (profileData.password || profileData.old_password || profileData.confirm_password) {
+        if (profileData.password && profileData.old_password && profileData.confirm_password) {
             // Jika mengisi password, kirim perubahan password
-            const passwordResponse = await updateStaffProfile({
+            const passwordResponse = await changePassword({
                 old_password: profileData.old_password,
-                password: profileData.password
+                password: profileData.password,
+                confirm_password: profileData.confirm_password,
             });
             if (passwordResponse.status === 'success') {
                 setSuccessPassword('Profile dan password berhasil diperbarui!');
             } else {
                 newErrors.submitpassword = 'Gagal memperbarui password: ' + passwordResponse.message;
+                return;
             }
         }
 
@@ -334,19 +362,19 @@ return (
             className="text-2xl sm:text-3xl font-bold mb-2"
             style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}
             >
-            Profile {profileData.position}
+            Profile {oldData.position}
             </h1>
             <p 
             className="text-lg"
             style={{ color: '#015023', opacity: 0.7, fontFamily: 'Urbanist, sans-serif' }}
             >
-            {profileData.full_name}
+            {oldData.full_name}
             </p>
             <p 
             className="text-sm"
             style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}
             >
-            Employee ID: {profileData.employee_id}
+            Employee ID: {oldData.employee_id}
             </p>
         </div>
         </div>
@@ -598,7 +626,7 @@ return (
                     }}
                 >
                     <Upload className="w-5 h-5" />
-                    {imagePreview ? 'Ganti Foto' : 'Upload Foto'}
+                    {oldData.profile_image ? 'Ganti Foto' : 'Upload Foto'}
                 </label>
                 <input
                     type="file"
