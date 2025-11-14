@@ -609,18 +609,30 @@ return (
                     />
                     </div>
                 )}
-                <label
-                    htmlFor="profile_image"
-                    className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
-                    style={{
-                    backgroundColor: '#015023',
-                    color: 'white',
-                    fontFamily: 'Urbanist, sans-serif'
-                    }}
-                >
-                    <Upload className="w-5 h-5" />
-                    {imagePreview ? 'Ganti Foto' : 'Upload Foto'}
-                </label>
+                <div className="flex items-center gap-3">
+                    <label
+                        htmlFor="profile_image"
+                        className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
+                        style={{
+                        backgroundColor: '#015023',
+                        color: 'white',
+                        fontFamily: 'Urbanist, sans-serif'
+                        }}
+                    >
+                        <Upload className="w-5 h-5" />
+                        {oldData.profile_image || imagePreview ? 'Ganti Foto' : 'Upload Foto'}
+                    </label>
+                    {(imagePreview || oldData.profile_image) && (
+                        <WarningButton
+                        type="button"
+                        onClick={handleRemoveImage}
+                        disabled={isLoading}
+                        className="sm:min-w-[120px]"
+                        >
+                        Hapus Foto
+                        </WarningButton>
+                    )}
+                </div>
                 <input
                     type="file"
                     id="profile_image"
