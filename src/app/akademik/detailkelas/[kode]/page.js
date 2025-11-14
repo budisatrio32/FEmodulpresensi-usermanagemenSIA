@@ -3,8 +3,9 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/ui/navigation-menu';
 import DataTable from '@/components/ui/table';
+import ChatModal from '@/components/ui/chatmodal';
 import { ArrowLeft, GraduationCap, Users, Mail, Phone, MessageCircle } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 export default function DetailKelasPage({ params }) {
 	const router = useRouter();
@@ -16,6 +17,10 @@ export default function DetailKelasPage({ params }) {
 	const dosen = searchParams.get('dosen') || '';
 	const semester = searchParams.get('semester') || '';
 	const sks = searchParams.get('sks') || '';
+
+	// Chat modal state
+	const [isChatOpen, setIsChatOpen] = useState(false);
+	const [chatUser, setChatUser] = useState({ id: '', name: '', nim: '' });
 
 	// Dummy data mahasiswa
 	const mahasiswaData = useMemo(() => [
@@ -110,7 +115,10 @@ export default function DetailKelasPage({ params }) {
 		chat: (_value, item) => (
 			<div className="flex items-center justify-center">
 				<button
-					onClick={() => router.push(`/chat?user=${encodeURIComponent(item.nama)}&nim=${item.nim}`)}
+					onClick={() => {
+						setChatUser({ id: item.nim, name: item.nama, nim: item.nim });
+						setIsChatOpen(true);
+					}}
 					className="flex items-center gap-2 text-white px-3 py-2 transition shadow-sm hover:opacity-90 font-semibold"
 					style={{ backgroundColor: '#16874B', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
 				>
@@ -131,7 +139,10 @@ export default function DetailKelasPage({ params }) {
 		chat: (_value, item) => (
 			<div className="flex items-center justify-center">
 				<button
-					onClick={() => router.push(`/chat?user=${encodeURIComponent(item.nama)}`)}
+					onClick={() => {
+						setChatUser({ id: item.nama, name: item.nama, nim: '' });
+						setIsChatOpen(true);
+					}}
 					className="flex items-center gap-2 text-white px-3 py-2 transition shadow-sm hover:opacity-90 font-semibold"
 					style={{ backgroundColor: '#16874B', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
 				>
@@ -215,6 +226,15 @@ export default function DetailKelasPage({ params }) {
 					/>
 				</div>
 			</div>
+
+			{/* Chat Modal */}
+			<ChatModal
+				isOpen={isChatOpen}
+				onClose={() => setIsChatOpen(false)}
+				userId={chatUser.id}
+				userName={chatUser.name}
+				userNim={chatUser.nim}
+			/>
 		</div>
 	);
 }
