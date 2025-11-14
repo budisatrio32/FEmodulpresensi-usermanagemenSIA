@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, User, Eye, EyeOff, Upload, X, Lock } from 'lucide-react';
+import { ArrowLeft, Save, User, Eye, EyeOff, Upload, X, Lock, Trash2 } from 'lucide-react';
 import { Field, FieldLabel, FieldContent, FieldDescription, FieldError } from '@/components/ui/field';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { changePassword, getStaffProfile, updateStaffProfile } from '@/lib/profileApi';
+import { changePassword, deleteProfileImage, getStaffProfile, updateStaffProfile } from '@/lib/profileApi';
 import LoadingEffect from './loading-effect';
 import { buildImageUrl } from '@/lib/utils';
 import { ErrorMessageBoxWithButton, SuccessMessageBox, ErrorMessageBox } from './message-box';
@@ -17,9 +17,11 @@ const router = useRouter();
 const { refreshUser } = useAuth();
 const [isLoading, setIsLoading] = useState(false);
 const [isFetching, setIsFetching] = useState(true);
+const [isDeleting, setIsDeleting] = useState(false)
 const [errors, setErrors] = useState({});
 const [successSubmit, setSuccessSubmit] = useState('');
 const [successPassword, setSuccessPassword] = useState('');
+const [successDeleteImage, setSuccessDeleteImage] = useState('');
 const [showOldPassword, setShowOldPassword] = useState(false);
 const [showPassword, setShowPassword] = useState(false);
 const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -250,6 +252,7 @@ const handleSubmit = async (e) => {
                 username: response.data.username,
                 profile_image: response.data.profile_image
             }));
+            setImagePreview(null);
         } else {
             newErrors.submit = 'Gagal memperbarui profile: ' + response.message;
             return;
@@ -285,6 +288,28 @@ const handleSubmit = async (e) => {
     }
 };
 
+const handleDeleteProfileImage = async () => {
+    setIsDeleting(true)
+    setErrors(prev => ({ ...prev, deleteProfileImage: null }));
+    try {
+        const response = await deleteProfileImage();
+        if (response.status === 'success') {
+            setOldData(prev => ({
+                ...prev,
+                profile_image: null
+            }));
+            refreshUser();
+            setSuccessDeleteImage('Gambar profil berhasil dihapus!');
+        } else {
+            setErrors(prev => ({ ...prev, deleteProfileImage: 'Gagal menghapus gambar profil: ' + response.message }));
+        }
+    } catch (error) {
+        setErrors(prev => ({ ...prev, deleteProfileImage: 'Gagal menghapus gambar profil: ' + error.message }));
+    } finally {
+        setIsDeleting(false);
+    }
+};
+
 const handleCancel = () => {
     if (window.confirm('Apakah Anda yakin ingin membatalkan perubahan?')) {
         router.back();
@@ -310,6 +335,14 @@ useEffect(() => {
     }, 10000);
     return () => clearTimeout(timer);
 }, [successPassword]);
+
+useEffect(() => {
+    if (!successDeleteImage) return;
+    const timer = setTimeout(() => {
+        setSuccessDeleteImage(null);
+    }, 10000);
+    return () => clearTimeout(timer);
+}, [successDeleteImage]);
 
 if (isFetching) {
     return (
@@ -637,25 +670,42 @@ return (
                     className="hidden"
                     disabled={isLoading}
                 />
-                <button
-                type="button"
-                onClick={handleRemoveImage}
-                className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
-                style={{
-                    backgroundColor: '#BE0414',
-                    color: 'white',
-                    fontFamily: 'Urbanist, sans-serif'
-                }}
-                disabled={!profileData.profile_image || isLoading}
-                >
-                <Trash2 /> Hapus Foto
-                </button>
+                {oldData.profile_image && (
+                    <button
+                    type="button"
+                    onClick={handleDeleteProfileImage}
+                    className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
+                    style={{
+                        backgroundColor: '#BE0414',
+                        color: 'white',
+                        fontFamily: 'Urbanist, sans-serif'
+                    }}
+                    disabled={!profileData.profile_image || isLoading}
+                    >
+                    {isDeleting ? (
+                    <>
+                        <span className="animate-spin mr-2">⏳</span>
+                        Menghapus....
+                    </>
+                    ) : (
+                    <>
+                        <Trash2 /> Hapus Foto
+                    </>
+                    )}
+                    </button>
+                )}
                 </div>
             </FieldContent>
             {errors.profile_image && (
                 <FieldError>{errors.profile_image}</FieldError>
             )}
             </Field>
+            {successDeleteImage && (
+                <SuccessMessageBox message={successDeleteImage} />
+            )}
+            {errors.deleteProfileImage && (
+                <ErrorMessageBox message={errors.deleteProfileImage} />
+            )}
         </div>
         </div>
 
@@ -848,8 +898,16 @@ return (
             disabled={isLoading}
             className="sm:min-w-[150px]"
             >
-            <Save className="w-5 h-5 mr-2" />
-            {isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}
+            {isLoading ? (
+            <>
+                <span className="animate-spin mr-2">⏳</span>
+                Menyimpan...
+            </>
+            ) : (
+            <>
+                <Save className="w-5 h-5 mr-2" /> Simpan Perubahan
+            </>
+            )}
             </PrimaryButton>
         </div>
     </form>

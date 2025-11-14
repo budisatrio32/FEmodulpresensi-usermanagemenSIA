@@ -6,7 +6,7 @@ import { ArrowLeft, Save, User, MapPin, Users, Eye, EyeOff, Upload, X, Lock, Tra
 import { Field, FieldLabel, FieldContent, FieldDescription, FieldError } from '@/components/ui/field';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { getStudentProfile, getStudentAddress, getStudentFamilyEducation, updateStudentProfile, updateStudentAddress, updateStudentFamilyEducation, changePassword } from '@/lib/profileApi';
+import { getStudentProfile, getStudentAddress, getStudentFamilyEducation, updateStudentProfile, updateStudentAddress, updateStudentFamilyEducation, changePassword, deleteProfileImage } from '@/lib/profileApi';
 import LoadingEffect from './loading-effect';
 import { buildImageUrl } from '@/lib/utils';
 import { ErrorMessageBox, SuccessMessageBox, ErrorMessageBoxWithButton } from './message-box';
@@ -17,6 +17,7 @@ const router = useRouter();
 const { refreshUser } = useAuth();
 const [isLoading, setIsLoading] = useState(false);
 const [isFetching, setIsFetching] = useState(true);
+const [isDeleting, setIsDeleting] = useState(false);
 const [success, setSuccess] = useState({});
 const [errors, setErrors] = useState({});
 const [showOldPassword, setShowOldPassword] = useState(false);
@@ -530,6 +531,7 @@ try {
 
         // Refresh user data in auth context
         await refreshUser();
+        setImagePreview(null);
     } else {
         newErrors.submit = 'Gagal memperbarui data identitas: ' + response.message;
         return;
@@ -607,6 +609,27 @@ try {
     }));
 }
 };
+const handleDeleteProfileImage = async () => {
+    setIsDeleting(true)
+    setErrors(prev => ({ ...prev, deleteProfileImage: null }));
+    try {
+        const response = await deleteProfileImage();
+        if (response.status === 'success') {
+            setOldData(prev => ({
+                ...prev,
+                profile_image: null
+            }));
+            refreshUser();
+            setSuccess(prev => ({ ...prev, deleteProfileImage: 'Gambar profil berhasil dihapus' }));
+        } else {
+            setErrors(prev => ({ ...prev, deleteProfileImage: 'Gagal menghapus gambar profil: ' + response.message }));
+        }
+    } catch (error) {
+        setErrors(prev => ({ ...prev, deleteProfileImage: 'Gagal menghapus gambar profil: ' + error.message }));
+    } finally {
+        setIsDeleting(false)
+    }
+};
 
 const handleCancel = () => {
     if (window.confirm('Apakah Anda yakin ingin membatalkan perubahan?')) {
@@ -624,7 +647,7 @@ const ijazahOption = ['SMA', 'SMK' , 'MA', 'Paket C', 'Lainnya']
 
 // restart success message after 5 seconds
 useEffect(() => {
-    if (success.submit || success.submitpassword || success.submitaddress || success.submitfamilyeducation) {
+    if (success.submit || success.submitpassword || success.submitaddress || success.submitfamilyeducation || success.deleteProfileImage) {
         const timer = setTimeout(() => {
             setSuccess({
                 submit: '',
@@ -903,23 +926,42 @@ return (
                 className="hidden"
                 disabled={isLoading}
                 />
-                <button
-                type="button"
-                onClick={handleRemoveImage}
-                className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
-                style={{
-                    backgroundColor: '#BE0414',
-                    color: 'white',
-                    fontFamily: 'Urbanist, sans-serif'
-                }}
-                disabled={!profileData.profile_image || isLoading}
-                >
-                <Trash2 /> Hapus Foto
-                </button>
+                {oldData.profile_image && (
+                    <button
+                    type="button"
+                    onClick={handleDeleteProfileImage}
+                    className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
+                    style={{
+                        backgroundColor: '#BE0414',
+                        color: 'white',
+                        fontFamily: 'Urbanist, sans-serif'
+                    }}
+                    disabled={!profileData.profile_image || isLoading}
+                    >
+                    {isDeleting ? (
+                    <>
+                        <span className="animate-spin mr-2">⏳</span>
+                        Menghapus....
+                    </>
+                    ) : (
+                    <>
+                        <Trash2 /> Hapus Foto
+                    </>
+                    )}
+                    </button>
+                )}
             </div>
             </FieldContent>
             {errors.profile_image && (
             <FieldError>{errors.profile_image}</FieldError>
+            )}
+        </Field>
+        <Field className="md:col-span-2">
+            {success.deleteProfileImage && (
+                <SuccessMessageBox message={success.deleteProfileImage} onClose={() => setSuccess(prev => ({ ...prev, deleteProfileImage: '' }))} />
+            )}
+            {errors.deleteProfileImage && (
+                <ErrorMessageBox message={errors.deleteProfileImage} onClose={() => setErrors(prev => ({ ...prev, deleteProfileImage: null }))} />
             )}
         </Field>
 
@@ -1781,8 +1823,16 @@ return (
             disabled={isLoading}
             className="sm:min-w-[150px]"
         >
-            <Save className="w-5 h-5 mr-2" />
-            {isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}
+            {isLoading ? (
+            <>
+                <span className="animate-spin mr-2">⏳</span>
+                Menyimpan...
+            </>
+            ) : (
+            <>
+                <Save className="w-5 h-5 mr-2" /> Simpan Perubahan
+            </>
+            )}
         </PrimaryButton>
         </div>
     </form>

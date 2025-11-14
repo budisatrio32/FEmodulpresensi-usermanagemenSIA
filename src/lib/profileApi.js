@@ -172,6 +172,18 @@ export const changePassword = async (data) => {
     throw (error.response?.data ?? error)
   }
 };
+/**
+ * Delete profile image of current user
+ * @returns {Promise<*>} data user or failure status
+ */
+export const deleteProfileImage = async () => {
+  try {
+    const response = await api.delete('/profile/picture');
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error)
+  }
+};
 
 export default {
     getProfile,
@@ -184,4 +196,5 @@ export default {
     getStudentFamilyEducation,
     updateStudentFamilyEducation,
     changePassword,
+    deleteProfileImage,
 };
