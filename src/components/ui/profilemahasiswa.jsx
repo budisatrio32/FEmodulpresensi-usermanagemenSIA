@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, User, MapPin, Users, Eye, EyeOff, Upload, X, Lock } from 'lucide-react';
+import { ArrowLeft, Save, User, MapPin, Users, Eye, EyeOff, Upload, X, Lock, Trash2 } from 'lucide-react';
 import { Field, FieldLabel, FieldContent, FieldDescription, FieldError } from '@/components/ui/field';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -903,6 +903,19 @@ return (
                 className="hidden"
                 disabled={isLoading}
                 />
+                <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
+                style={{
+                    backgroundColor: '#BE0414',
+                    color: 'white',
+                    fontFamily: 'Urbanist, sans-serif'
+                }}
+                disabled={!profileData.profile_image || isLoading}
+                >
+                <Trash2 /> Hapus Foto
+                </button>
             </div>
             </FieldContent>
             {errors.profile_image && (

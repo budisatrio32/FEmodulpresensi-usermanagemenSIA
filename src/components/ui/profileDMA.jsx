@@ -637,6 +637,19 @@ return (
                     className="hidden"
                     disabled={isLoading}
                 />
+                <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
+                style={{
+                    backgroundColor: '#BE0414',
+                    color: 'white',
+                    fontFamily: 'Urbanist, sans-serif'
+                }}
+                disabled={!profileData.profile_image || isLoading}
+                >
+                <Trash2 /> Hapus Foto
+                </button>
                 </div>
             </FieldContent>
             {errors.profile_image && (
