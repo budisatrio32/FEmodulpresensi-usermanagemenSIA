@@ -607,32 +607,27 @@ return (
                         className="w-20 h-20 rounded-full object-cover border-2"
                         style={{ borderColor: '#015023' }}
                     />
-                    </div>
-                )}
-                <div className="flex items-center gap-3">
-                    <label
-                        htmlFor="profile_image"
-                        className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
-                        style={{
-                        backgroundColor: '#015023',
-                        color: 'white',
-                        fontFamily: 'Urbanist, sans-serif'
-                        }}
-                    >
-                        <Upload className="w-5 h-5" />
-                        {oldData.profile_image || imagePreview ? 'Ganti Foto' : 'Upload Foto'}
-                    </label>
-                    {(imagePreview || oldData.profile_image) && (
-                        <WarningButton
+                    <button
                         type="button"
                         onClick={handleRemoveImage}
-                        disabled={isLoading}
-                        className="sm:min-w-[120px]"
-                        >
-                        Hapus Foto
-                        </WarningButton>
-                    )}
-                </div>
+                        className="absolute -top-2 -right-2 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                    </div>
+                )}
+                <label
+                    htmlFor="profile_image"
+                    className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
+                    style={{
+                    backgroundColor: '#015023',
+                    color: 'white',
+                    fontFamily: 'Urbanist, sans-serif'
+                    }}
+                >
+                    <Upload className="w-5 h-5" />
+                    {oldData.profile_image ? 'Ganti Foto' : 'Upload Foto'}
+                </label>
                 <input
                     type="file"
                     id="profile_image"
