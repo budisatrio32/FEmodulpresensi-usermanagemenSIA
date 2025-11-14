@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
@@ -8,18 +8,48 @@ import { SecondaryButton } from './button';
 import sessionApi from '@/lib/sessionApi';
 import Cookies from 'js-cookie';
 import { ErrorMessageBox } from './message-box';
+import LoadingEffect from './loading-effect';
+import { useAuth } from '@/lib/auth-context';
 
 export default function LoginForm() {
 const router = useRouter();
+// Panggil hook di level atas komponen, bukan di dalam fungsi event
+const { refreshUser } = useAuth();
 const [showPassword, setShowPassword] = useState(false);
 const [email, setEmail] = useState('');
 const [password, setPassword] = useState('');
-const [isLoading, setIsLoading] = useState(false);
+const [isLoading, setIsLoading] = useState(true);
 const [error, setError] = useState(null);
+const [isLoggedIn, setIsLoggedIn] = useState(false);
+const [isSubmitting, setIsSubmitting] = useState(false);
+
+//cek sudah login blm
+const checkLoggedIn = async () => {
+  setIsLoading(true);
+  try {
+    const token = Cookies.get('token'); 
+    const roles = Cookies.get('roles');
+    if (token && roles) {
+      setIsLoggedIn(true);
+      if (roles == 'admin' || roles == 'manager') {
+      router.push('/adminpage');
+      } else if (roles == 'mahasiswa' || roles == 'dosen') {
+        router.push('/landingpage');
+      }
+    }
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+// Panggil cek login saat komponen dimount
+useEffect(() => {
+  checkLoggedIn();
+}, []);
 
 const handleSubmit = async (e) => {
   e.preventDefault();
-  setIsLoading(true);
+  setIsSubmitting(true);
   try {
     setError(null);
     // Pastikan tidak ada token lama yang nyangkut sebelum login
@@ -34,6 +64,11 @@ const handleSubmit = async (e) => {
       const roles = response.data.user.roles;
       Cookies.set('token', token, { expires: 3 }); // expires in 3 days
       Cookies.set('roles', roles, { expires: 3 });
+
+      // Refresh data user di context
+      await refreshUser();
+
+      setIsLoggedIn(true);
 
       // redirect sesuai role
       if (roles == 'admin' || roles == 'manager') {
@@ -51,9 +86,17 @@ const handleSubmit = async (e) => {
     console.error('error di login:', error);
   } finally {
     // Hentikan loading
-    setIsLoading(false);
+    setIsSubmitting(false);
   }
 };
+
+if (isLoading) {
+  return <LoadingEffect />;
+}
+
+if (isLoggedIn) {
+  return <LoadingEffect message="Redirecting..." />;
+}
 
 return (
 <main className="min-h-screen flex items-center justify-center py-12 px-4 font-urbanist">
@@ -182,7 +225,7 @@ return (
           disabled={isLoading}
           className="text-lg w-full py-3 px-4 shadow-md font-urbanist"
         >
-          {isLoading ? 'Signing in...' : 'Sign In'}
+          {isSubmitting ? 'Signing in...' : 'Sign In'}
         </SecondaryButton>
 </form>
     {/* Error Message */}

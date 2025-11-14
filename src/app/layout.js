@@ -1,5 +1,6 @@
 import { Urbanist } from 'next/font/google';
 import './globals.css';
+import Providers from './providers';
 
 const urbanist = Urbanist({ 
   subsets: ['latin'],
@@ -16,7 +17,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="id">
       <body className={`${urbanist.variable} font-urbanist`}>
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

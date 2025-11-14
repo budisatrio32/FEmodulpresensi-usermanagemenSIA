@@ -5,9 +5,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { LogOut, UserCog } from 'lucide-react'
-import { cn } from "@/lib/utils"
-import Cookies from 'js-cookie';
+import { cn, buildImageUrl } from "@/lib/utils"
 import { logout } from '@/lib/sessionApi';
+import { useAuth } from '@/lib/auth-context';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -57,8 +57,12 @@ className={cn("text-right", className)}
 </div>
 ))
 
-const AdminNavbar = React.forwardRef(({ className, title, userName = "Admin", ...props }, ref) => {
+const AdminNavbar = React.forwardRef(({ className, title, userName, Name, ...props }, ref) => {
 const router = useRouter()
+const { user, logoutLocal } = useAuth();
+const displayuserName = (userName || user.username || '...');
+const displayName = (Name || user.name || '...');
+const displayImage = user.image;
 
 const handleLogout = async () => {
   if (confirm('Apakah Anda yakin ingin logout?')) {
@@ -69,17 +73,11 @@ const handleLogout = async () => {
         serverMessage = response.message || '';
       }
     } catch (error) {
-      // Jika token kadaluarsa/invalid, server bisa balas 401 Unauthenticated — tetap lanjut clear session
       console.error('Error saat logout:', error);
       serverMessage = error?.message || error?.response?.data?.message || '';
     } finally {
-      // Selalu hapus sesi lokal dan redirect
-      Cookies.remove('token');
-      Cookies.remove('roles');
-      if (serverMessage) {
-        // Opsional tampilkan info, tapi jangan blok redirect
-        console.warn('Logout info:', serverMessage);
-      }
+      logoutLocal();
+      if (serverMessage) console.warn('Logout info:', serverMessage);
       router.push('/loginpage');
     }
   }
@@ -105,9 +103,9 @@ return (
                 className="transition-all duration-200 hover:scale-105 hover:opacity-90 cursor-pointer focus:outline-none"
               >
                 <Avatar className="size-10 sm:size-12">
-                  <AvatarImage src="/profile-placeholder.jpg" alt="Admin Profile" />
+                  <AvatarImage src={displayImage} alt={displayuserName} />
                   <AvatarFallback>
-                    {userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                    {displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                   </AvatarFallback>
                 </Avatar>
               </button>
@@ -116,10 +114,10 @@ return (
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                    {userName}
+                    {displayName}
                   </p>
                   <p className="text-xs" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
-                    Akun Admin
+                    {displayuserName}
                   </p>
                 </div>
               </DropdownMenuLabel>

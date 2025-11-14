@@ -1,15 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, User, MapPin, Users, Eye, EyeOff, Upload, X, Lock } from 'lucide-react';
+import { ArrowLeft, Save, User, MapPin, Users, Eye, EyeOff, Upload, X, Lock, Trash2 } from 'lucide-react';
 import { Field, FieldLabel, FieldContent, FieldDescription, FieldError } from '@/components/ui/field';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { getStudentProfile, getStudentAddress, getStudentFamilyEducation, updateStudentProfile, updateStudentAddress, updateStudentFamilyEducation, changePassword, deleteProfileImage } from '@/lib/profileApi';
+import LoadingEffect from './loading-effect';
+import { buildImageUrl } from '@/lib/utils';
+import { ErrorMessageBox, SuccessMessageBox, ErrorMessageBoxWithButton } from './message-box';
+import { useAuth } from '@/lib/auth-context';
 
 export default function ProfileMahasiswa() {
 const router = useRouter();
+const { refreshUser } = useAuth();
 const [isLoading, setIsLoading] = useState(false);
+const [isFetching, setIsFetching] = useState(true);
+const [isDeleting, setIsDeleting] = useState(false);
+const [success, setSuccess] = useState({});
 const [errors, setErrors] = useState({});
 const [showOldPassword, setShowOldPassword] = useState(false);
 const [showPassword, setShowPassword] = useState(false);
@@ -18,49 +27,247 @@ const [imagePreview, setImagePreview] = useState(null);
 
 // State untuk data profile mahasiswa
 const [profileData, setProfileData] = useState({
-// Data yang bisa edit dan dilihat
-registration_number: '2021110001',
-full_name: 'John Doe',
-username: 'john.doe',
-email: 'john.doe@student.ugn.ac.id',
-old_password: '',
-password: '',
-confirm_password: '',
-profile_image: null,
-alamat: 'Jl. Mawar No. 123',
-dusun: 'Dusun Makmur',
-kelurahan: 'Kelurahan Sejahtera',
-kecamatan: 'Kecamatan Bahagia',
-city_regency: 'Kota Jakarta',
-provinsi: 'DKI Jakarta',
-kode_pos: '12345',
+    // Data yang bisa edit dan dilihat
+    // profile umum
+    registration_number: '',
+    full_name: '',
+    username: '',
+    email: '',
+    program: '', 
 
-// Data yang bisa edit dan dilihat
-gender: 'Laki-laki',
-religion: 'Islam',
-tanggal_lahir: '2000-01-15',
-tempat_lahir: 'Jakarta',
-nik: '3201010101000001',
-nomor_kartu_keluarga: '3201010101000001',
-citizenship: 'WNI',
-birth_order: '1',
-jumlah_saudara: '2',
-sekolah_asal: 'SMA Negeri 1 Jakarta',
+    //
+    old_password: '',
+    password: '',
+    confirm_password: '',
+    profile_image: null,
+    alamat: '',
+    dusun: '',
+    kelurahan: '',
+    kecamatan: '',
+    city_regency: '',
+    provinsi: '',
+    kode_pos: '',
+
+    // Data yang bisa edit dan dilihat
+    gender: '',
+    religion: '',
+    tanggal_lahir: '',
+    tempat_lahir: '',
+    nik: '',
+    nomor_kartu_keluarga: '',
+    citizenship: '',
+    birth_order: '',
+    jumlah_saudara: '',
+    sekolah_asal: '',
+    ijazah_terakhir: '',
 });
 
+const [oldData, setOldData] = useState({
+    // Data yang bisa edit dan dilihat
+    // profile umum
+    registration_number: '',
+    full_name: '',
+    username: '',
+    email: '',
+    program: '', 
+
+    //
+    old_password: '',
+    password: '',
+    confirm_password: '',
+    profile_image: null,
+    alamat: '',
+    dusun: '',
+    kelurahan: '',
+    kecamatan: '',
+    city_regency: '',
+    provinsi: '',
+    kode_pos: '',
+
+    // Data yang bisa edit dan dilihat
+    gender: '',
+    religion: '',
+    tanggal_lahir: '',
+    tempat_lahir: '',
+    nik: '',
+    nomor_kartu_keluarga: '',
+    citizenship: '',
+    birth_order: '',
+    jumlah_saudara: '',
+    sekolah_asal: '',
+    ijazah_terakhir: '',
+});
+
+const [editableData, setEditableData] = useState({
+    // Data yang bisa edit opsional kalo data di database null
+    // profile umum
+    gender: false,
+    tanggal_lahir: false,
+    tempat_lahir: false,
+    nik: false,
+    nomor_kartu_keluarga: false,
+
+    // keluarga-pendidikan
+    birth_order: false,
+    sekolah_asal: false,
+    ijazah_terakhir: false,
+});
+
+useEffect(() => {
+    fetchAll();
+}, []);
+
+const fetchAll = async () => {
+    setErrors(prev => ({...prev, fetch: null}));
+    setIsFetching(true);
+    await Promise.all([
+        FetchProfileData(),
+        FetchAddressData(),
+        FetchFamilyEducationData(),
+    ]);
+    setIsFetching(false);
+};
+
+const FetchProfileData = async () => {
+    // alert('Debug: FetchProfileData dipanggil');
+    try {
+        const response = await getStudentProfile()
+        if (response.status === 'success') {
+            setProfileData(prev => ({
+                ...prev, 
+                registration_number: response.data.registration_number,
+                full_name: response.data.name,
+                username: response.data.username,
+                email: response.data.email,
+                profile_image: response.data.profile_image,
+                program: response.data.program_name,
+                gender: response.data.gender,
+                religion: response.data.religion,
+                tanggal_lahir: response.data.birth_date ? response.data.birth_date.slice(0, 10) : '',
+                tempat_lahir: response.data.birth_place,
+                nik: response.data.nik,
+                nomor_kartu_keluarga: response.data.no_kk,
+                citizenship: response.data.citizenship,
+            }));
+            setOldData(prev => ({
+                ...prev,
+                registration_number: response.data.registration_number,
+                full_name: response.data.name,
+                username: response.data.username,
+                email: response.data.email,
+                profile_image: response.data.profile_image,
+                program: response.data.program_name,
+                gender: response.data.gender,
+                religion: response.data.religion,
+                tanggal_lahir: response.data.birth_date ? response.data.birth_date.slice(0, 10) : '',
+                tempat_lahir: response.data.birth_place,
+                nik: response.data.nik,
+                nomor_kartu_keluarga: response.data.no_kk,
+                citizenship: response.data.citizenship,
+            }));
+            setEditableData(prev => ({
+                ...prev,
+                gender: response.data.editable_fields.gender,
+                tanggal_lahir: response.data.editable_fields.birth_date,
+                tempat_lahir: response.data.editable_fields.birth_place,
+                nik: response.data.editable_fields.nik,
+                nomor_kartu_keluarga: response.data.editable_fields.no_kk,
+            }))
+        } else {
+            setErrors(prev => ({...prev, fetch: 'Gagal mengambil data profile: ' + response.message}));
+        }
+    } catch (error) {
+        setErrors(prev => ({...prev, fetch: 'Gagal mengambil data profile: ' + error.message}));
+    }
+};
+
+const FetchAddressData = async () => {
+    try {
+        const response = await getStudentAddress()
+        if (response.status === 'success') {
+            setProfileData(prev => ({
+                ...prev,
+                alamat: response.data.full_address,
+                dusun: response.data.dusun,
+                kelurahan: response.data.kelurahan,
+                kecamatan: response.data.kecamatan,
+                city_regency: response.data.city_regency,
+                provinsi: response.data.province,
+                kode_pos: response.data.postal_code,
+            }));
+            setOldData(prev => ({
+                ...prev,
+                alamat: response.data.full_address,
+                dusun: response.data.dusun,
+                kelurahan: response.data.kelurahan,
+                kecamatan: response.data.kecamatan,
+                city_regency: response.data.city_regency,
+                provinsi: response.data.province,
+                kode_pos: response.data.postal_code,
+            }));
+        } else {
+            setErrors(prev => ({...prev, fetch: 'Gagal mengambil data alamat: ' + response.message}));
+        }
+    } catch (error) {
+        setErrors(prev => ({...prev, fetch: 'Gagal mengambil data alamat: ' + error.message}));
+    }
+};
+
+const FetchFamilyEducationData = async () => {
+    try {
+        const response = await getStudentFamilyEducation()
+        if (response.status === 'success') {
+            setProfileData(prev => ({
+                ...prev,
+                birth_order: response.data.birth_order,
+                jumlah_saudara: response.data.number_of_siblings,
+                sekolah_asal: response.data.previous_school,
+                ijazah_terakhir: response.data.last_ijazah,
+            }));
+            setOldData(prev => ({
+                ...prev,
+                birth_order: response.data.birth_order,
+                jumlah_saudara: response.data.number_of_siblings,
+                sekolah_asal: response.data.previous_school,
+                ijazah_terakhir: response.data.last_ijazah,
+            }));
+            setEditableData(prev => ({
+                ...prev,
+                birth_order: response.data.editable_fields.birth_order,
+                sekolah_asal: response.data.editable_fields.previous_school,
+                ijazah_terakhir: response.data.editable_fields.last_ijazah,
+            }))
+        } else {
+            setErrors(prev => ({...prev, fetch: 'Gagal mengambil data edukasi: ' + response.message}));
+        }
+    } catch (error) {
+        setErrors(prev => ({...prev,  fetch: 'Gagal mengambil data edukasi: ' + error.message}))
+    }
+};
+
 const handleChange = (e) => {
-const { name, value } = e.target;
-setProfileData(prev => ({
-    ...prev,
-    [name]: value
-}));
-// Clear error untuk field ini
-if (errors[name]) {
-    setErrors(prev => ({
-    ...prev,
-    [name]: ''
+    const { name, value } = e.target;
+    setProfileData(prev => ({
+        ...prev,
+        [name]: value
     }));
-}
+    // Clear error untuk field ini
+    if (errors[name]) {
+        setErrors(prev => ({
+        ...prev,
+        [name]: ''
+        }));
+    }
+    // Clear general submit error
+    if (errors.submit || errors.submitpassword || errors.submitaddress || errors.submitfamilyeducation) {
+        setErrors(prev => ({
+        ...prev,
+        submit: null,
+        submitpassword: null,
+        submitaddress: null,
+        submitfamilyeducation: null
+        }));
+    }
 };
 
 const handleImageChange = (e) => {
@@ -118,9 +325,6 @@ const validateForm = () => {
 const newErrors = {};
 
 // Validasi data wajib
-if (!profileData.registration_number?.trim()) {
-    newErrors.registration_number = 'Registration Number wajib diisi';
-}
 
 if (!profileData.full_name?.trim()) {
     newErrors.full_name = 'Nama Lengkap wajib diisi';
@@ -139,14 +343,14 @@ if (!profileData.email?.trim()) {
 }
 
 // Validasi password (opsional, hanya jika diisi)
-if (profileData.password || profileData.old_password) {
+if (profileData.password || profileData.old_password || profileData.confirm_password) {
     // Jika mengisi password baru, harus mengisi password lama
-    if (profileData.password && !profileData.old_password) {
+    if ((profileData.password || profileData.confirm_password) && !profileData.old_password) {
     newErrors.old_password = 'Password lama wajib diisi untuk mengubah password';
     }
     
-    if (profileData.password && profileData.password.length < 6) {
-    newErrors.password = 'Password minimal 6 karakter';
+    if (profileData.password && profileData.password.length < 8) {
+    newErrors.password = 'Password minimal 8 karakter';
     }
     
     if (profileData.password !== profileData.confirm_password) {
@@ -156,6 +360,28 @@ if (profileData.password || profileData.old_password) {
 
 if (!profileData.alamat?.trim()) {
     newErrors.alamat = 'Alamat wajib diisi';
+}
+
+if (!profileData.dusun?.trim()) {
+    newErrors.dusun = 'Dusun wajib diisi';
+}
+
+if (!profileData.kelurahan?.trim()) {
+    newErrors.kelurahan = 'Kelurahan wajib diisi';
+}
+
+if (!profileData.kecamatan?.trim()) {
+    newErrors.kecamatan = 'Kecamatan wajib diisi';
+}
+
+if (!profileData.city_regency?.trim()) {
+    newErrors.city_regency = 'Kota/Kabupaten wajib diisi';
+}
+if (!profileData.provinsi?.trim()) {
+    newErrors.provinsi = 'Provinsi wajib diisi';
+}
+if (!profileData.kode_pos?.trim()) {
+    newErrors.kode_pos = 'Kode Pos wajib diisi';
 }
 
 if (!profileData.gender) {
@@ -179,61 +405,282 @@ if (!profileData.nik?.trim()) {
 } else if (profileData.nik.length !== 16) {
     newErrors.nik = 'NIK harus 16 digit';
 }
+if (!profileData.nomor_kartu_keluarga?.trim()) {
+    newErrors.nomor_kartu_keluarga = 'No KK wajib diisi';
+} else if (profileData.nomor_kartu_keluarga.length !== 16) {
+    newErrors.nomor_kartu_keluarga = 'No KK harus 16 digit';
+}
+if (!profileData.citizenship) {
+    newErrors.citizenship = 'Kewarganegaraan wajib dipilih';
+}
+if (!profileData.birth_order) {
+    newErrors.birth_order = 'Anak ke-berapa wajib diisi';
+}
+if (!profileData.jumlah_saudara) {
+    newErrors.jumlah_saudara = 'Jumlah saudara wajib diisi';
+}
+if (!profileData.sekolah_asal?.trim()) {
+    newErrors.sekolah_asal = 'Sekolah Asal wajib diisi';
+}
+if (!profileData.ijazah_terakhir) {
+    newErrors.ijazah_terakhir = 'Ijazah Terakhir wajib dipilih';
+}
 
 setErrors(newErrors);
 return Object.keys(newErrors).length === 0;
 };
 
+const getStudentIdenititySubmissionBecauseApiWantOnlyUpdatedDataToSend = () => {
+    const updatedData = {};
+    if (profileData.full_name !== oldData.full_name) {
+        updatedData.name = profileData.full_name;
+        updatedData.full_name = profileData.full_name;
+    }
+    if (profileData.username !== oldData.username) {
+        updatedData.username = profileData.username;
+    }
+    if (profileData.profile_image !== oldData.profile_image) {
+        updatedData.profile_image = profileData.profile_image;
+    }
+    if (profileData.gender !== oldData.gender && editableData.gender) {
+        updatedData.gender = profileData.gender;
+    }
+    if (profileData.religion !== oldData.religion) {
+        updatedData.religion = profileData.religion;
+    }
+    if (profileData.tanggal_lahir !== oldData.tanggal_lahir && editableData.tanggal_lahir) {
+        updatedData.birth_date = profileData.tanggal_lahir;
+    }
+    if (profileData.tempat_lahir !== oldData.tempat_lahir && editableData.tempat_lahir) {
+        updatedData.birth_place = profileData.tempat_lahir;
+    }
+    if (profileData.nik !== oldData.nik && editableData.nik) {
+        updatedData.nik = profileData.nik;
+    }
+    if (profileData.nomor_kartu_keluarga !== oldData.nomor_kartu_keluarga && editableData.nomor_kartu_keluarga) {
+        updatedData.no_kk = profileData.nomor_kartu_keluarga;
+    }
+    if (profileData.citizenship !== oldData.citizenship) {
+        updatedData.citizenship = profileData.citizenship;
+    }
+    return updatedData;
+};
+
+const getStudentStudentFamilyAndEducationSubmissionBecauseApiWantOnlyUpdatedDataToSend = () => {
+    const updatedData = {};
+    if (profileData.birth_order !== oldData.birth_order && editableData.birth_order) {
+        updatedData.birth_order = profileData.birth_order;
+    }
+    if (profileData.jumlah_saudara !== oldData.jumlah_saudara) {
+        updatedData.number_of_siblings = profileData.jumlah_saudara;
+    }
+    if (profileData.sekolah_asal !== oldData.sekolah_asal && editableData.sekolah_asal) {
+        updatedData.previous_school = profileData.sekolah_asal;
+    }
+    if (profileData.ijazah_terakhir !== oldData.ijazah_terakhir && editableData.ijazah_terakhir) {
+        updatedData.last_ijazah = profileData.ijazah_terakhir;
+    }
+    return updatedData;
+};
+
 const handleSubmit = async (e) => {
+if (!window.confirm('Apakah Anda yakin ingin menyimpan perubahan? Beberapa data tidak dapat diubah kembali setelah disimpan.')) {
+    return;
+}
 e.preventDefault();
 
 if (!validateForm()) {
+    setErrors(prev => ({
+        ...prev,
+        submit: 'Data tidak valid, silakan periksa kembali form di atas',
+    }));
     return;
 }
 
 setIsLoading(true);
+setErrors(prev => ({
+    ...prev,
+    submit: null,
+    submitpassword: null,
+    submitaddress: null,
+    submitfamilyeducation: null
+}));
 
+const newErrors = {};
+const newSuccess = {};
 try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const response = await updateStudentProfile(getStudentIdenititySubmissionBecauseApiWantOnlyUpdatedDataToSend());
+    if (response.status === 'success') {
+        newSuccess.submit = 'Data Identitas berhasil diperbarui';
+        oldData.full_name = profileData.full_name;
+        oldData.username = profileData.username;
+        oldData.profile_image = response.data.profile_image;
+        oldData.gender = profileData.gender;
+        oldData.religion = profileData.religion;
+        oldData.tanggal_lahir = profileData.tanggal_lahir;
+        oldData.tempat_lahir = profileData.tempat_lahir;
+        oldData.nik = profileData.nik;
+        oldData.nomor_kartu_keluarga = profileData.nomor_kartu_keluarga;
+        oldData.citizenship = profileData.citizenship;
 
-    // TODO: Replace with actual API call
-    // const response = await fetch('/api/profile/mahasiswa', {
-    //   method: 'PUT',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-    //   },
-    //   body: JSON.stringify(profileData)
-    // });
+        editableData.gender = oldData.gender ? false : true;
+        editableData.tanggal_lahir = oldData.tanggal_lahir ? false : true;
+        editableData.tempat_lahir = oldData.tempat_lahir ? false : true;
+        editableData.nik = oldData.nik ? false : true;
+        editableData.nomor_kartu_keluarga = oldData.nomor_kartu_keluarga ? false : true;
 
-    // if (!response.ok) throw new Error('Gagal memperbarui profile');
+        // Refresh user data in auth context
+        await refreshUser();
+        setImagePreview(null);
+    } else {
+        newErrors.submit = 'Gagal memperbarui data identitas: ' + response.message;
+        return;
+    }
+    const responseAddress = await updateStudentAddress({
+        full_address : profileData.alamat,
+        dusun : profileData.dusun,
+        kelurahan : profileData.kelurahan,
+        kecamatan : profileData.kecamatan,
+        city_regency : profileData.city_regency,
+        province : profileData.provinsi,
+        postal_code : profileData.kode_pos,
+    });
+    if (responseAddress.status === 'success') {
+        newSuccess.submitaddress = 'Alamat berhasil diperbarui';
+        oldData.alamat = profileData.alamat;
+        oldData.dusun = profileData.dusun;
+        oldData.kelurahan = profileData.kelurahan;
+        oldData.kecamatan = profileData.kecamatan;
+        oldData.city_regency = profileData.city_regency;
+        oldData.provinsi = profileData.provinsi;
+        oldData.kode_pos = profileData.kode_pos;
+    } else {
+        newErrors.submitaddress = 'Gagal memperbarui data alamat: ' + responseAddress.message;
+        return;
+    }
+    const responseFamilyEducation = await updateStudentFamilyEducation(getStudentStudentFamilyAndEducationSubmissionBecauseApiWantOnlyUpdatedDataToSend());
+    if (responseFamilyEducation.status === 'success') {
+        newSuccess.submitfamilyeducation = 'Data keluarga & pendidikan berhasil diperbarui';
+        oldData.birth_order = profileData.birth_order;
+        oldData.jumlah_saudara = profileData.jumlah_saudara;
+        oldData.sekolah_asal = profileData.sekolah_asal;
+        oldData.ijazah_terakhir = profileData.ijazah_terakhir;
 
-    alert('Profile berhasil diperbarui!');
-    
-    // Clear password fields after successful submit
-    setProfileData(prev => ({
-        ...prev,
-        old_password: '',
-        password: '',
-        confirm_password: ''
-    }));
+        editableData.birth_order = oldData.birth_order ? false : true;
+        editableData.sekolah_asal = oldData.sekolah_asal ? false : true;
+        editableData.ijazah_terakhir = oldData.ijazah_terakhir ? false : true;
+
+    } else {
+        newErrors.submitfamilyeducation = 'Gagal memperbarui data keluarga & pendidikan: ' + responseFamilyEducation.message;
+        return;
+    }
+    if (profileData.password && profileData.old_password && profileData.confirm_password) {
+        const passwordResponse = await changePassword({
+            old_password: profileData.old_password,
+            password: profileData.password,
+            confirm_password: profileData.confirm_password,
+        });
+        if (passwordResponse.status === 'success') {
+            newSuccess.submitpassword = 'Password berhasil diperbarui';
+            // Clear password fields
+            setProfileData(prev => ({
+                ...prev,
+                old_password: '',
+                password: '',
+                confirm_password: ''
+            }));
+        } else {
+            newErrors.submitpassword = 'Gagal memperbarui password: ' + passwordResponse.message;
+            return;
+        }
+    }
+
 } catch (error) {
-    alert('Gagal memperbarui profile: ' + error.message);
+    newErrors.submit = 'Gagal memperbarui profile: ' + error.message;
 } finally {
     setIsLoading(false);
+    setErrors(prev => ({
+        ...prev,
+        ...newErrors
+    }));
+    setSuccess(prev => ({
+        ...prev,
+        ...newSuccess
+    }));
 }
+};
+const handleDeleteProfileImage = async () => {
+    setIsDeleting(true)
+    setErrors(prev => ({ ...prev, deleteProfileImage: null }));
+    try {
+        const response = await deleteProfileImage();
+        if (response.status === 'success') {
+            setOldData(prev => ({
+                ...prev,
+                profile_image: null
+            }));
+            refreshUser();
+            setSuccess(prev => ({ ...prev, deleteProfileImage: 'Gambar profil berhasil dihapus' }));
+        } else {
+            setErrors(prev => ({ ...prev, deleteProfileImage: 'Gagal menghapus gambar profil: ' + response.message }));
+        }
+    } catch (error) {
+        setErrors(prev => ({ ...prev, deleteProfileImage: 'Gagal menghapus gambar profil: ' + error.message }));
+    } finally {
+        setIsDeleting(false)
+    }
 };
 
 const handleCancel = () => {
-if (window.confirm('Apakah Anda yakin ingin membatalkan perubahan?')) {
+    if (window.confirm('Apakah Anda yakin ingin membatalkan perubahan?')) {
+        router.back();
+    }
+};
+const handleBack = () => {
     router.back();
-}
 };
 
 const genderOptions = ['Laki-laki', 'Perempuan'];
 const religionOptions = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu'];
 const citizenshipOptions = ['WNI', 'WNA'];
+const ijazahOption = ['SMA', 'SMK' , 'MA', 'Paket C', 'Lainnya']
+
+// restart success message after 5 seconds
+useEffect(() => {
+    if (success.submit || success.submitpassword || success.submitaddress || success.submitfamilyeducation || success.deleteProfileImage) {
+        const timer = setTimeout(() => {
+            setSuccess({
+                submit: '',
+                submitpassword: '',
+                submitaddress: '',
+                submitfamilyeducation: ''
+            });
+        }, 5000);
+
+        return () => clearTimeout(timer);
+    }
+}, [success]);
+
+if (isFetching) {
+    return (
+        <LoadingEffect />
+    );
+}
+
+if (errors.fetch) {
+    return (
+        <div className="min-h-screen bg-brand-light-sage">
+            <div className="container mx-auto px-4 py-8 max-w-5xl">
+                <ErrorMessageBoxWithButton
+                    message={errors.fetch}
+                    action={fetchAll}
+                    back={true}
+                    actionback={handleBack}
+                />
+            </div>
+        </div>
+    );
+}
 
 return (
 <div className="min-h-screen bg-brand-light-sage">
@@ -252,9 +699,9 @@ return (
     <div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ borderRadius: '16px' }}>
     <div className="flex items-center gap-6">
         <Avatar className="size-24 sm:size-28">
-        <AvatarImage src={imagePreview || "/profile-placeholder.jpg"} alt={profileData.full_name} />
+        <AvatarImage src={buildImageUrl(oldData.profile_image)} alt={oldData.full_name} />
         <AvatarFallback className="text-2xl">
-            {profileData.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+            {oldData.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
         </AvatarFallback>
         </Avatar>
         <div>
@@ -268,13 +715,13 @@ return (
             className="text-lg"
             style={{ color: '#015023', opacity: 0.7, fontFamily: 'Urbanist, sans-serif' }}
         >
-            {profileData.full_name}
+            {oldData.full_name}
         </p>
         <p 
             className="text-sm"
             style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}
         >
-            NIM: {profileData.registration_number}
+            NIM: {oldData.registration_number}
         </p>
         </div>
     </div>
@@ -317,7 +764,7 @@ return (
             Registration Number (NIM) <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            Nomor induk mahasiswa
+            Nomor induk mahasiswa <span className="text-red-500">(tidak dapat diubah)</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -325,15 +772,15 @@ return (
                 id="registration_number"
                 name="registration_number"
                 value={profileData.registration_number}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
+                className="w-full px-4 py-3 border-2 focus:outline-none cursor-not-allowed bg-gray-50"
                 style={{
                 fontFamily: 'Urbanist, sans-serif',
-                borderColor: errors.registration_number ? '#BE0414' : '#015023',
+                borderColor: '#015023',
                 borderRadius: '12px',
-                opacity: errors.registration_number ? 1 : 0.7
+                opacity: 0.5
                 }}
-                disabled={isLoading}
+                disabled
+                readOnly
             />
             </FieldContent>
             {errors.registration_number && (
@@ -407,7 +854,7 @@ return (
             Email <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            Email aktif untuk komunikasi
+            Email aktif untuk komunikasi <span className="text-red-500">(tidak dapat diubah)</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -415,15 +862,15 @@ return (
                 id="email"
                 name="email"
                 value={profileData.email}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
+                className="w-full px-4 py-3 border-2 focus:outline-none cursor-not-allowed bg-gray-50"
                 style={{
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: errors.email ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: errors.email ? 1 : 0.7
+                opacity: 0.5
                 }}
-                disabled={isLoading}
+                disabled
+                readOnly
             />
             </FieldContent>
             {errors.email && (
@@ -468,7 +915,7 @@ return (
                 }}
                 >
                 <Upload className="w-5 h-5" />
-                {imagePreview ? 'Ganti Foto' : 'Upload Foto'}
+                {oldData.profile_image ? 'Ganti Foto' : 'Upload Foto'}
                 </label>
                 <input
                 type="file"
@@ -479,10 +926,42 @@ return (
                 className="hidden"
                 disabled={isLoading}
                 />
+                {oldData.profile_image && (
+                    <button
+                    type="button"
+                    onClick={handleDeleteProfileImage}
+                    className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
+                    style={{
+                        backgroundColor: '#BE0414',
+                        color: 'white',
+                        fontFamily: 'Urbanist, sans-serif'
+                    }}
+                    disabled={!profileData.profile_image || isLoading}
+                    >
+                    {isDeleting ? (
+                    <>
+                        <span className="animate-spin mr-2">⏳</span>
+                        Menghapus....
+                    </>
+                    ) : (
+                    <>
+                        <Trash2 /> Hapus Foto
+                    </>
+                    )}
+                    </button>
+                )}
             </div>
             </FieldContent>
             {errors.profile_image && (
             <FieldError>{errors.profile_image}</FieldError>
+            )}
+        </Field>
+        <Field className="md:col-span-2">
+            {success.deleteProfileImage && (
+                <SuccessMessageBox message={success.deleteProfileImage} onClose={() => setSuccess(prev => ({ ...prev, deleteProfileImage: '' }))} />
+            )}
+            {errors.deleteProfileImage && (
+                <ErrorMessageBox message={errors.deleteProfileImage} onClose={() => setErrors(prev => ({ ...prev, deleteProfileImage: null }))} />
             )}
         </Field>
 
@@ -492,7 +971,7 @@ return (
             Jenis Kelamin <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            Pilih jenis kelamin
+            Pilih jenis kelamin <span className="text-red-500">{!editableData.gender ? '(tidak dapat diubah)' : ''}</span>
             </FieldDescription>
             <FieldContent>
             <select
@@ -505,15 +984,16 @@ return (
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: errors.gender ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: errors.gender ? 1 : 0.7,
+                opacity: !editableData.gender ? 0.5 : errors.gender ? 1 : 0.7,
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23015023' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
                 backgroundRepeat: 'no-repeat',
                 backgroundPosition: 'right 1rem center',
                 backgroundSize: '1.5rem'
                 }}
-                disabled={isLoading}
+                disabled={!editableData.gender || isLoading}
+                readOnly={!editableData.gender}
             >
-                <option value="">Pilih Jenis Kelamin</option>
+                <option value="" disabled>Pilih Jenis Kelamin</option>
                 {genderOptions.map(option => (
                 <option key={option} value={option}>{option}</option>
                 ))}
@@ -536,7 +1016,7 @@ return (
             <select
                 id="religion"
                 name="religion"
-                value={profileData.religion}
+                value={profileData.religion || ''}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100 appearance-none cursor-pointer"
                 style={{
@@ -551,7 +1031,7 @@ return (
                 }}
                 disabled={isLoading}
             >
-                <option value="">Pilih Agama</option>
+                <option value="" disabled>Pilih Agama</option>
                 {religionOptions.map(option => (
                 <option key={option} value={option}>{option}</option>
                 ))}
@@ -568,7 +1048,7 @@ return (
             Tempat Lahir <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            Kota/Kabupaten tempat lahir
+            Kota/Kabupaten tempat lahir <span className="text-red-500">{!editableData.tempat_lahir ? '(tidak dapat diubah)' : ''}</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -582,9 +1062,10 @@ return (
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: errors.tempat_lahir ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: errors.tempat_lahir ? 1 : 0.7
+                opacity: !editableData.tempat_lahir ? 0.5 : errors.tempat_lahir ? 1 : 0.7
                 }}
-                disabled={isLoading}
+                disabled={!editableData.tempat_lahir || isLoading}
+                readOnly={!editableData.tempat_lahir}
             />
             </FieldContent>
             {errors.tempat_lahir && (
@@ -598,7 +1079,7 @@ return (
             Tanggal Lahir <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            Format: DD/MM/YYYY
+            Format: DD/MM/YYYY <span className="text-red-500">{!editableData.tanggal_lahir ? '(tidak dapat diubah)' : ''}</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -612,9 +1093,10 @@ return (
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: errors.tanggal_lahir ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: errors.tanggal_lahir ? 1 : 0.7
+                opacity: !editableData.tanggal_lahir ? 0.5 : errors.tanggal_lahir ? 1 : 0.7
                 }}
-                disabled={isLoading}
+                disabled={!editableData.tanggal_lahir || isLoading}
+                readOnly={!editableData.tanggal_lahir}
             />
             </FieldContent>
             {errors.tanggal_lahir && (
@@ -628,7 +1110,7 @@ return (
             NIK (Nomor Induk Kependudukan) <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            16 digit NIK sesuai KTP
+            16 digit NIK sesuai KTP <span className="text-red-500">{!editableData.nik ? '(tidak dapat diubah)' : ''}</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -643,9 +1125,10 @@ return (
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: errors.nik ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: errors.nik ? 1 : 0.7
+                opacity: !editableData.nik ? 0.5 : errors.nik ? 1 : 0.7
                 }}
-                disabled={isLoading}
+                disabled={!editableData.nik || isLoading}
+                readOnly={!editableData.nik}
             />
             </FieldContent>
             {errors.nik && (
@@ -659,7 +1142,7 @@ return (
             Nomor Kartu Keluarga
             </FieldLabel>
             <FieldDescription>
-            16 digit nomor KK
+            16 digit nomor KK <span className="text-red-500">{!editableData.nomor_kartu_keluarga ? '(tidak dapat diubah)' : ''}</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -672,13 +1155,17 @@ return (
                 className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
                 style={{
                 fontFamily: 'Urbanist, sans-serif',
-                borderColor: '#015023',
+                borderColor: errors.nomor_kartu_keluarga ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: 0.7
+                opacity: !editableData.nomor_kartu_keluarga ? 0.5 : errors.nomor_kartu_keluarga ? 1 : 0.7
                 }}
-                disabled={isLoading}
+                disabled={!editableData.nomor_kartu_keluarga || isLoading}
+                readOnly={!editableData.nomor_kartu_keluarga}
             />
             </FieldContent>
+            {errors.nomor_kartu_keluarga && (
+            <FieldError>{errors.nomor_kartu_keluarga}</FieldError>
+            )}
         </Field>
 
         {/* Citizenship */}
@@ -693,14 +1180,14 @@ return (
             <select
                 id="citizenship"
                 name="citizenship"
-                value={profileData.citizenship}
+                value={profileData.citizenship || ''}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100 appearance-none cursor-pointer"
                 style={{
                 fontFamily: 'Urbanist, sans-serif',
-                borderColor: '#015023',
+                borderColor: errors.citizenship ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: 0.7,
+                opacity: errors.citizenship ? 1 : 0.7,
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23015023' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
                 backgroundRepeat: 'no-repeat',
                 backgroundPosition: 'right 1rem center',
@@ -708,11 +1195,41 @@ return (
                 }}
                 disabled={isLoading}
             >
-                <option value="">Pilih Kewarganegaraan</option>
+                <option value="" disabled>Pilih Kewarganegaraan</option>
                 {citizenshipOptions.map(option => (
                 <option key={option} value={option}>{option}</option>
                 ))}
             </select>
+            </FieldContent>
+            {errors.citizenship && (
+            <FieldError>{errors.citizenship}</FieldError>
+            )}
+        </Field>
+
+        {/* Jurusan */}
+        <Field>
+            <FieldLabel htmlFor="jurusan">
+            Jurusan <span className="text-red-500">*</span>
+            </FieldLabel>
+            <FieldDescription>
+            Jurusan Kuliah <span className="text-red-500">(tidak dapat diubah)</span>
+            </FieldDescription>
+            <FieldContent>
+            <input
+                type="email"
+                id="email"
+                name="email"
+                value={profileData.program}
+                className="w-full px-4 py-3 border-2 focus:outline-none cursor-not-allowed bg-gray-50"
+                style={{
+                fontFamily: 'Urbanist, sans-serif',
+                borderColor: errors.program ? '#BE0414' : '#015023',
+                borderRadius: '12px',
+                opacity: 0.5
+                }}
+                disabled
+                readOnly
+            />
             </FieldContent>
         </Field>
         </div>
@@ -793,13 +1310,16 @@ return (
                 className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
                 style={{
                     fontFamily: 'Urbanist, sans-serif',
-                    borderColor: '#015023',
+                    borderColor: errors.dusun ? '#BE0414' : '#015023',
                     borderRadius: '12px',
-                    opacity: 0.7
+                    opacity: errors.dusun ? 1 : 0.7
                 }}
                 disabled={isLoading}
                 />
             </FieldContent>
+            {errors.dusun && (
+            <FieldError>{errors.dusun}</FieldError>
+            )}
             </Field>
 
             {/* Kelurahan */}
@@ -817,13 +1337,16 @@ return (
                 className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
                 style={{
                     fontFamily: 'Urbanist, sans-serif',
-                    borderColor: '#015023',
+                    borderColor: errors.kelurahan ? '#BE0414' : '#015023',
                     borderRadius: '12px',
-                    opacity: 0.7
+                    opacity: errors.kelurahan ? 1 : 0.7
                 }}
                 disabled={isLoading}
                 />
             </FieldContent>
+            {errors.kelurahan && (
+            <FieldError>{errors.kelurahan}</FieldError>
+            )}
             </Field>
 
             {/* Kecamatan */}
@@ -841,13 +1364,16 @@ return (
                 className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
                 style={{
                     fontFamily: 'Urbanist, sans-serif',
-                    borderColor: '#015023',
+                    borderColor: errors.kecamatan ? '#BE0414' : '#015023',
                     borderRadius: '12px',
-                    opacity: 0.7
+                    opacity: errors.kecamatan ? 1 : 0.7
                 }}
                 disabled={isLoading}
                 />
             </FieldContent>
+                {errors.kecamatan && (
+                <FieldError>{errors.kecamatan}</FieldError>
+                )}
             </Field>
 
             {/* City/Regency */}
@@ -865,13 +1391,16 @@ return (
                 className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
                 style={{
                     fontFamily: 'Urbanist, sans-serif',
-                    borderColor: '#015023',
+                    borderColor: errors.city_regency ? '#BE0414' : '#015023',
                     borderRadius: '12px',
-                    opacity: 0.7
+                    opacity: errors.city_regency ? 1 : 0.7
                 }}
                 disabled={isLoading}
                 />
             </FieldContent>
+            {errors.city_regency && (
+            <FieldError>{errors.city_regency}</FieldError>
+            )}
             </Field>
 
             {/* Provinsi */}
@@ -889,13 +1418,16 @@ return (
                 className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
                 style={{
                     fontFamily: 'Urbanist, sans-serif',
-                    borderColor: '#015023',
+                    borderColor: errors.provinsi ? '#BE0414' : '#015023',
                     borderRadius: '12px',
-                    opacity: 0.7
+                    opacity: errors.provinsi ? 1 : 0.7
                 }}
                 disabled={isLoading}
                 />
             </FieldContent>
+            {errors.provinsi && (
+            <FieldError>{errors.provinsi}</FieldError>
+            )}
             </Field>
 
             {/* Kode Pos */}
@@ -914,13 +1446,16 @@ return (
                 className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
                 style={{
                     fontFamily: 'Urbanist, sans-serif',
-                    borderColor: '#015023',
+                    borderColor: errors.kode_pos ? '#BE0414' : '#015023',
                     borderRadius: '12px',
-                    opacity: 0.7
+                    opacity: errors.kode_pos ? 1 : 0.7
                 }}
                 disabled={isLoading}
                 />
             </FieldContent>
+            {errors.kode_pos && (
+            <FieldError>{errors.kode_pos}</FieldError>
+            )}
             </Field>
         </div>
         </div>
@@ -961,7 +1496,7 @@ return (
             Anak Ke-
             </FieldLabel>
             <FieldDescription>
-            Urutan kelahiran dalam keluarga
+            Urutan kelahiran dalam keluarga (1, 2, 3, dst.) <span className="text-red-500">{!editableData.birth_order ? '(tidak dapat diubah)' : ''}</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -974,13 +1509,17 @@ return (
                 className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
                 style={{
                 fontFamily: 'Urbanist, sans-serif',
-                borderColor: '#015023',
+                borderColor: errors.birth_order ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: 0.7
+                opacity: !editableData.birth_order ? 0.5 : errors.birth_order ? 1 : 0.7
                 }}
-                disabled={isLoading}
+                disabled={!editableData.birth_order || isLoading}
+                readOnly={!editableData.birth_order}
             />
             </FieldContent>
+            {errors.birth_order && (
+            <FieldError>{errors.birth_order}</FieldError>
+            )}
         </Field>
 
         {/* Jumlah Saudara */}
@@ -1002,22 +1541,64 @@ return (
                 className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
                 style={{
                 fontFamily: 'Urbanist, sans-serif',
-                borderColor: '#015023',
+                borderColor: errors.jumlah_saudara ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: 0.7
+                opacity: errors.jumlah_saudara ? 1 : 0.7
                 }}
                 disabled={isLoading}
             />
             </FieldContent>
+            {errors.jumlah_saudara && (
+            <FieldError>{errors.jumlah_saudara}</FieldError>
+            )}
+        </Field>
+
+        {/* Ijazah Terakhir */}
+        <Field>
+            <FieldLabel htmlFor="ijazah_terakhir">
+            Ijazah Terakhir
+            </FieldLabel>
+            <FieldDescription>
+            SMA, SMK, MA, Paket C, Lainnya <span className="text-red-500">{!editableData.ijazah_terakhir ? '(tidak dapat diubah)' : ''}</span>
+            </FieldDescription>
+            <FieldContent>
+            <select
+                id="ijazah_terakhir"
+                name="ijazah_terakhir"
+                value={profileData.ijazah_terakhir || ''}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100 appearance-none cursor-pointer"
+                style={{
+                fontFamily: 'Urbanist, sans-serif',
+                borderColor: errors.ijazah_terakhir ? '#BE0414' : '#015023',
+                borderRadius: '12px',
+                opacity: !editableData.ijazah_terakhir ? 0.5 : errors.ijazah_terakhir ? 1 : 0.7,
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23015023' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 1rem center',
+                backgroundSize: '1.5rem'
+                }}
+                disabled={!editableData.ijazah_terakhir || isLoading}
+                readOnly={!editableData.ijazah_terakhir}
+            >
+                <option value="" disabled>Pilih Ijazah  Terakhir</option>
+                {ijazahOption.map(option => (
+                <option key={option} value={option}>{option}</option>
+                ))}
+            </select>
+            </FieldContent>
+            {errors.ijazah_terakhir && (
+            <FieldError>{errors.ijazah_terakhir}</FieldError>
+            )}
         </Field>
 
         {/* Sekolah Asal */}
-        <Field className="md:col-span-2">
+        <Field>
             <FieldLabel htmlFor="sekolah_asal">
             Sekolah Asal
             </FieldLabel>
             <FieldDescription>
-            Nama sekolah menengah atas terakhir
+            Nama sekolah menengah atas terakhir <span className="text-red-500">{!editableData.sekolah_asal ? '(tidak dapat diubah)' : ''}</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -1029,19 +1610,26 @@ return (
                 className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
                 style={{
                 fontFamily: 'Urbanist, sans-serif',
-                borderColor: '#015023',
+                borderColor: errors.sekolah_asal ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: 0.7
+                opacity: !editableData.sekolah_asal ? 0.5 : errors.sekolah_asal ? 1 : 0.7
                 }}
-                disabled={isLoading}
+                disabled={!editableData.sekolah_asal || isLoading}
+                readOnly={!editableData.sekolah_asal}
             />
             </FieldContent>
+            {errors.sekolah_asal && (
+            <FieldError>{errors.sekolah_asal}</FieldError>
+            )}
         </Field>
         </div>
     </div>
 
     {/* Section 4: Ubah Password */}
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
+    <div 
+        className="bg-white rounded-2xl shadow-lg p-6"
+        style={{ borderRadius: '16px' }}
+        >
         <div className="flex items-center gap-3 mb-6">
             <div 
             className="p-3 rounded-xl"
@@ -1066,140 +1654,158 @@ return (
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Password Lama */}
-        <Field className="space-y-2 md:col-span-2">
-            <FieldLabel className="text-sm font-medium text-gray-700">
-            Password Lama
-            <span className="text-xs text-gray-500 ml-2">(Wajib diisi jika ingin mengubah password)</span>
+            {/* Password Lama */}
+            <Field className="md:col-span-2">
+            <FieldLabel htmlFor="old_password">
+                Password Lama
             </FieldLabel>
-            <FieldContent className="relative">
-            <input
-                type={showOldPassword ? "text" : "password"}
-                name="old_password"
-                placeholder="Masukkan password lama"
-                value={profileData.old_password}
-                onChange={handleChange}
-                className={`
-                w-full px-4 py-2.5 pr-12
-                border ${errors.old_password ? 'border-brand-danger' : 'border-gray-200'}
-                rounded-xl
-                text-gray-900 placeholder-gray-400
-                focus:outline-none focus:ring-2 
-                ${errors.old_password ? 'focus:ring-brand-danger' : 'focus:ring-brand-primary'}
-                transition-all
-                disabled:bg-gray-50 disabled:cursor-not-allowed
-                `}
-                disabled={isLoading}
-            />
-            <button
-                type="button"
-                onClick={() => setShowOldPassword(!showOldPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-                {showOldPassword ? (
-                <EyeOff className="w-5 h-5" />
-                ) : (
-                <Eye className="w-5 h-5" />
-                )}
-            </button>
+            <FieldDescription>
+                Wajib diisi jika ingin mengubah password
+            </FieldDescription>
+            <FieldContent>
+                <div className="relative">
+                <input
+                    type={showOldPassword ? "text" : "password"}
+                    id="old_password"
+                    name="old_password"
+                    value={profileData.old_password}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 pr-12 border-2 focus:outline-none focus:border-opacity-100"
+                    style={{
+                    fontFamily: 'Urbanist, sans-serif',
+                    borderColor: errors.old_password ? '#BE0414' : '#015023',
+                    borderRadius: '12px',
+                    opacity: errors.old_password ? 1 : 0.7
+                    }}
+                    disabled={isLoading}
+                    placeholder="Masukkan password lama"
+                />
+                <button
+                    type="button"
+                    onClick={() => setShowOldPassword(!showOldPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition"
+                    style={{ color: '#015023' }}
+                >
+                    {showOldPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+                </div>
+            </FieldContent>
             {errors.old_password && (
-                <p className="text-brand-danger text-xs mt-1">{errors.old_password}</p>
+                <FieldError>{errors.old_password}</FieldError>
             )}
-            </FieldContent>
-        </Field>
+            </Field>
 
-        {/* Password Baru */}
-        <Field className="space-y-2">
-            <FieldLabel className="text-sm font-medium text-gray-700">
-            Password Baru
-            <span className="text-xs text-gray-500 ml-2">(Opsional)</span>
+            {/* Password Baru */}
+            <Field>
+            <FieldLabel htmlFor="password">
+                Password Baru
             </FieldLabel>
-            <FieldContent className="relative">
-            <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                placeholder="Masukkan password baru"
-                value={profileData.password}
-                onChange={handleChange}
-                className={`
-                w-full px-4 py-2.5 pr-12
-                border ${errors.password ? 'border-brand-danger' : 'border-gray-200'}
-                rounded-xl
-                text-gray-900 placeholder-gray-400
-                focus:outline-none focus:ring-2 
-                ${errors.password ? 'focus:ring-brand-danger' : 'focus:ring-brand-primary'}
-                transition-all
-                disabled:bg-gray-50 disabled:cursor-not-allowed
-                `}
-                disabled={isLoading}
-            />
-            <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-                {showPassword ? (
-                <EyeOff className="w-5 h-5" />
-                ) : (
-                <Eye className="w-5 h-5" />
-                )}
-            </button>
+            <FieldDescription>
+                Minimal 6 karakter
+            </FieldDescription>
+            <FieldContent>
+                <div className="relative">
+                <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    name="password"
+                    value={profileData.password}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 pr-12 border-2 focus:outline-none focus:border-opacity-100"
+                    style={{
+                    fontFamily: 'Urbanist, sans-serif',
+                    borderColor: errors.password ? '#BE0414' : '#015023',
+                    borderRadius: '12px',
+                    opacity: errors.password ? 1 : 0.7
+                    }}
+                    disabled={isLoading}
+                    placeholder="Masukkan password baru"
+                />
+                <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition"
+                    style={{ color: '#015023' }}
+                >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+                </div>
+            </FieldContent>
             {errors.password && (
-                <p className="text-brand-danger text-xs mt-1">{errors.password}</p>
+                <FieldError>{errors.password}</FieldError>
             )}
-            </FieldContent>
-        </Field>
+            </Field>
 
-        {/* Confirm Password */}
-        <Field className="space-y-2">
-            <FieldLabel className="text-sm font-medium text-gray-700">
-            Konfirmasi Password
-            <span className="text-xs text-gray-500 ml-2">(Opsional)</span>
+            {/* Confirm Password */}
+            <Field>
+            <FieldLabel htmlFor="confirm_password">
+                Konfirmasi Password Baru
             </FieldLabel>
-            <FieldContent className="relative">
-            <input
-                type={showConfirmPassword ? "text" : "password"}
-                name="confirm_password"
-                placeholder="Konfirmasi password baru"
-                value={profileData.confirm_password}
-                onChange={handleChange}
-                className={`
-                w-full px-4 py-2.5 pr-12
-                border ${errors.confirm_password ? 'border-brand-danger' : 'border-gray-200'}
-                rounded-xl
-                text-gray-900 placeholder-gray-400
-                focus:outline-none focus:ring-2 
-                ${errors.confirm_password ? 'focus:ring-brand-danger' : 'focus:ring-brand-primary'}
-                transition-all
-                disabled:bg-gray-50 disabled:cursor-not-allowed
-                `}
-                disabled={isLoading}
-            />
-            <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-                {showConfirmPassword ? (
-                <EyeOff className="w-5 h-5" />
-                ) : (
-                <Eye className="w-5 h-5" />
-                )}
-            </button>
-            {errors.confirm_password && (
-                <p className="text-brand-danger text-xs mt-1">{errors.confirm_password}</p>
-            )}
+            <FieldDescription>
+                Masukkan ulang password baru
+            </FieldDescription>
+            <FieldContent>
+                <div className="relative">
+                <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    id="confirm_password"
+                    name="confirm_password"
+                    value={profileData.confirm_password}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 pr-12 border-2 focus:outline-none focus:border-opacity-100"
+                    style={{
+                    fontFamily: 'Urbanist, sans-serif',
+                    borderColor: errors.confirm_password ? '#BE0414' : '#015023',
+                    borderRadius: '12px',
+                    opacity: errors.confirm_password ? 1 : 0.7
+                    }}
+                    disabled={isLoading}
+                    placeholder="Konfirmasi password baru"
+                />
+                <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition"
+                    style={{ color: '#015023' }}
+                >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+                </div>
             </FieldContent>
-        </Field>
+            {errors.confirm_password && (
+                <FieldError>{errors.confirm_password}</FieldError>
+            )}
+            </Field>
+        </div>
+        </div>
 
-        {/* Info Text */}
-        <div className="md:col-span-2">
-            <p className="text-sm text-gray-500">
-            <span className="font-medium">Catatan:</span> Untuk mengubah password, Anda harus mengisi password lama terlebih dahulu. Kosongkan semua field password jika tidak ingin mengubah password. Password baru minimal 6 karakter.
-            </p>
-        </div>
-        </div>
-    </div>
+        {/* Error message */}
+        {errors.submit && (
+            <ErrorMessageBox message={errors.submit} />
+        )}
+        {errors.submitpassword && (
+            <ErrorMessageBox message={errors.submitpassword} />
+        )}
+        {errors.submitaddress && (
+            <ErrorMessageBox message={errors.submitaddress} />
+        )}
+        {errors.submitfamilyeducation && (
+            <ErrorMessageBox message={errors.submitfamilyeducation} />
+        )}
+
+        {/* Success message */}
+        {success.submit && (
+            <SuccessMessageBox message={success.submit} />
+        )}
+        {success.submitpassword && (
+            <SuccessMessageBox message={success.submitpassword} />
+        )}
+        {success.submitaddress && (
+            <SuccessMessageBox message={success.submitaddress} />
+        )}
+        {success.submitfamilyeducation && (
+            <SuccessMessageBox message={success.submitfamilyeducation} />
+        )}
 
     {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-end">
@@ -1217,8 +1823,16 @@ return (
             disabled={isLoading}
             className="sm:min-w-[150px]"
         >
-            <Save className="w-5 h-5 mr-2" />
-            {isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}
+            {isLoading ? (
+            <>
+                <span className="animate-spin mr-2">⏳</span>
+                Menyimpan...
+            </>
+            ) : (
+            <>
+                <Save className="w-5 h-5 mr-2" /> Simpan Perubahan
+            </>
+            )}
         </PrimaryButton>
         </div>
     </form>

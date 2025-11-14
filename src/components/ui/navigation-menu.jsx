@@ -5,8 +5,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Bell, User, UserCog, LogOut } from 'lucide-react'
-import { cn } from "@/lib/utils"
+import { cn, buildImageUrl } from "@/lib/utils"
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { useAuth } from '@/lib/auth-context'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +16,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import Cookies from 'js-cookie'
 import { logout } from '@/lib/sessionApi'
 
 const NavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
@@ -97,8 +97,12 @@ const NavbarNotification = React.forwardRef(({ className, ...props }, ref) => (
   </Link>
 ))
 
-const NavbarProfile = React.forwardRef(({ className, userName = "User", userImage, ...props }, ref) => {
+const NavbarProfile = React.forwardRef(({ className, userName, userImage, Name, ...props }, ref) => {
   const router = useRouter()
+  const { user, logoutLocal } = useAuth();
+  const displayuserName = userName || user.username || '...';
+  const displayName = Name || user.name || '...';
+  const displayImage = userImage || user.image;
 
   const handleLogout = async () => {
     if (confirm('Apakah Anda yakin ingin logout?')) {
@@ -112,11 +116,8 @@ const NavbarProfile = React.forwardRef(({ className, userName = "User", userImag
         console.error('Error saat logout:', error);
         serverMessage = error?.message || error?.response?.data?.message || '';
       } finally {
-        Cookies.remove('token');
-        Cookies.remove('roles');
-        if (serverMessage) {
-          console.warn('Logout info:', serverMessage);
-        }
+        logoutLocal();
+        if (serverMessage) console.warn('Logout info:', serverMessage);
         router.push('/loginpage');
       }
     }
@@ -134,9 +135,9 @@ const NavbarProfile = React.forwardRef(({ className, userName = "User", userImag
           {...props}
         >
           <Avatar className="size-9 sm:size-10">
-            <AvatarImage src={userImage} alt={userName} />
+            <AvatarImage src={displayImage} alt={displayuserName} />
             <AvatarFallback>
-              {userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+              {displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
             </AvatarFallback>
           </Avatar>
         </button>
@@ -145,10 +146,10 @@ const NavbarProfile = React.forwardRef(({ className, userName = "User", userImag
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-              {userName}
+              {displayName}
             </p>
             <p className="text-xs" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
-              Akun Pengguna
+              {displayuserName}
             </p>
           </div>
         </DropdownMenuLabel>

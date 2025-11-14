@@ -1,16 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, User, Eye, EyeOff, Upload, X, Lock } from 'lucide-react';
+import { ArrowLeft, Save, User, Eye, EyeOff, Upload, X, Lock, Trash2 } from 'lucide-react';
 import { Field, FieldLabel, FieldContent, FieldDescription, FieldError } from '@/components/ui/field';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { changePassword, deleteProfileImage, getStaffProfile, updateStaffProfile } from '@/lib/profileApi';
+import LoadingEffect from './loading-effect';
+import { buildImageUrl } from '@/lib/utils';
+import { ErrorMessageBoxWithButton, SuccessMessageBox, ErrorMessageBox } from './message-box';
+import { useAuth } from '@/lib/auth-context';
 
 export default function ProfileDMA() {
 const router = useRouter();
+const { refreshUser } = useAuth();
 const [isLoading, setIsLoading] = useState(false);
+const [isFetching, setIsFetching] = useState(true);
+const [isDeleting, setIsDeleting] = useState(false)
 const [errors, setErrors] = useState({});
+const [successSubmit, setSuccessSubmit] = useState('');
+const [successPassword, setSuccessPassword] = useState('');
+const [successDeleteImage, setSuccessDeleteImage] = useState('');
 const [showOldPassword, setShowOldPassword] = useState(false);
 const [showPassword, setShowPassword] = useState(false);
 const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -18,182 +29,341 @@ const [imagePreview, setImagePreview] = useState(null);
 
 // State untuk data profile DMA (Dosen, Manager, Admin)
 const [profileData, setProfileData] = useState({
-// Data yang bisa edit dan dilihat
-full_name: 'Dr. Ahmad Wijaya',
-username: 'ahmad.wijaya',
-email: 'ahmad.wijaya@university.ac.id',
-old_password: '',
-password: '',
-confirm_password: '',
-profile_image: null,
+    // Data yang bisa edit dan dilihat
+    full_name: '',
+    username: '',
+    email: '',
+    old_password: '',
+    password: '',
+    confirm_password: '',
+    profile_image: null,
 
-// Data yang hanya bisa dilihat (read-only)
-employee_id: 'EMP-2021-001',
-position: 'Dosen', // Dosen / Manager / Admin
+    // Data yang hanya bisa dilihat (read-only)
+    employee_id: '',
+    position: '', // Dosen / Manager / Admin
 });
 
+// State untuk data profile DMA (Dosen, Manager, Admin)
+const [oldData, setOldData] = useState({
+    // Data yang bisa edit dan dilihat
+    full_name: '',
+    username: '',
+    email: '',
+    old_password: '',
+    password: '',
+    confirm_password: '',
+    profile_image: null,
+
+    // Data yang hanya bisa dilihat (read-only)
+    employee_id: '',
+    position: '', // Dosen / Manager / Admin
+});
+
+useEffect(() => {
+    fetchAll();
+}, []);
+
+const fetchAll = async () => {
+    setErrors(prev => ({...prev, fetch: null}));
+    setIsFetching(true);
+    await Promise.all([
+        FetchProfileData()
+    ]);
+    setIsFetching(false);
+};
+
+const FetchProfileData = async () => {
+    try {
+        const response = await getStaffProfile();
+        if (response.status === 'success') {
+            setOldData(prev => ({
+                ...prev,
+                full_name: response.data.name,
+                username: response.data.username,
+                email: response.data.email,
+                profile_image: response.data.profile_image,
+                employee_id: response.data.staff_data.employee_id_number,
+                position: response.data.staff_data.position,
+            }));
+            setProfileData(prev => ({
+                ...prev,
+                full_name: response.data.name,
+                username: response.data.username,
+                email: response.data.email,
+                profile_image: response.data.profile_image,
+                employee_id: response.data.staff_data.employee_id_number,
+                position: response.data.staff_data.position,
+            }));
+        } else {
+            setErrors(prev => ({...prev, fetch: 'Gagal mengambil data profile: ' + response.message}));
+        }
+    } catch (error) {
+        setErrors(prev => ({...prev, fetch: 'Gagal mengambil data profile: ' + error.message}));
+    }
+};
+
 const handleChange = (e) => {
-const { name, value } = e.target;
-setProfileData(prev => ({
-    ...prev,
-    [name]: value
-}));
-// Clear error untuk field ini
-if (errors[name]) {
-    setErrors(prev => ({
-    ...prev,
-    [name]: ''
+    const { name, value } = e.target;
+    setProfileData(prev => ({
+        ...prev,
+        [name]: value
     }));
-}
+    // Clear error untuk field ini
+    if (errors[name]) {
+        setErrors(prev => ({
+        ...prev,
+        [name]: ''
+        }));
+    }
+    // Clear submit error
+    if (errors.submit || errors.submitpassword) {
+        setErrors(prev => ({
+        ...prev,
+        submit: null,
+        submitpassword: null
+        }));
+    }
 };
 
 const handleImageChange = (e) => {
-const file = e.target.files[0];
-if (file) {
-    // Validasi ukuran file (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-    setErrors(prev => ({
+    const file = e.target.files[0];
+    if (file) {
+        // Validasi ukuran file (max 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+        setErrors(prev => ({
+            ...prev,
+            profile_image: 'Ukuran file maksimal 2MB'
+        }));
+        return;
+        }
+
+        // Validasi tipe file
+        if (!file.type.startsWith('image/')) {
+        setErrors(prev => ({
+            ...prev,
+            profile_image: 'File harus berupa gambar'
+        }));
+        return;
+        }
+
+        setProfileData(prev => ({
         ...prev,
-        profile_image: 'Ukuran file maksimal 2MB'
-    }));
-    return;
+        profile_image: file
+        }));
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+        setImagePreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+
+        // Clear error
+        if (errors.profile_image) {
+        setErrors(prev => ({
+            ...prev,
+            profile_image: ''
+        }));
+        }
     }
-
-    // Validasi tipe file
-    if (!file.type.startsWith('image/')) {
-    setErrors(prev => ({
-        ...prev,
-        profile_image: 'File harus berupa gambar'
-    }));
-    return;
-    }
-
-    setProfileData(prev => ({
-    ...prev,
-    profile_image: file
-    }));
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-    setImagePreview(reader.result);
-    };
-    reader.readAsDataURL(file);
-
-    // Clear error
-    if (errors.profile_image) {
-    setErrors(prev => ({
-        ...prev,
-        profile_image: ''
-    }));
-    }
-}
 };
 
 const handleRemoveImage = () => {
-setProfileData(prev => ({
-    ...prev,
-    profile_image: null
-}));
-setImagePreview(null);
+    setProfileData(prev => ({
+        ...prev,
+        profile_image: null
+    }));
+    setImagePreview(null);
 };
 
 const validateForm = () => {
-const newErrors = {};
+    const newErrors = {};
 
-// Validasi data wajib
-if (!profileData.full_name?.trim()) {
-    newErrors.full_name = 'Nama Lengkap wajib diisi';
-}
-
-if (!profileData.username?.trim()) {
-    newErrors.username = 'Username wajib diisi';
-} else if (profileData.username.length < 3) {
-    newErrors.username = 'Username minimal 3 karakter';
-}
-
-if (!profileData.email?.trim()) {
-    newErrors.email = 'Email wajib diisi';
-} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileData.email)) {
-    newErrors.email = 'Format email tidak valid';
-}
-
-// Validasi password (opsional, hanya jika diisi)
-if (profileData.password || profileData.old_password) {
-    // Jika mengisi password baru, harus mengisi password lama
-    if (profileData.password && !profileData.old_password) {
-    newErrors.old_password = 'Password lama wajib diisi untuk mengubah password';
+    // Validasi data wajib
+    if (!profileData.full_name?.trim()) {
+        newErrors.full_name = 'Nama Lengkap wajib diisi';
     }
-    
-    if (profileData.password && profileData.password.length < 6) {
-    newErrors.password = 'Password minimal 6 karakter';
-    }
-    
-    if (profileData.password !== profileData.confirm_password) {
-    newErrors.confirm_password = 'Password tidak cocok';
-    }
-}
 
-setErrors(newErrors);
-return Object.keys(newErrors).length === 0;
+    if (!profileData.username?.trim()) {
+        newErrors.username = 'Username wajib diisi';
+    } else if (profileData.username.length < 3) {
+        newErrors.username = 'Username minimal 3 karakter';
+    }
+
+    if (!profileData.email?.trim()) {
+        newErrors.email = 'Email wajib diisi';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileData.email)) {
+        newErrors.email = 'Format email tidak valid';
+    }
+
+    // Validasi password (opsional, hanya jika diisi)
+    if (profileData.password || profileData.old_password || profileData.confirm_password) {
+        // Jika mengisi password baru, harus mengisi password lama
+        if ((profileData.password || profileData.confirm_password) && !profileData.old_password) {
+        newErrors.old_password = 'Password lama wajib diisi untuk mengubah password';
+        }
+
+        if (profileData.old_password && (!profileData.password || !profileData.confirm_password)) {
+        newErrors.password = 'Password baru wajib diisi';
+        newErrors.confirm_password = 'Konfirmasi password wajib diisi';
+        }
+        
+        if (profileData.password && profileData.password.length < 8) {
+        newErrors.password = 'Password minimal 8 karakter';
+        }
+        
+        if (profileData.password !== profileData.confirm_password) {
+        newErrors.confirm_password = 'Password tidak cocok';
+        }
+    }
+
+    setErrors(prev => ({ ...prev, ...newErrors }));
+    return Object.keys(newErrors).length === 0;
 };
 
 const handleSubmit = async (e) => {
-e.preventDefault();
+    e.preventDefault();
 
-if (!validateForm()) {
-    return;
-}
+    if (!validateForm()) {
+        setErrors(prev => ({
+            ...prev,
+            submit: 'Data tidak valid, silakan periksa kembali form di atas',
+        }));
+        return;
+    }
 
-setIsLoading(true);
+    setIsLoading(true);
 
-try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    setErrors(prev => ({ ...prev, submit: null, submitpassword: null }));
 
-    // TODO: Replace with actual API call
-    // const formData = new FormData();
-    // formData.append('full_name', profileData.full_name);
-    // formData.append('username', profileData.username);
-    // formData.append('email', profileData.email);
-    // if (profileData.password) {
-    //   formData.append('password', profileData.password);
-    // }
-    // if (profileData.profile_image) {
-    //   formData.append('profile_image', profileData.profile_image);
-    // }
-    //
-    // const response = await fetch('/api/profile/dma', {
-    //   method: 'PUT',
-    //   headers: {
-    //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-    //   },
-    //   body: formData
-    // });
-    //
-    // if (!response.ok) throw new Error('Gagal memperbarui profile');
+    const newErrors = {};
+    try {
+        const response = await updateStaffProfile({
+            name: profileData.full_name,
+            username: profileData.username,
+            profile_image: profileData.profile_image === oldData.profile_image ? null : profileData.profile_image
+        });
+        if (response.status === 'success') {
+            await refreshUser();
+            setSuccessSubmit('Profile berhasil diperbarui!');
+            setOldData(prev => ({
+                ...prev,
+                name: response.data.name,
+                username: response.data.username,
+                profile_image: response.data.profile_image
+            }));
+            setImagePreview(null);
+        } else {
+            newErrors.submit = 'Gagal memperbarui profile: ' + response.message;
+            return;
+        }
 
-    alert('Profile berhasil diperbarui!');
-    
-    // Clear password fields after successful update
-    setProfileData(prev => ({
-    ...prev,
-    old_password: '',
-    password: '',
-    confirm_password: ''
-    }));
-} catch (error) {
-    alert('Gagal memperbarui profile: ' + error.message);
-} finally {
-    setIsLoading(false);
-}
+        if (profileData.password && profileData.old_password && profileData.confirm_password) {
+            // Jika mengisi password, kirim perubahan password
+            const passwordResponse = await changePassword({
+                old_password: profileData.old_password,
+                password: profileData.password,
+                confirm_password: profileData.confirm_password,
+            });
+            if (passwordResponse.status === 'success') {
+                setSuccessPassword('Profile dan password berhasil diperbarui!');
+            } else {
+                newErrors.submitpassword = 'Gagal memperbarui password: ' + passwordResponse.message;
+                return;
+            }
+        }
+
+        // Clear password fields after successful update
+        setProfileData(prev => ({
+            ...prev,
+            old_password: '',
+            password: '',
+            confirm_password: ''
+        }));
+    } catch (error) {
+        newErrors.submit = 'Gagal memperbarui profile/password: ' + error.message;
+    } finally {
+        setErrors(prev => ({ ...prev, ...newErrors }));
+        setIsLoading(false);
+    }
+};
+
+const handleDeleteProfileImage = async () => {
+    setIsDeleting(true)
+    setErrors(prev => ({ ...prev, deleteProfileImage: null }));
+    try {
+        const response = await deleteProfileImage();
+        if (response.status === 'success') {
+            setOldData(prev => ({
+                ...prev,
+                profile_image: null
+            }));
+            refreshUser();
+            setSuccessDeleteImage('Gambar profil berhasil dihapus!');
+        } else {
+            setErrors(prev => ({ ...prev, deleteProfileImage: 'Gagal menghapus gambar profil: ' + response.message }));
+        }
+    } catch (error) {
+        setErrors(prev => ({ ...prev, deleteProfileImage: 'Gagal menghapus gambar profil: ' + error.message }));
+    } finally {
+        setIsDeleting(false);
+    }
 };
 
 const handleCancel = () => {
-if (window.confirm('Apakah Anda yakin ingin membatalkan perubahan?')) {
-    router.back();
-}
+    if (window.confirm('Apakah Anda yakin ingin membatalkan perubahan?')) {
+        router.back();
+    }
 };
+
+const handleBack = () => {
+    router.back();
+};
+
+useEffect(() => {
+    if (!successSubmit) return;
+    const timer = setTimeout(() => {
+        setSuccessSubmit(null);
+    }, 10000);
+    return () => clearTimeout(timer);
+}, [successSubmit]);
+
+useEffect(() => {
+    if (!successPassword) return;
+    const timer = setTimeout(() => {
+        setSuccessPassword(null);
+    }, 10000);
+    return () => clearTimeout(timer);
+}, [successPassword]);
+
+useEffect(() => {
+    if (!successDeleteImage) return;
+    const timer = setTimeout(() => {
+        setSuccessDeleteImage(null);
+    }, 10000);
+    return () => clearTimeout(timer);
+}, [successDeleteImage]);
+
+if (isFetching) {
+    return (
+        <LoadingEffect />
+    );
+}
+
+if (errors.fetch) {
+    return (
+        <div className="min-h-screen bg-brand-light-sage">
+            <div className="container mx-auto px-4 py-8 max-w-5xl">
+                <ErrorMessageBoxWithButton
+                    message={errors.fetch}
+                    action={fetchAll}
+                    back={true}
+                    actionback={handleBack}
+                />
+            </div>
+        </div>
+    );
+}
 
 return (
 <div className="min-h-screen bg-brand-light-sage">
@@ -213,11 +383,11 @@ return (
         <div className="flex items-center gap-6">
         <Avatar className="size-24 sm:size-28">
             <AvatarImage 
-            src={imagePreview || "/profile-placeholder.jpg"} 
-            alt={profileData.full_name} 
+            src={buildImageUrl(oldData.profile_image)} 
+            alt={oldData.full_name} 
             />
             <AvatarFallback className="text-2xl">
-            {profileData.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+            {oldData.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
             </AvatarFallback>
         </Avatar>
         <div>
@@ -225,19 +395,19 @@ return (
             className="text-2xl sm:text-3xl font-bold mb-2"
             style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}
             >
-            Profile {profileData.position}
+            Profile {oldData.position}
             </h1>
             <p 
             className="text-lg"
             style={{ color: '#015023', opacity: 0.7, fontFamily: 'Urbanist, sans-serif' }}
             >
-            {profileData.full_name}
+            {oldData.full_name}
             </p>
             <p 
             className="text-sm"
             style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}
             >
-            Employee ID: {profileData.employee_id}
+            Employee ID: {oldData.employee_id}
             </p>
         </div>
         </div>
@@ -280,7 +450,7 @@ return (
                 Employee ID
             </FieldLabel>
             <FieldDescription>
-                Nomor induk pegawai
+                Nomor induk pegawai <span className="text-sm text-red-500">(tidak dapat diubah)</span>
             </FieldDescription>
             <FieldContent>
                 <input
@@ -307,7 +477,7 @@ return (
                 Posisi/Jabatan
             </FieldLabel>
             <FieldDescription>
-                Role dalam sistem
+                Role dalam sistem <span className="text-sm text-red-500">(tidak dapat diubah)</span>
             </FieldDescription>
             <FieldContent>
                 <input
@@ -426,7 +596,7 @@ return (
                 Email <span className="text-red-500">*</span>
                 </FieldLabel>
                 <FieldDescription>
-                Email aktif untuk komunikasi
+                Email aktif untuk komunikasi <span className="text-sm text-red-500">(tidak dapat diubah)</span>
                 </FieldDescription>
                 <FieldContent>
                 <input
@@ -435,14 +605,15 @@ return (
                     name="email"
                     value={profileData.email}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
+                    className="w-full px-4 py-3 border-2 focus:outline-none cursor-not-allowed bg-gray-50"
                     style={{
-                    fontFamily: 'Urbanist, sans-serif',
-                    borderColor: errors.email ? '#BE0414' : '#015023',
-                    borderRadius: '12px',
-                    opacity: errors.email ? 1 : 0.7
+                        fontFamily: 'Urbanist, sans-serif',
+                        borderColor: errors.email ? '#BE0414' : '#015023',
+                        borderRadius: '12px',
+                        opacity: 0.5
                     }}
-                    disabled={isLoading}
+                    disabled
+                    readOnly
                 />
                 </FieldContent>
                 {errors.email && (
@@ -488,7 +659,7 @@ return (
                     }}
                 >
                     <Upload className="w-5 h-5" />
-                    {imagePreview ? 'Ganti Foto' : 'Upload Foto'}
+                    {oldData.profile_image ? 'Ganti Foto' : 'Upload Foto'}
                 </label>
                 <input
                     type="file"
@@ -499,12 +670,42 @@ return (
                     className="hidden"
                     disabled={isLoading}
                 />
+                {oldData.profile_image && (
+                    <button
+                    type="button"
+                    onClick={handleDeleteProfileImage}
+                    className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
+                    style={{
+                        backgroundColor: '#BE0414',
+                        color: 'white',
+                        fontFamily: 'Urbanist, sans-serif'
+                    }}
+                    disabled={!profileData.profile_image || isLoading}
+                    >
+                    {isDeleting ? (
+                    <>
+                        <span className="animate-spin mr-2">⏳</span>
+                        Menghapus....
+                    </>
+                    ) : (
+                    <>
+                        <Trash2 /> Hapus Foto
+                    </>
+                    )}
+                    </button>
+                )}
                 </div>
             </FieldContent>
             {errors.profile_image && (
                 <FieldError>{errors.profile_image}</FieldError>
             )}
             </Field>
+            {successDeleteImage && (
+                <SuccessMessageBox message={successDeleteImage} />
+            )}
+            {errors.deleteProfileImage && (
+                <ErrorMessageBox message={errors.deleteProfileImage} />
+            )}
         </div>
         </div>
 
@@ -662,6 +863,25 @@ return (
         </div>
         </div>
 
+        {/* success messaaage */}
+        {successSubmit && (
+            <SuccessMessageBox message={successSubmit} />
+        )}
+        {successPassword && (
+            <SuccessMessageBox message={successPassword} />
+        )}
+        {/* error message */}
+        {errors.submit && (
+            <ErrorMessageBox
+                message={errors.submit}
+            />
+        )}
+        {errors.submitpassword && (
+            <ErrorMessageBox
+                message={errors.submitpassword}
+            />
+        )}
+
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-end">
             <WarningButton
@@ -678,8 +898,16 @@ return (
             disabled={isLoading}
             className="sm:min-w-[150px]"
             >
-            <Save className="w-5 h-5 mr-2" />
-            {isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}
+            {isLoading ? (
+            <>
+                <span className="animate-spin mr-2">⏳</span>
+                Menyimpan...
+            </>
+            ) : (
+            <>
+                <Save className="w-5 h-5 mr-2" /> Simpan Perubahan
+            </>
+            )}
             </PrimaryButton>
         </div>
     </form>

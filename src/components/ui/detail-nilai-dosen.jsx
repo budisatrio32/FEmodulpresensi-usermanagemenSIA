@@ -6,7 +6,8 @@ import { ArrowLeft, FileText, Eye } from 'lucide-react';
 import DataTable from '@/components/ui/table';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import { Field, FieldLabel, FieldContent } from '@/components/ui/field';
-import Navbar from '@/components/ui/navigation-menu';    export default function DetailNilaiDosen() {
+import Navbar from '@/components/ui/navigation-menu';    
+export default function DetailNilaiDosen() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
 

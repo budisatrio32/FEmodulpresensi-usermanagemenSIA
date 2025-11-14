@@ -519,7 +519,7 @@ export default function AddMahasiswaForm() {
                 )}
             </Field>
 
-            {/* Role Field */}
+            {/* Program Field */}
             <Field>
                 <FieldLabel htmlFor="role">
                 Program <span className="text-red-500">*</span>
@@ -547,7 +547,7 @@ export default function AddMahasiswaForm() {
                     }}
                     disabled={isLoading}
                     >
-                    <option value="">Pilih Program</option>
+                    <option value="" disabled>Pilih Program</option>
                     {programs.map(program => (
                         <option key={program.id_program || program.id} value={program.id_program || program.id}>
                         {program.name}
