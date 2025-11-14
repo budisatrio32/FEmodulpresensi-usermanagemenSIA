@@ -607,13 +607,6 @@ return (
                         className="w-20 h-20 rounded-full object-cover border-2"
                         style={{ borderColor: '#015023' }}
                     />
-                    <button
-                        type="button"
-                        onClick={handleRemoveImage}
-                        className="absolute -top-2 -right-2 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
                     </div>
                 )}
                 <label
@@ -626,7 +619,7 @@ return (
                     }}
                 >
                     <Upload className="w-5 h-5" />
-                    {oldData.profile_image ? 'Ganti Foto' : 'Upload Foto'}
+                    {imagePreview ? 'Ganti Foto' : 'Upload Foto'}
                 </label>
                 <input
                     type="file"

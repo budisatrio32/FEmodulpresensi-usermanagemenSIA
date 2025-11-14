@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, User, MapPin, Users, Eye, EyeOff, Upload, X, Lock } from 'lucide-react';
 import { Field, FieldLabel, FieldContent, FieldDescription, FieldError } from '@/components/ui/field';
@@ -26,13 +26,25 @@ const [imagePreview, setImagePreview] = useState(null);
 
 // State untuk data profile mahasiswa
 const [profileData, setProfileData] = useState({
-    // Data yang bisa edit dan dilihat
-    // profile umum
+// Data yang bisa edit dan dilihat
     registration_number: '',
     full_name: '',
     username: '',
     email: '',
-    program: '', 
+    program: '',
+
+    //
+    old_password: '',
+    password: '',
+    confirm_password: '',
+    profile_image: null,
+    alamat: '',
+    dusun: '',
+    kelurahan: '',
+    kecamatan: '',
+    city_regency: '',
+    provinsi: '',
+    kode_pos: '',
 
     //
     old_password: '',
@@ -245,10 +257,16 @@ const FetchFamilyEducationData = async () => {
 };
 
 const handleChange = (e) => {
-    const { name, value } = e.target;
-    setProfileData(prev => ({
-        ...prev,
-        [name]: value
+const { name, value } = e.target;
+setProfileData(prev => ({
+    ...prev,
+    [name]: value
+}));
+// Clear error untuk field ini
+if (errors[name]) {
+    setErrors(prev => ({
+    ...prev,
+    [name]: ''
     }));
     // Clear error untuk field ini
     if (errors[name]) {
@@ -609,12 +627,9 @@ try {
 };
 
 const handleCancel = () => {
-    if (window.confirm('Apakah Anda yakin ingin membatalkan perubahan?')) {
-        router.back();
-    }
-};
-const handleBack = () => {
+if (window.confirm('Apakah Anda yakin ingin membatalkan perubahan?')) {
     router.back();
+}
 };
 
 const genderOptions = ['Laki-laki', 'Perempuan'];
@@ -637,27 +652,6 @@ useEffect(() => {
         return () => clearTimeout(timer);
     }
 }, [success]);
-
-if (isFetching) {
-    return (
-        <LoadingEffect />
-    );
-}
-
-if (errors.fetch) {
-    return (
-        <div className="min-h-screen bg-brand-light-sage">
-            <div className="container mx-auto px-4 py-8 max-w-5xl">
-                <ErrorMessageBoxWithButton
-                    message={errors.fetch}
-                    action={fetchAll}
-                    back={true}
-                    actionback={handleBack}
-                />
-            </div>
-        </div>
-    );
-}
 
 return (
 <div className="min-h-screen bg-brand-light-sage">
@@ -741,7 +735,7 @@ return (
             Registration Number (NIM) <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            Nomor induk mahasiswa <span className="text-red-500">(tidak dapat diubah)</span>
+            Nomor induk mahasiswa
             </FieldDescription>
             <FieldContent>
             <input
@@ -749,15 +743,15 @@ return (
                 id="registration_number"
                 name="registration_number"
                 value={profileData.registration_number}
-                className="w-full px-4 py-3 border-2 focus:outline-none cursor-not-allowed bg-gray-50"
+                onChange={handleChange}
+                className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
                 style={{
                 fontFamily: 'Urbanist, sans-serif',
-                borderColor: '#015023',
+                borderColor: errors.registration_number ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: 0.5
+                opacity: errors.registration_number ? 1 : 0.7
                 }}
-                disabled
-                readOnly
+                disabled={isLoading}
             />
             </FieldContent>
             {errors.registration_number && (
@@ -831,7 +825,7 @@ return (
             Email <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            Email aktif untuk komunikasi <span className="text-red-500">(tidak dapat diubah)</span>
+            Email aktif untuk komunikasi
             </FieldDescription>
             <FieldContent>
             <input
@@ -839,15 +833,15 @@ return (
                 id="email"
                 name="email"
                 value={profileData.email}
-                className="w-full px-4 py-3 border-2 focus:outline-none cursor-not-allowed bg-gray-50"
+                onChange={handleChange}
+                className="w-full px-4 py-3 border-2 focus:outline-none focus:border-opacity-100"
                 style={{
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: errors.email ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: 0.5
+                opacity: errors.email ? 1 : 0.7
                 }}
-                disabled
-                readOnly
+                disabled={isLoading}
             />
             </FieldContent>
             {errors.email && (
@@ -873,27 +867,32 @@ return (
                     className="w-20 h-20 rounded-full object-cover border-2"
                     style={{ borderColor: '#015023' }}
                     />
-                    <button
-                    type="button"
-                    onClick={handleRemoveImage}
-                    className="absolute -top-2 -right-2 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
-                    >
-                    <X className="w-4 h-4" />
-                    </button>
                 </div>
                 )}
+                <div className="flex items-center gap-3">
                 <label
-                htmlFor="profile_image"
-                className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
-                style={{
-                    backgroundColor: '#015023',
-                    color: 'white',
-                    fontFamily: 'Urbanist, sans-serif'
-                }}
+                    htmlFor="profile_image"
+                    className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
+                    style={{
+                        backgroundColor: '#015023',
+                        color: 'white',
+                        fontFamily: 'Urbanist, sans-serif'
+                    }}
                 >
                 <Upload className="w-5 h-5" />
                 {oldData.profile_image ? 'Ganti Foto' : 'Upload Foto'}
                 </label>
+                {imagePreview && (
+                    <WarningButton
+                    type="button"
+                    onClick={handleRemoveImage}
+                    disabled={isLoading}
+                    className="sm:min-w-[120px]"
+                    >
+                    Hapus Foto
+                    </WarningButton>
+                )}
+                </div>
                 <input
                 type="file"
                 id="profile_image"
@@ -916,7 +915,7 @@ return (
             Jenis Kelamin <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            Pilih jenis kelamin <span className="text-red-500">{!editableData.gender ? '(tidak dapat diubah)' : ''}</span>
+            Pilih jenis kelamin
             </FieldDescription>
             <FieldContent>
             <select
@@ -929,16 +928,15 @@ return (
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: errors.gender ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: !editableData.gender ? 0.5 : errors.gender ? 1 : 0.7,
+                opacity: errors.gender ? 1 : 0.7,
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23015023' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
                 backgroundRepeat: 'no-repeat',
                 backgroundPosition: 'right 1rem center',
                 backgroundSize: '1.5rem'
                 }}
-                disabled={!editableData.gender || isLoading}
-                readOnly={!editableData.gender}
+                disabled={isLoading}
             >
-                <option value="" disabled>Pilih Jenis Kelamin</option>
+                <option value="">Pilih Jenis Kelamin</option>
                 {genderOptions.map(option => (
                 <option key={option} value={option}>{option}</option>
                 ))}
@@ -976,7 +974,7 @@ return (
                 }}
                 disabled={isLoading}
             >
-                <option value="" disabled>Pilih Agama</option>
+                <option value="">Pilih Agama</option>
                 {religionOptions.map(option => (
                 <option key={option} value={option}>{option}</option>
                 ))}
@@ -993,7 +991,7 @@ return (
             Tempat Lahir <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            Kota/Kabupaten tempat lahir <span className="text-red-500">{!editableData.tempat_lahir ? '(tidak dapat diubah)' : ''}</span>
+            Kota/Kabupaten tempat lahir
             </FieldDescription>
             <FieldContent>
             <input
@@ -1007,10 +1005,9 @@ return (
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: errors.tempat_lahir ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: !editableData.tempat_lahir ? 0.5 : errors.tempat_lahir ? 1 : 0.7
+                opacity: errors.tempat_lahir ? 1 : 0.7
                 }}
-                disabled={!editableData.tempat_lahir || isLoading}
-                readOnly={!editableData.tempat_lahir}
+                disabled={isLoading}
             />
             </FieldContent>
             {errors.tempat_lahir && (
@@ -1024,7 +1021,7 @@ return (
             Tanggal Lahir <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            Format: DD/MM/YYYY <span className="text-red-500">{!editableData.tanggal_lahir ? '(tidak dapat diubah)' : ''}</span>
+            Format: DD/MM/YYYY
             </FieldDescription>
             <FieldContent>
             <input
@@ -1038,10 +1035,9 @@ return (
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: errors.tanggal_lahir ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: !editableData.tanggal_lahir ? 0.5 : errors.tanggal_lahir ? 1 : 0.7
+                opacity: errors.tanggal_lahir ? 1 : 0.7
                 }}
-                disabled={!editableData.tanggal_lahir || isLoading}
-                readOnly={!editableData.tanggal_lahir}
+                disabled={isLoading}
             />
             </FieldContent>
             {errors.tanggal_lahir && (
@@ -1055,7 +1051,7 @@ return (
             NIK (Nomor Induk Kependudukan) <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            16 digit NIK sesuai KTP <span className="text-red-500">{!editableData.nik ? '(tidak dapat diubah)' : ''}</span>
+            16 digit NIK sesuai KTP
             </FieldDescription>
             <FieldContent>
             <input
@@ -1070,10 +1066,9 @@ return (
                 fontFamily: 'Urbanist, sans-serif',
                 borderColor: errors.nik ? '#BE0414' : '#015023',
                 borderRadius: '12px',
-                opacity: !editableData.nik ? 0.5 : errors.nik ? 1 : 0.7
+                opacity: errors.nik ? 1 : 0.7
                 }}
-                disabled={!editableData.nik || isLoading}
-                readOnly={!editableData.nik}
+                disabled={isLoading}
             />
             </FieldContent>
             {errors.nik && (
@@ -1087,7 +1082,7 @@ return (
             Nomor Kartu Keluarga
             </FieldLabel>
             <FieldDescription>
-            16 digit nomor KK <span className="text-red-500">{!editableData.nomor_kartu_keluarga ? '(tidak dapat diubah)' : ''}</span>
+            16 digit nomor KK
             </FieldDescription>
             <FieldContent>
             <input
@@ -1104,8 +1099,7 @@ return (
                 borderRadius: '12px',
                 opacity: !editableData.nomor_kartu_keluarga ? 0.5 : errors.nomor_kartu_keluarga ? 1 : 0.7
                 }}
-                disabled={!editableData.nomor_kartu_keluarga || isLoading}
-                readOnly={!editableData.nomor_kartu_keluarga}
+                disabled={isLoading}
             />
             </FieldContent>
             {errors.nomor_kartu_keluarga && (
@@ -1140,7 +1134,7 @@ return (
                 }}
                 disabled={isLoading}
             >
-                <option value="" disabled>Pilih Kewarganegaraan</option>
+                <option value="">Pilih Kewarganegaraan</option>
                 {citizenshipOptions.map(option => (
                 <option key={option} value={option}>{option}</option>
                 ))}
@@ -1441,7 +1435,7 @@ return (
             Anak Ke-
             </FieldLabel>
             <FieldDescription>
-            Urutan kelahiran dalam keluarga (1, 2, 3, dst.) <span className="text-red-500">{!editableData.birth_order ? '(tidak dapat diubah)' : ''}</span>
+            Urutan kelahiran dalam keluarga
             </FieldDescription>
             <FieldContent>
             <input
@@ -1458,8 +1452,7 @@ return (
                 borderRadius: '12px',
                 opacity: !editableData.birth_order ? 0.5 : errors.birth_order ? 1 : 0.7
                 }}
-                disabled={!editableData.birth_order || isLoading}
-                readOnly={!editableData.birth_order}
+                disabled={isLoading}
             />
             </FieldContent>
             {errors.birth_order && (
@@ -1543,7 +1536,7 @@ return (
             Sekolah Asal
             </FieldLabel>
             <FieldDescription>
-            Nama sekolah menengah atas terakhir <span className="text-red-500">{!editableData.sekolah_asal ? '(tidak dapat diubah)' : ''}</span>
+            Nama sekolah menengah atas terakhir
             </FieldDescription>
             <FieldContent>
             <input
@@ -1559,8 +1552,7 @@ return (
                 borderRadius: '12px',
                 opacity: !editableData.sekolah_asal ? 0.5 : errors.sekolah_asal ? 1 : 0.7
                 }}
-                disabled={!editableData.sekolah_asal || isLoading}
-                readOnly={!editableData.sekolah_asal}
+                disabled={isLoading}
             />
             </FieldContent>
             {errors.sekolah_asal && (
@@ -1571,10 +1563,7 @@ return (
     </div>
 
     {/* Section 4: Ubah Password */}
-    <div 
-        className="bg-white rounded-2xl shadow-lg p-6"
-        style={{ borderRadius: '16px' }}
-        >
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
         <div className="flex items-center gap-3 mb-6">
             <div 
             className="p-3 rounded-xl"
@@ -1599,130 +1588,140 @@ return (
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Password Lama */}
-            <Field className="md:col-span-2">
-            <FieldLabel htmlFor="old_password">
-                Password Lama
+        {/* Password Lama */}
+        <Field className="space-y-2 md:col-span-2">
+            <FieldLabel className="text-sm font-medium text-gray-700">
+            Password Lama
+            <span className="text-xs text-gray-500 ml-2">(Wajib diisi jika ingin mengubah password)</span>
             </FieldLabel>
-            <FieldDescription>
-                Wajib diisi jika ingin mengubah password
-            </FieldDescription>
-            <FieldContent>
-                <div className="relative">
-                <input
-                    type={showOldPassword ? "text" : "password"}
-                    id="old_password"
-                    name="old_password"
-                    value={profileData.old_password}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 pr-12 border-2 focus:outline-none focus:border-opacity-100"
-                    style={{
-                    fontFamily: 'Urbanist, sans-serif',
-                    borderColor: errors.old_password ? '#BE0414' : '#015023',
-                    borderRadius: '12px',
-                    opacity: errors.old_password ? 1 : 0.7
-                    }}
-                    disabled={isLoading}
-                    placeholder="Masukkan password lama"
-                />
-                <button
-                    type="button"
-                    onClick={() => setShowOldPassword(!showOldPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition"
-                    style={{ color: '#015023' }}
-                >
-                    {showOldPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-                </div>
-            </FieldContent>
+            <FieldContent className="relative">
+            <input
+                type={showOldPassword ? "text" : "password"}
+                name="old_password"
+                placeholder="Masukkan password lama"
+                value={profileData.old_password}
+                onChange={handleChange}
+                className={`
+                w-full px-4 py-2.5 pr-12
+                border ${errors.old_password ? 'border-brand-danger' : 'border-gray-200'}
+                rounded-xl
+                text-gray-900 placeholder-gray-400
+                focus:outline-none focus:ring-2 
+                ${errors.old_password ? 'focus:ring-brand-danger' : 'focus:ring-brand-primary'}
+                transition-all
+                disabled:bg-gray-50 disabled:cursor-not-allowed
+                `}
+                disabled={isLoading}
+            />
+            <button
+                type="button"
+                onClick={() => setShowOldPassword(!showOldPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+                {showOldPassword ? (
+                <EyeOff className="w-5 h-5" />
+                ) : (
+                <Eye className="w-5 h-5" />
+                )}
+            </button>
             {errors.old_password && (
-                <FieldError>{errors.old_password}</FieldError>
+                <p className="text-brand-danger text-xs mt-1">{errors.old_password}</p>
             )}
-            </Field>
-
-            {/* Password Baru */}
-            <Field>
-            <FieldLabel htmlFor="password">
-                Password Baru
-            </FieldLabel>
-            <FieldDescription>
-                Minimal 6 karakter
-            </FieldDescription>
-            <FieldContent>
-                <div className="relative">
-                <input
-                    type={showPassword ? "text" : "password"}
-                    id="password"
-                    name="password"
-                    value={profileData.password}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 pr-12 border-2 focus:outline-none focus:border-opacity-100"
-                    style={{
-                    fontFamily: 'Urbanist, sans-serif',
-                    borderColor: errors.password ? '#BE0414' : '#015023',
-                    borderRadius: '12px',
-                    opacity: errors.password ? 1 : 0.7
-                    }}
-                    disabled={isLoading}
-                    placeholder="Masukkan password baru"
-                />
-                <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition"
-                    style={{ color: '#015023' }}
-                >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-                </div>
             </FieldContent>
+        </Field>
+
+        {/* Password Baru */}
+        <Field className="space-y-2">
+            <FieldLabel className="text-sm font-medium text-gray-700">
+            Password Baru
+            <span className="text-xs text-gray-500 ml-2">(Opsional)</span>
+            </FieldLabel>
+            <FieldContent className="relative">
+            <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Masukkan password baru"
+                value={profileData.password}
+                onChange={handleChange}
+                className={`
+                w-full px-4 py-2.5 pr-12
+                border ${errors.password ? 'border-brand-danger' : 'border-gray-200'}
+                rounded-xl
+                text-gray-900 placeholder-gray-400
+                focus:outline-none focus:ring-2 
+                ${errors.password ? 'focus:ring-brand-danger' : 'focus:ring-brand-primary'}
+                transition-all
+                disabled:bg-gray-50 disabled:cursor-not-allowed
+                `}
+                disabled={isLoading}
+            />
+            <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+                {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+                ) : (
+                <Eye className="w-5 h-5" />
+                )}
+            </button>
             {errors.password && (
-                <FieldError>{errors.password}</FieldError>
+                <p className="text-brand-danger text-xs mt-1">{errors.password}</p>
             )}
-            </Field>
-
-            {/* Confirm Password */}
-            <Field>
-            <FieldLabel htmlFor="confirm_password">
-                Konfirmasi Password Baru
-            </FieldLabel>
-            <FieldDescription>
-                Masukkan ulang password baru
-            </FieldDescription>
-            <FieldContent>
-                <div className="relative">
-                <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    id="confirm_password"
-                    name="confirm_password"
-                    value={profileData.confirm_password}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 pr-12 border-2 focus:outline-none focus:border-opacity-100"
-                    style={{
-                    fontFamily: 'Urbanist, sans-serif',
-                    borderColor: errors.confirm_password ? '#BE0414' : '#015023',
-                    borderRadius: '12px',
-                    opacity: errors.confirm_password ? 1 : 0.7
-                    }}
-                    disabled={isLoading}
-                    placeholder="Konfirmasi password baru"
-                />
-                <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition"
-                    style={{ color: '#015023' }}
-                >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-                </div>
             </FieldContent>
+        </Field>
+
+        {/* Confirm Password */}
+        <Field className="space-y-2">
+            <FieldLabel className="text-sm font-medium text-gray-700">
+            Konfirmasi Password
+            <span className="text-xs text-gray-500 ml-2">(Opsional)</span>
+            </FieldLabel>
+            <FieldContent className="relative">
+            <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirm_password"
+                placeholder="Konfirmasi password baru"
+                value={profileData.confirm_password}
+                onChange={handleChange}
+                className={`
+                w-full px-4 py-2.5 pr-12
+                border ${errors.confirm_password ? 'border-brand-danger' : 'border-gray-200'}
+                rounded-xl
+                text-gray-900 placeholder-gray-400
+                focus:outline-none focus:ring-2 
+                ${errors.confirm_password ? 'focus:ring-brand-danger' : 'focus:ring-brand-primary'}
+                transition-all
+                disabled:bg-gray-50 disabled:cursor-not-allowed
+                `}
+                disabled={isLoading}
+            />
+            <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+                {showConfirmPassword ? (
+                <EyeOff className="w-5 h-5" />
+                ) : (
+                <Eye className="w-5 h-5" />
+                )}
+            </button>
             {errors.confirm_password && (
-                <FieldError>{errors.confirm_password}</FieldError>
+                <p className="text-brand-danger text-xs mt-1">{errors.confirm_password}</p>
             )}
-            </Field>
+            </FieldContent>
+        </Field>
+
+        {/* Info Text */}
+        <div className="md:col-span-2">
+            <p className="text-sm text-gray-500">
+            <span className="font-medium">Catatan:</span> Untuk mengubah password, Anda harus mengisi password lama terlebih dahulu. Kosongkan semua field password jika tidak ingin mengubah password. Password baru minimal 6 karakter.
+            </p>
         </div>
         </div>
+    </div>
 
         {/* Error message */}
         {errors.submit && (
@@ -1776,4 +1775,5 @@ return (
     </div>
 </div>
 );
+}
 }
