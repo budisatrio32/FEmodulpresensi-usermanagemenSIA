@@ -6,7 +6,7 @@ import ProfileDMA from '@/components/ui/profileDMA';
 import Cookies from 'js-cookie';
 
 export default function ProfilePage() {
-  const userRole = Cookies.get('roles');
+  const userRole = Cookies.get('role');
 
   // Function to render appropriate profile component based on role
   const renderProfileComponent = () => {

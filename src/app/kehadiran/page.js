@@ -30,7 +30,6 @@ console.log('Fetching data for semester:', selectedSemester);
 	// Dummy data daftar mata kuliah (presensi)
 	const data = useMemo(() => [
 		{
-			no: 1,
 			kode_matkul: 'IF301',
 			nama_matkul: 'Metode dan Model Pengembangan Perangkat Lunak',
 			sks: 3,
@@ -39,7 +38,6 @@ console.log('Fetching data for semester:', selectedSemester);
 			jumlah_pertemuan: 8,
 		},
 		{
-			no: 2,
 			kode_matkul: 'IF210',
 			nama_matkul: 'Basis Data',
 			sks: 3,
@@ -48,7 +46,6 @@ console.log('Fetching data for semester:', selectedSemester);
 			jumlah_pertemuan: 9,
 		},
 		{
-			no: 3,
 			kode_matkul: 'IF220',
 			nama_matkul: 'Jaringan Komputer',
 			sks: 3,
@@ -57,7 +54,6 @@ console.log('Fetching data for semester:', selectedSemester);
 			jumlah_pertemuan: 7,
 		},
 		{
-			no: 4,
 			kode_matkul: 'IF205',
 			nama_matkul: 'Matematika Diskrit',
 			sks: 3,
@@ -66,7 +62,6 @@ console.log('Fetching data for semester:', selectedSemester);
 			jumlah_pertemuan: 10,
 		},
 		{
-			no: 5,
 			kode_matkul: 'IF230',
 			nama_matkul: 'Pemrograman Web Lanjut',
 			sks: 3,
@@ -77,7 +72,6 @@ console.log('Fetching data for semester:', selectedSemester);
 	], []);
 
 	const columns = [
-		{ key: 'no', label: 'No', width: '64px', cellClassName: 'text-center font-medium' },
 		{ key: 'kode_matkul', label: 'Kode Matkul', width: '130px', cellClassName: 'font-medium' },
 		{ key: 'nama_matkul', label: 'Mata Kuliah', className: 'text-left', cellClassName: 'text-left font-medium' },
 		{ key: 'sks', label: 'SKS', width: '80px', cellClassName: 'font-semibold' },
