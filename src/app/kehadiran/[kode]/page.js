@@ -216,7 +216,8 @@ aksi: (value, item) => (
         </div>
         </div>
 
-        {/* Summary Stats */}
+        {/* Summary Stats - Hidden for Dosen */}
+        {role === 'mahasiswa' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-200">
         <div>
             <p className="text-sm font-medium" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
@@ -243,6 +244,7 @@ aksi: (value, item) => (
             </p>
         </div>
         </div>
+        )}
     </div>
 
     {/* Tabel Pertemuan */}

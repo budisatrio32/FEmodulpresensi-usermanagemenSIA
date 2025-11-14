@@ -417,7 +417,7 @@ export default function AddKelasForm() {
                     }}
                     disabled={isLoading}
                   >
-                    <option value="">Pilih Tahun Ajaran</option>
+                    <option value="" disabled>Pilih Tahun Ajaran</option>
                     {academic_period.map(year => (
                       <option key={year.id_academic_period} value={year.id_academic_period}>
                         {year.name}
