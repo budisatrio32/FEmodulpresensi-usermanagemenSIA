@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/ui/navigation-menu';
 import DataTable from '@/components/ui/table';
+import Footer from '@/components/ui/footer';
 import { Eye, GraduationCap, Users } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 
@@ -151,6 +152,7 @@ export default function AkademikPage() {
 					customRender={customRender}
 				/>
 			</div>
+			<Footer />
 		</div>
 	);
 }

@@ -7,6 +7,17 @@ import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
 import { getMahasiswa, toggleUserStatus } from '@/lib/adminApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 
 export default function StudentDashboard() {
 const router = useRouter();
@@ -16,6 +27,8 @@ const [loading, setLoading] = useState(true);
 const [success, setSuccess] = useState(null);
 const [students, setStudents] = useState([]);
 const [isTogglingStatus, setIsTogglingStatus] = useState(null);
+const [showStatusDialog, setShowStatusDialog] = useState(false);
+const [selectedStudent, setSelectedStudent] = useState(null);
 
 // Fetch students from API
 const indexStudents = async () => {
@@ -96,13 +109,15 @@ const handleClearSearch = () => {
 
 // Handle toggle status active/inactive
 const handleActivate = async (student, index) => {
-  const userId = student.id_user_si || student.id;
-  const statusText = student.is_active ? 'Non-Aktifkan' : 'Aktifkan';
-  
-  if (!window.confirm(`Apakah Anda yakin ingin ${statusText.toLowerCase()} akun ${student.name}?`)) {
-    return;
-  }
+  setSelectedStudent(student);
+  setShowStatusDialog(true);
+};
 
+const confirmToggleStatus = async () => {
+  if (!selectedStudent) return;
+  
+  const userId = selectedStudent.id_user_si || selectedStudent.id;
+  setShowStatusDialog(false);
   setIsTogglingStatus(userId);
   
   try {
@@ -115,20 +130,17 @@ const handleActivate = async (student, index) => {
           ? { ...s, is_active: response.data.is_active }
           : s
       ));
-      
-      alert(`Status berhasil diubah menjadi ${response.data.is_active ? 'Aktif' : 'Non-Aktif'}`);
-    } else {
-      alert('Gagal mengubah status user');
     }
   } catch (error) {
     console.error("Error toggling status:", error);
-    alert("Gagal mengubah status user: " + (error.message || 'Unknown error'));
   } finally {
     setIsTogglingStatus(null);
+    setSelectedStudent(null);
   }
 };
 
 return (
+  <>
 <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100" style={{ fontFamily: 'Urbanist, sans-serif' }}>
     {/* Admin Navbar */}
     <AdminNavbar title="Dashboard Admin - Mahasiswa" />
@@ -219,5 +231,31 @@ return (
     }
     </div>
 </div>
+
+<AlertDialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Konfirmasi Ubah Status</AlertDialogTitle>
+      <AlertDialogDescription>
+        {selectedStudent && (
+          <>
+            Apakah Anda yakin ingin {selectedStudent.is_active ? 'menonaktifkan' : 'mengaktifkan'} akun <strong>{selectedStudent.name}</strong>?
+          </>
+        )}
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel asChild>
+        <OutlineButton>Batal</OutlineButton>
+      </AlertDialogCancel>
+      <AlertDialogAction asChild>
+        <WarningButton onClick={confirmToggleStatus}>
+          {selectedStudent?.is_active ? 'Non-Aktifkan' : 'Aktifkan'}
+        </WarningButton>
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>  
+</>
 );
 }

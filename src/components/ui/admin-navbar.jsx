@@ -17,6 +17,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { PrimaryButton, OutlineButton } from '@/components/ui/button';
 
 const AdminNavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
 <div 
@@ -60,30 +71,31 @@ className={cn("text-right", className)}
 const AdminNavbar = React.forwardRef(({ className, title, userName, Name, ...props }, ref) => {
 const router = useRouter()
 const { user, logoutLocal } = useAuth();
+const [showLogoutDialog, setShowLogoutDialog] = React.useState(false);
 const displayuserName = (userName || user.username || '...');
 const displayName = (Name || user.name || '...');
 const displayImage = user.image;
 
-const handleLogout = async () => {
-  if (confirm('Apakah Anda yakin ingin logout?')) {
-    let serverMessage = '';
-    try {
-      const response = await logout();
-      if (response.status !== 'success') {
-        serverMessage = response.message || '';
-      }
-    } catch (error) {
-      console.error('Error saat logout:', error);
-      serverMessage = error?.message || error?.response?.data?.message || '';
-    } finally {
-      logoutLocal();
-      if (serverMessage) console.warn('Logout info:', serverMessage);
-      router.push('/loginpage');
+const confirmLogout = async () => {
+  setShowLogoutDialog(false);
+  let serverMessage = '';
+  try {
+    const response = await logout();
+    if (response.status !== 'success') {
+      serverMessage = response.message || '';
     }
+  } catch (error) {
+    console.error('Error saat logout:', error);
+    serverMessage = error?.message || error?.response?.data?.message || '';
+  } finally {
+    logoutLocal();
+    if (serverMessage) console.warn('Logout info:', serverMessage);
+    router.push('/loginpage');
   }
 }
 
 return (
+  <>
   <nav 
     ref={ref}
     className={cn("bg-brand-green shadow-md rounded-b-[18px]", className)} 
@@ -131,7 +143,7 @@ return (
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 variant="destructive" 
-                onClick={handleLogout}
+                onClick={() => setShowLogoutDialog(true)}
                 className="cursor-pointer"
               >
                 <LogOut className="mr-2 h-4 w-4" />
@@ -143,6 +155,26 @@ return (
       </div>
     </div>  
   </nav>
+  
+  <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Konfirmasi Logout</AlertDialogTitle>
+        <AlertDialogDescription>
+          Apakah Anda yakin ingin keluar dari sistem?
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel asChild>
+          <OutlineButton>Batal</OutlineButton>
+        </AlertDialogCancel>
+        <AlertDialogAction asChild>
+          <PrimaryButton onClick={confirmLogout}>Logout</PrimaryButton>
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+  </>
 )
 })
 

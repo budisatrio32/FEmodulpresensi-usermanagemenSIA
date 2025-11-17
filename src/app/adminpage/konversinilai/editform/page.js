@@ -306,13 +306,14 @@ return (
                 name="min_grade"
                 value={formData.min_grade}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all ${
-                    errors.min_grade 
-                    ? 'border-red-500 focus:border-red-500' 
-                    : 'border-gray-300 focus:border-[#015023]'
-                }`}
+                className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
+                style={{
+                  fontFamily: 'Urbanist, sans-serif',
+                  borderColor: errors.min_grade ? '#BE0414' : '#015023',
+                  borderRadius: '12px',
+                  opacity: errors.min_grade ? 1 : 0.7
+                }}
                 placeholder="95"
-                style={{ fontFamily: 'Urbanist, sans-serif' }}
                 disabled={isLoading}
                 />
             </FieldContent>
@@ -330,13 +331,14 @@ return (
                 name="max_grade"
                 value={formData.max_grade}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all ${
-                    errors.max_grade 
-                    ? 'border-red-500 focus:border-red-500' 
-                    : 'border-gray-300 focus:border-[#015023]'
-                }`}
+                className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
+                style={{
+                  fontFamily: 'Urbanist, sans-serif',
+                  borderColor: errors.max_grade ? '#BE0414' : '#015023',
+                  borderRadius: '12px',
+                  opacity: errors.max_grade ? 1 : 0.7
+                }}
                 placeholder="100"
-                style={{ fontFamily: 'Urbanist, sans-serif' }}
                 disabled={isLoading}
                 />
             </FieldContent>
@@ -356,13 +358,14 @@ return (
                 name="letter"
                 value={formData.letter}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all uppercase ${
-                    errors.letter 
-                    ? 'border-red-500 focus:border-red-500' 
-                    : 'border-gray-300 focus:border-[#015023]'
-                }`}
+                className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition uppercase"
+                style={{
+                  fontFamily: 'Urbanist, sans-serif',
+                  borderColor: errors.letter ? '#BE0414' : '#015023',
+                  borderRadius: '12px',
+                  opacity: errors.letter ? 1 : 0.7
+                }}
                 placeholder="A"
-                style={{ fontFamily: 'Urbanist, sans-serif' }}
                 disabled={isLoading}
                 maxLength={2}
                 />
@@ -378,16 +381,17 @@ return (
             <FieldContent>
                 <input
                 type="text"
-                name="ip_skor"
-                value={formData.ip_skor}
+                name="weight"
+                value={formData.weight}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all ${
-                    errors.ip_skor 
-                    ? 'border-red-500 focus:border-red-500' 
-                    : 'border-gray-300 focus:border-[#015023]'
-                }`}
+                className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
+                style={{
+                  fontFamily: 'Urbanist, sans-serif',
+                  borderColor: errors.weight ? '#BE0414' : '#015023',
+                  borderRadius: '12px',
+                  opacity: errors.weight ? 1 : 0.7
+                }}
                 placeholder="4.00"
-                style={{ fontFamily: 'Urbanist, sans-serif' }}
                 disabled={isLoading}
                 />
             </FieldContent>

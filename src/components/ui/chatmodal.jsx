@@ -201,7 +201,7 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
 						</div>
 						<button
 							onClick={onClose}
-							className="text-white hover:bg-white hover:bg-opacity-10 p-2 rounded-lg transition"
+							className="text-white hover:bg-brand-yellow hover:bg-opacity-10 p-2 rounded-lg transition"
 						>
 							<X className="w-6 h-6" />
 						</button>

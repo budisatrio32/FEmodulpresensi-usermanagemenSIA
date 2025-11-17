@@ -4,8 +4,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/ui/navigation-menu';
 import DataTable from '@/components/ui/table';
 import ChatModal from '@/components/ui/chatmodal';
-import { ArrowLeft, GraduationCap, Users, Mail, Phone, MessageCircle } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import RoleSwitcher from '@/components/ui/role-switcher';
+import { ArrowLeft, GraduationCap, Users, Mail, Phone, MessageCircle, Megaphone } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
 
 export default function DetailKelasPage({ params }) {
 	const router = useRouter();
@@ -17,6 +18,14 @@ export default function DetailKelasPage({ params }) {
 	const dosen = searchParams.get('dosen') || '';
 	const semester = searchParams.get('semester') || '';
 	const sks = searchParams.get('sks') || '';
+
+	// Get user role from localStorage
+	const [userRole, setUserRole] = useState('mahasiswa');
+
+	useEffect(() => {
+		const role = localStorage.getItem('userRole') || 'mahasiswa';
+		setUserRole(role);
+	}, []);
 
 	// Chat modal state
 	const [isChatOpen, setIsChatOpen] = useState(false);
@@ -192,37 +201,47 @@ export default function DetailKelasPage({ params }) {
 									{sks} SKS
 								</span>
 							</div>
-						</div>
-					</div>
 				</div>
+				</div>
+			</div>
 
-				{/* Tabel Daftar Mahasiswa */}
-				<div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ borderRadius: '16px' }}>
-					<h2 className="text-xl font-bold mb-4" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-						Daftar Mahasiswa
+			{/* Tabel Daftar Dosen Pengampu */}
+			<div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ borderRadius: '16px' }}>
+				<div className="flex items-center justify-between mb-4">
+					<h2 className="text-xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+						Daftar Dosen Pengampu
 					</h2>
-					
-					<DataTable
+					{userRole === 'dosen' && (
+						<button
+							onClick={() => router.push(`/akademik/detailkelas/${kode}/pengumuman`)}
+							className="flex items-center gap-2 text-white px-4 py-2 transition shadow-sm hover:opacity-90 font-semibold"
+							style={{ backgroundColor: '#015023', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
+						>
+							<Megaphone className="w-4 h-4" />
+							Buat Pengumuman
+						</button>
+					)}
+				</div>
+				
+				<DataTable
+					columns={dosenColumns}
+					data={dosenData}
+					actions={[]}
+					pagination={false}
+					customRender={dosenCustomRender}
+				/>
+			</div>
+
+			{/* Tabel Daftar Mahasiswa */}
+			<div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ borderRadius: '16px' }}>
+				<h2 className="text-xl font-bold mb-4" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+					Daftar Mahasiswa
+				</h2>					<DataTable
 						columns={columns}
 						data={mahasiswaData}
 						actions={[]}
 						pagination={false}
 						customRender={customRender}
-					/>
-				</div>
-
-				{/* Tabel Daftar Dosen Pengampu */}
-				<div className="bg-white rounded-2xl shadow-lg p-6" style={{ borderRadius: '16px' }}>
-					<h2 className="text-xl font-bold mb-4" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-						Daftar Dosen Pengampu
-					</h2>
-					
-					<DataTable
-						columns={dosenColumns}
-						data={dosenData}
-						actions={[]}
-						pagination={false}
-						customRender={dosenCustomRender}
 					/>
 				</div>
 			</div>
@@ -235,6 +254,9 @@ export default function DetailKelasPage({ params }) {
 				userName={chatUser.name}
 				userNim={chatUser.nim}
 			/>
+
+			{/* Role Switcher for Development/Testing */}
+			<RoleSwitcher />
 		</div>
 	);
 }

@@ -283,13 +283,14 @@ export default function EditPeriodeForm() {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all ${
-                    errors.name 
-                      ? 'border-red-500 focus:border-red-500' 
-                      : 'border-gray-300 focus:border-[#015023]'
-                  }`}
+                  className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
+                  style={{
+                    fontFamily: 'Urbanist, sans-serif',
+                    borderColor: errors.name ? '#BE0414' : '#015023',
+                    borderRadius: '12px',
+                    opacity: errors.name ? 1 : 0.7
+                  }}
                   placeholder="Semester Ganjil 2024/2025"
-                  style={{ fontFamily: 'Urbanist, sans-serif' }}
                   disabled={isLoading}
                 />
               </FieldContent>
@@ -308,12 +309,13 @@ export default function EditPeriodeForm() {
                     name="start_date"
                     value={formData.start_date}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all ${
-                      errors.start_date 
-                        ? 'border-red-500 focus:border-red-500' 
-                        : 'border-gray-300 focus:border-[#015023]'
-                    }`}
-                    style={{ fontFamily: 'Urbanist, sans-serif' }}
+                    className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
+                    style={{
+                      fontFamily: 'Urbanist, sans-serif',
+                      borderColor: errors.start_date ? '#BE0414' : '#015023',
+                      borderRadius: '12px',
+                      opacity: errors.start_date ? 1 : 0.7
+                    }}
                     disabled={isLoading}
                   />
                 </FieldContent>
@@ -331,12 +333,13 @@ export default function EditPeriodeForm() {
                     name="end_date"
                     value={formData.end_date}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all ${
-                      errors.end_date 
-                        ? 'border-red-500 focus:border-red-500' 
-                        : 'border-gray-300 focus:border-[#015023]'
-                    }`}
-                    style={{ fontFamily: 'Urbanist, sans-serif' }}
+                    className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
+                    style={{
+                      fontFamily: 'Urbanist, sans-serif',
+                      borderColor: errors.end_date ? '#BE0414' : '#015023',
+                      borderRadius: '12px',
+                      opacity: errors.end_date ? 1 : 0.7
+                    }}
                     disabled={isLoading}
                   />
                 </FieldContent>
