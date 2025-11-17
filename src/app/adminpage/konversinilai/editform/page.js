@@ -263,7 +263,10 @@ return (
 
     <div 
         className="bg-white rounded-3xl shadow-xl p-8"
-        style={{ borderRadius: '24px' }}
+        style={{ 
+          borderRadius: '24px',
+          border: '2px solid #015023'
+        }}
     >
         <form onSubmit={handleSubmit} className="space-y-8">
         <div 

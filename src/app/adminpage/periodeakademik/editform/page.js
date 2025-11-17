@@ -242,7 +242,10 @@ export default function EditPeriodeForm() {
 
         <div 
           className="bg-white rounded-3xl shadow-xl p-8"
-          style={{ borderRadius: '24px' }}
+          style={{ 
+            borderRadius: '24px',
+            border: '2px solid #015023'
+          }}
         >
           <form onSubmit={handleSubmit} className="space-y-8">
             <div 
@@ -348,7 +351,13 @@ export default function EditPeriodeForm() {
             </div>
 
             <Field>
-              <div className="flex items-center gap-3">
+              <div 
+                className="flex items-center gap-3 p-4 rounded-xl"
+                style={{
+                  border: '2px solid #015023',
+                  backgroundColor: formData.active ? 'rgba(1, 80, 35, 0.05)' : 'transparent'
+                }}
+              >
                 <input
                   type="checkbox"
                   name="active"
@@ -358,20 +367,29 @@ export default function EditPeriodeForm() {
                   className="w-5 h-5 rounded border-2 border-gray-300 text-[#015023] focus:ring-[#015023] focus:ring-offset-0"
                   disabled={isLoading}
                 />
-                <label 
-                  htmlFor="active"
-                  className="font-semibold cursor-pointer"
-                  style={{ 
-                    color: '#015023',
-                    fontFamily: 'Urbanist, sans-serif'
-                  }}
-                >
-                  Aktifkan periode ini
-                </label>
+                <div className="flex-1">
+                  <label 
+                    htmlFor="active"
+                    className="font-semibold cursor-pointer block"
+                    style={{ 
+                      color: '#015023',
+                      fontFamily: 'Urbanist, sans-serif'
+                    }}
+                  >
+                    Aktifkan periode ini
+                  </label>
+                  <p 
+                    className="text-sm mt-1"
+                    style={{ 
+                      color: '#015023',
+                      opacity: 0.7,
+                      fontFamily: 'Urbanist, sans-serif'
+                    }}
+                  >
+                    Jika dicentang, periode ini akan menjadi periode aktif dan periode lain akan dinonaktifkan
+                  </p>
+                </div>
               </div>
-              <FieldDescription className="mt-2 ml-8">
-                Jika dicentang, periode ini akan menjadi periode aktif dan periode lain akan dinonaktifkan
-              </FieldDescription>
             </Field>
 
             <div className="flex gap-4 pt-6 border-t border-gray-200">
