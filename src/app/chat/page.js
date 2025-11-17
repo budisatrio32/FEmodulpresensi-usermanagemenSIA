@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/ui/navigation-menu';
+import Footer from '@/components/ui/footer';
 import { ArrowLeft, Send, User, MessageCircle } from 'lucide-react';
 import { PrimaryButton } from '@/components/ui/button';
 
@@ -240,6 +241,7 @@ export default function ChatPage() {
 					</div>
 				</div>
 			</div>
+			<Footer />
 		</div>
 	);
 }

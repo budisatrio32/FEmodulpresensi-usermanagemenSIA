@@ -13,12 +13,24 @@ import { Button } from '@/components/ui/button';
 import AdminNavbar from '@/components/ui/admin-navbar';
 import { ArrowLeft, Save, X, Info } from 'lucide-react';
 import { ErrorMessageBox, SuccessMessageBoxWithButton } from '@/components/ui/message-box';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 
 export default function AddPeriodeForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -115,9 +127,12 @@ export default function AddPeriodeForm() {
   };
 
   const handleCancel = () => {
-    if (window.confirm('Apakah Anda yakin ingin membatalkan? Data yang diisi akan hilang.')) {
-      router.push('/adminpage/periodeakademik');
-    }
+    setShowCancelDialog(true);
+  };
+
+  const confirmCancel = () => {
+    setShowCancelDialog(false);
+    router.push('/adminpage/periodeakademik');
   };
 
   const handleFinish = () => {
@@ -230,13 +245,14 @@ export default function AddPeriodeForm() {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all ${
-                    errors.name 
-                      ? 'border-red-500 focus:border-red-500' 
-                      : 'border-gray-300 focus:border-[#015023]'
-                  }`}
+                  className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
+                  style={{
+                    fontFamily: 'Urbanist, sans-serif',
+                    borderColor: errors.name ? '#BE0414' : '#015023',
+                    borderRadius: '12px',
+                    opacity: errors.name ? 1 : 0.7
+                  }}
                   placeholder="Semester Ganjil 2024/2025"
-                  style={{ fontFamily: 'Urbanist, sans-serif' }}
                   disabled={isLoading}
                 />
               </FieldContent>
@@ -257,12 +273,13 @@ export default function AddPeriodeForm() {
                     name="start_date"
                     value={formData.start_date}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all ${
-                      errors.start_date 
-                        ? 'border-red-500 focus:border-red-500' 
-                        : 'border-gray-300 focus:border-[#015023]'
-                    }`}
-                    style={{ fontFamily: 'Urbanist, sans-serif' }}
+                    className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
+                    style={{
+                      fontFamily: 'Urbanist, sans-serif',
+                      borderColor: errors.start_date ? '#BE0414' : '#015023',
+                      borderRadius: '12px',
+                      opacity: errors.start_date ? 1 : 0.7
+                    }}
                     disabled={isLoading}
                   />
                 </FieldContent>
@@ -281,12 +298,13 @@ export default function AddPeriodeForm() {
                     name="end_date"
                     value={formData.end_date}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all ${
-                      errors.end_date 
-                        ? 'border-red-500 focus:border-red-500' 
-                        : 'border-gray-300 focus:border-[#015023]'
-                    }`}
-                    style={{ fontFamily: 'Urbanist, sans-serif' }}
+                    className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
+                    style={{
+                      fontFamily: 'Urbanist, sans-serif',
+                      borderColor: errors.end_date ? '#BE0414' : '#015023',
+                      borderRadius: '12px',
+                      opacity: errors.end_date ? 1 : 0.7
+                    }}
                     disabled={isLoading}
                   />
                 </FieldContent>
@@ -362,6 +380,25 @@ export default function AddPeriodeForm() {
           </form>
         </div>
       </div>
+
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Konfirmasi Pembatalan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin membatalkan? Data yang diisi akan hilang.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel asChild>
+              <OutlineButton>Tetap Di Sini</OutlineButton>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <WarningButton onClick={confirmCancel}>Ya, Batalkan</WarningButton>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -5,6 +5,17 @@ import { useRouter } from 'next/navigation';
 import { Calendar, Search, X, ArrowLeft } from 'lucide-react';
 import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 
 export default function PeriodeAkademikDashboard() {
   const router = useRouter();
@@ -12,6 +23,9 @@ export default function PeriodeAkademikDashboard() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [periods, setPeriods] = useState([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState(null);
 
   // Dummy data periode akademik
   const dummyPeriods = [
@@ -130,21 +144,36 @@ export default function PeriodeAkademikDashboard() {
   // Handle delete action
   const handleDelete = async (period, index) => {
     if (period.active) {
-      alert('Tidak dapat menghapus periode yang sedang aktif!');
+      // Show error dialog for active period
+      setSelectedPeriod({ ...period, isActive: true });
+      setShowDeleteDialog(true);
       return;
     }
 
-    if (window.confirm(`Apakah Anda yakin ingin menghapus periode "${period.name}"?`)) {
-      try {
-        // TODO: Replace with actual API call
-        // await deleteAcademicPeriod(period.id);
-        
-        // Remove from local state
-        setPeriods(prevPeriods => prevPeriods.filter((_, i) => i !== index));
-        alert('Periode akademik berhasil dihapus!');
-      } catch (error) {
-        alert('Gagal menghapus periode akademik: ' + error.message);
-      }
+    setSelectedPeriod(period);
+    setSelectedIndex(index);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedPeriod || selectedPeriod.isActive) {
+      setShowDeleteDialog(false);
+      return;
+    }
+
+    setShowDeleteDialog(false);
+    
+    try {
+      // TODO: Replace with actual API call
+      // await deleteAcademicPeriod(selectedPeriod.id);
+      
+      // Remove from local state
+      setPeriods(prevPeriods => prevPeriods.filter((_, i) => i !== selectedIndex));
+    } catch (error) {
+      console.error('Gagal menghapus periode akademik:', error.message);
+    } finally {
+      setSelectedPeriod(null);
+      setSelectedIndex(null);
     }
   };
 
@@ -235,6 +264,45 @@ export default function PeriodeAkademikDashboard() {
           customRender={customRender}
         />
       </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {selectedPeriod?.isActive ? 'Tidak Dapat Menghapus' : 'Konfirmasi Hapus'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedPeriod?.isActive ? (
+                <>Tidak dapat menghapus periode yang sedang aktif!</>
+              ) : (
+                <>
+                  Apakah Anda yakin ingin menghapus periode <strong>{selectedPeriod?.name}</strong>?
+                  <br />
+                  <span style={{ color: '#BE0414', fontWeight: '600', marginTop: '8px', display: 'block' }}>
+                    Tindakan ini tidak dapat dibatalkan.
+                  </span>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {selectedPeriod?.isActive ? (
+              <AlertDialogCancel asChild>
+                <PrimaryButton>Tutup</PrimaryButton>
+              </AlertDialogCancel>
+            ) : (
+              <>
+                <AlertDialogCancel asChild>
+                  <OutlineButton>Batal</OutlineButton>
+                </AlertDialogCancel>
+                <AlertDialogAction asChild>
+                  <WarningButton onClick={confirmDelete}>Hapus</WarningButton>
+                </AlertDialogAction>
+              </>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
