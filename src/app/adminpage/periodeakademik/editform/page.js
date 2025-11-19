@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import AdminNavbar from '@/components/ui/admin-navbar';
 import { ArrowLeft, Save, X, Info } from 'lucide-react';
 import { ErrorMessageBox, SuccessMessageBoxWithButton } from '@/components/ui/message-box';
+import LoadingEffect from '@/components/ui/loading-effect';
 
 export default function EditPeriodeForm() {
   const router = useRouter();
@@ -172,14 +173,7 @@ export default function EditPeriodeForm() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-brand-light-sage flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#015023] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-            Memuat data...
-          </p>
-        </div>
-      </div>
+      <LoadingEffect />
     );
   }
 

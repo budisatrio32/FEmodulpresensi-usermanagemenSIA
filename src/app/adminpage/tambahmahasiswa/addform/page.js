@@ -171,7 +171,7 @@ export default function AddMahasiswaForm() {
                 newErrors.form = response.message || 'Gagal menambah data mahasiswa';
             }
         } catch (error) {
-            newErrors.form = "Gagal menambah data: " + (error.message || 'Unknown error');
+            newErrors.form = error.message || 'Unknown error';
         } finally {
             setIsLoading(false);
             setErrors(prev => ({...prev, ...newErrors}));

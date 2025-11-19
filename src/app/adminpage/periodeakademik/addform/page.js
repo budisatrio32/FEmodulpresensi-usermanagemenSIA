@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
+import { storeAcademicPeriod } from '@/lib/adminApi';
 
 export default function AddPeriodeForm() {
   const router = useRouter();
@@ -105,21 +106,25 @@ export default function AddPeriodeForm() {
 
     const newErrors = {};
     try {
-      // TODO: Replace with actual API call
-      // const response = await storeAcademicPeriod(formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSuccess('Periode akademik berhasil ditambahkan');
-      setFormData({
-        name: '',
-        start_date: '',
-        end_date: '',
-        active: false
+      const response = await storeAcademicPeriod({
+        name: formData.name,
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        is_active: formData.active
       });
+      if (response.status === 'success') {
+        setSuccess('Periode akademik berhasil ditambahkan');
+        setFormData({
+          name: '',
+          start_date: '',
+          end_date: '',
+          active: false
+        });
+      } else {
+        newErrors.form = response.message || 'Unknown error';
+      }
     } catch (error) {
-      newErrors.form = 'Gagal menambahkan data: ' + (error.message || 'Unknown error');
+      newErrors.form = error.message || 'Unknown error';
     } finally {
       setIsLoading(false);
       setErrors(prev => ({...prev, ...newErrors}));
@@ -181,24 +186,6 @@ export default function AddPeriodeForm() {
           </div>
         </div>
 
-        {/* Error Message */}
-        {errors.form && (
-          <div className="mb-6">
-            <ErrorMessageBox message={errors.form} />
-          </div>
-        )}
-
-        {/* Success Message */}
-        {success && (
-          <div className="mb-6">
-            <SuccessMessageBoxWithButton
-              message={success}
-              action={handleFinish}
-              btntext="Kembali ke Daftar"
-            />
-          </div>
-        )}
-
         {/* Form Card */}
         <div 
           className="bg-white rounded-3xl shadow-xl p-8"
@@ -208,33 +195,6 @@ export default function AddPeriodeForm() {
           }}
         >
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Info Alert */}
-            <div 
-              className="flex items-start gap-3 p-4 rounded-xl"
-              style={{ backgroundColor: '#f0f9ff' }}
-            >
-              <Info 
-                className="w-5 h-5 flex-shrink-0 mt-0.5"
-                style={{ color: '#015023' }}
-              />
-              <div>
-                <p 
-                  className="font-semibold mb-1"
-                  style={{ 
-                    color: '#015023',
-                    fontFamily: 'Urbanist, sans-serif'
-                  }}
-                >
-                  Informasi Penting
-                </p>
-                <p 
-                  className="text-sm text-gray-700"
-                  style={{ fontFamily: 'Urbanist, sans-serif' }}
-                >
-                  Pastikan tanggal periode tidak tumpang tindih dengan periode lain. Hanya satu periode yang bisa aktif dalam satu waktu.
-                </p>
-              </div>
-            </div>
 
             {/* Nama Periode */}
             <Field>
@@ -358,6 +318,20 @@ export default function AddPeriodeForm() {
               </div>
             </Field>
 
+            {/* Error Message */}
+            {errors.form && (
+              <ErrorMessageBox message={errors.form} />
+            )}
+
+            {/* Success Message */}
+            {success && (
+              <SuccessMessageBoxWithButton
+                message={success + ' Lihat Data atau tambahkan periode akademik lain.'}
+                action={handleFinish}
+                btntext="Lihat Data"
+              />
+            )}
+
             {/* Action Buttons */}
             <div className="flex gap-4 pt-6 border-t border-gray-200">
               <Button
@@ -384,7 +358,7 @@ export default function AddPeriodeForm() {
               >
                 {isLoading ? (
                   <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    <span className="animate-spin mr-2">⏳</span>
                     Menyimpan...
                   </>
                 ) : (
@@ -397,7 +371,49 @@ export default function AddPeriodeForm() {
             </div>
           </form>
         </div>
+        {/* Info Box */}
+        <div 
+          className="mt-8 p-6 border-2 shadow-md"
+          style={{
+            borderColor: '#DABC4E',
+            borderRadius: '12px',
+            background: 'linear-gradient(135deg, #FFFEF7 0%, #FFF9E6 100%)'
+          }}
+        >
+          <div className="flex items-start gap-4">
+            <div 
+              className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{
+                backgroundColor: '#DABC4E',
+                color: '#ffffffff'
+              }}
+            >
+              <Info className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 
+                className="font-bold text-lg mb-2"
+                style={{ 
+                  fontFamily: 'Urbanist, sans-serif',
+                  color: '#015023'
+                }}
+              >
+                Catatan Penting
+              </h3>
+              <p 
+                className="text-sm leading-relaxed"
+                style={{ 
+                  fontFamily: 'Urbanist, sans-serif',
+                  color: '#015023'
+                }}
+              >
+                Pastikan tanggal periode tidak tumpang tindih dengan periode lain. Hanya satu periode yang bisa aktif dalam satu waktu.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
+      
 
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <AlertDialogContent>

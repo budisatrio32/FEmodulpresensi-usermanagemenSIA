@@ -182,22 +182,6 @@ export default function AddKonversiNilaiForm() {
           </div>
         </div>
 
-        {errors.form && (
-          <div className="mb-6">
-            <ErrorMessageBox message={errors.form} />
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-6">
-            <SuccessMessageBoxWithButton
-              message={success}
-              action={handleFinish}
-              btntext="Kembali ke Daftar"
-            />
-          </div>
-        )}
-
         <div 
           className="bg-white rounded-3xl shadow-xl p-8"
           style={{ 
@@ -206,34 +190,6 @@ export default function AddKonversiNilaiForm() {
           }}
         >
           <form onSubmit={handleSubmit} className="space-y-8">
-            <div 
-              className="flex items-start gap-3 p-4 rounded-xl"
-              style={{ backgroundColor: '#f0f9ff' }}
-            >
-              <Info 
-                className="w-5 h-5 flex-shrink-0 mt-0.5"
-                style={{ color: '#015023' }}
-              />
-              <div>
-                <p 
-                  className="font-semibold mb-1"
-                  style={{ 
-                    color: '#015023',
-                    fontFamily: 'Urbanist, sans-serif'
-                  }}
-                >
-                  Informasi Penting
-                </p>
-                <p 
-                  className="text-sm text-gray-700"
-                  style={{ fontFamily: 'Urbanist, sans-serif' }}
-                >
-                  Pastikan rentang nilai tidak tumpang tindih dengan konversi nilai yang sudah ada.
-                  Nilai huruf yang valid: A, A-, B+, B, B-, C+, C, C-, D+, D, E, F.
-                </p>
-              </div>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Field>
                 <FieldLabel required>Nilai Minimal</FieldLabel>
@@ -369,6 +325,20 @@ export default function AddKonversiNilaiForm() {
               </ul>
             </div>
 
+            {/* error message */}
+            {errors.form && (
+              <ErrorMessageBox message={errors.form} />
+            )}
+
+            {/* success message */}
+            {success && (
+              <SuccessMessageBoxWithButton
+                message={success}
+                action={handleFinish}
+                btntext="Kembali ke Daftar"
+              />
+            )}
+
             <div className="flex gap-4 pt-6 border-t border-gray-200">
               <Button
                 type="button"
@@ -394,7 +364,7 @@ export default function AddKonversiNilaiForm() {
               >
                 {isLoading ? (
                   <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    <span className="animate-spin mr-2">⏳</span>
                     Menyimpan...
                   </>
                 ) : (
@@ -406,6 +376,48 @@ export default function AddKonversiNilaiForm() {
               </Button>
             </div>
           </form>
+        </div>
+        {/* Info Box */}
+        <div 
+          className="mt-8 p-6 border-2 shadow-md"
+          style={{
+            borderColor: '#DABC4E',
+            borderRadius: '12px',
+            background: 'linear-gradient(135deg, #FFFEF7 0%, #FFF9E6 100%)'
+          }}
+        >
+          <div className="flex items-start gap-4">
+            <div 
+              className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{
+                backgroundColor: '#DABC4E',
+                color: '#ffffffff'
+              }}
+            >
+              <Info className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 
+                className="font-bold text-lg mb-2"
+                style={{ 
+                  fontFamily: 'Urbanist, sans-serif',
+                  color: '#015023'
+                }}
+              >
+                Informasi Penting
+              </h3>
+              <p 
+                className="text-sm leading-relaxed"
+                style={{ 
+                  fontFamily: 'Urbanist, sans-serif',
+                  color: '#015023'
+                }}
+              >
+                Pastikan rentang nilai tidak tumpang tindih dengan konversi nilai yang sudah ada.<br />
+                Nilai huruf yang valid: A, A-, B+, B, B-, C+, C, C-, D+, D, E, F.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

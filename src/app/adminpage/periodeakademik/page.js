@@ -190,6 +190,8 @@ export default function PeriodeAkademikDashboard() {
       
       // Update local state
       setPeriods(prevPeriods => prevPeriods.map((period, i) => i === selectedIndex ? { ...period, is_active: true } : period));
+      setSuccessActivate('Periode akademik ' + selectedPeriod.name + ' berhasil diaktifkan.');
+      setShowSuccessDialog(true);
     } catch (error) {
       setErrorActivate('Gagal mengaktifkan periode akademik: ' + error.message);
       setShowErrorDialog(true);
