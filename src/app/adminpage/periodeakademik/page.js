@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, Search, X, ArrowLeft } from 'lucide-react';
 import DataTable from '@/components/ui/table';
@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
-import { getAcademicPeriods } from '@/lib/adminApi';
+import { getAcademicPeriods, deleteAcademicPeriod } from '@/lib/adminApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 
 export default function PeriodeAkademikDashboard() {
@@ -26,6 +26,9 @@ export default function PeriodeAkademikDashboard() {
   const [errorDelete, setErrorDelete] = useState(null);
   const [errorActivate, setErrorActivate] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [successActivate, setSuccessActivate] = useState(null);
+  const [successDelete, setSuccessDelete] = useState(null);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [periods, setPeriods] = useState([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -141,11 +144,16 @@ export default function PeriodeAkademikDashboard() {
     setShowDeleteDialog(false);
     
     try {
-      // TODO: Replace with actual API call
-      // await deleteAcademicPeriod(selectedPeriod.id);
-      
-      // Remove from local state
-      setPeriods(prevPeriods => prevPeriods.filter((_, i) => i !== selectedIndex));
+      const response = await deleteAcademicPeriod(selectedPeriod.id_academic_period);
+      if (response.status === 'success') {
+        // Update local state
+        setPeriods(prevPeriods => prevPeriods.filter((_, i) => i !== selectedIndex));
+        setSuccessDelete('Periode akademik ' + selectedPeriod.name + ' berhasil dihapus.');
+        setShowSuccessDialog(true);
+      } else {
+        setErrorDelete('Gagal menghapus periode akademik: ' + response.message);
+        setShowErrorDialog(true);
+      }
     } catch (error) {
       setErrorDelete('Gagal menghapus periode akademik: ' + error.message);
       setShowErrorDialog(true);
@@ -154,6 +162,20 @@ export default function PeriodeAkademikDashboard() {
       setSelectedIndex(null);
     }
   };
+
+  // show activate dialog hilang setelah 2 detik tambahkan juga menghilangkan success message
+  useEffect(() => {
+    let timer;
+    if (showSuccessDialog) {
+      timer = setTimeout(() => {
+        setShowSuccessDialog(false);
+        setSuccessActivate(null);
+        setSuccessDelete(null);
+      }, 2000);
+    }
+    return () => clearTimeout(timer);
+  }, [showSuccessDialog]);
+  
   const confirmActivate = async () => {
     if (!selectedPeriod) {
       setShowActivateDialog(false);
@@ -343,6 +365,24 @@ export default function PeriodeAkademikDashboard() {
             <AlertDialogDescription>
               {(errorDelete || errorActivate) && (
                 errorDelete ? <>{errorDelete}</> : <>{errorActivate}</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel asChild>
+              <OutlineButton>Tutup</OutlineButton>
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle><span className='text-green-500'>Success</span></AlertDialogTitle>
+            <AlertDialogDescription>
+              {(successActivate || successDelete) && (
+                successActivate ? <>{successActivate}</> : <>{successDelete}</>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>

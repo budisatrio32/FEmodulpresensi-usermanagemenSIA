@@ -371,6 +371,20 @@ export const getAcademicPeriods = async () => {
   }
 };
 
+/**
+ * Delete academic period by ID
+ * @param {number} periodId - ID academic period yang akan dihapus
+ * @returns {Promise} Response hasil delete
+ */
+export const deleteAcademicPeriod = async (periodId) => {
+  try {
+    const response = await api.delete(`/academic-periods/${periodId}`);
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error);
+  }
+};
+
 export default {
   getDashboardStatistics,
   getDetailedStatistics,
@@ -398,4 +412,5 @@ export default {
   removeStudentFromClass,
   generateSchedule,
   getAcademicPeriods,
+  deleteAcademicPeriod,
 };
