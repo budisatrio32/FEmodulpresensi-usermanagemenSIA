@@ -26,7 +26,8 @@ const [error, setError] = useState(null);
 const [loading, setLoading] = useState(true);
 const [success, setSuccess] = useState(null);
 const [students, setStudents] = useState([]);
-const [isTogglingStatus, setIsTogglingStatus] = useState(null);
+const [errorActivate, setErrorActivate] = useState(null);
+const [showErrorDialog, setShowErrorDialog] = useState(false);
 const [showStatusDialog, setShowStatusDialog] = useState(false);
 const [selectedStudent, setSelectedStudent] = useState(null);
 
@@ -116,9 +117,8 @@ const handleActivate = async (student, index) => {
 const confirmToggleStatus = async () => {
   if (!selectedStudent) return;
   
-  const userId = selectedStudent.id_user_si || selectedStudent.id;
+  const userId = selectedStudent.id_user_si;
   setShowStatusDialog(false);
-  setIsTogglingStatus(userId);
   
   try {
     const response = await toggleUserStatus(userId);
@@ -126,13 +126,14 @@ const confirmToggleStatus = async () => {
     if (response.status === 'success') {
       // Update local state
       setStudents(students.map(s => 
-        (s.id_user_si || s.id) === userId
+        (s.id_user_si) === userId
           ? { ...s, is_active: response.data.is_active }
           : s
       ));
     }
   } catch (error) {
-    console.error("Error toggling status:", error);
+    setErrorActivate('Gagal mengubah status mahasiswa: ' + error.message);
+    setShowErrorDialog(true);
   } finally {
     setIsTogglingStatus(null);
     setSelectedStudent(null);
@@ -253,6 +254,22 @@ return (
           {selectedStudent?.is_active ? 'Non-Aktifkan' : 'Aktifkan'}
         </WarningButton>
       </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog> 
+ 
+<AlertDialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle><span className='text-red-500'>Error</span></AlertDialogTitle>
+      <AlertDialogDescription>
+        {errorActivate}
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel asChild>
+        <OutlineButton>Tutup</OutlineButton>
+      </AlertDialogCancel>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>  
