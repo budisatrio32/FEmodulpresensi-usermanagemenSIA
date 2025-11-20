@@ -19,6 +19,7 @@ import LoadingEffect from "@/components/ui/loading-effect";
 import { getClassById, getAcademicPeriods, getSubjects, getMahasiswa, getDosen, updateClass } from "@/lib/adminApi";
 import { ErrorMessageBoxWithButton, SuccessMessageBox, ErrorMessageBox } from "@/components/ui/message-box";
 import { assignStudentsToClass, assignLecturersToClass, removeLecturerFromClass, removeStudentFromClass, generateSchedule } from "@/lib/adminApi";
+import { AlertConfirmationDialog } from "@/components/ui/alert-dialog";
 
 export default function DetailKelas() {
     const router = useRouter();
@@ -37,6 +38,8 @@ export default function DetailKelas() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [generateSuccess, setGenerateSuccess] = useState('');
     const [generateErrors, setGenerateErrors] = useState({});
+
+    const [showConfirmBack, setShowConfirmBack] = useState(false);
 
     // Data kelas
     const [formData, setFormData] = useState({
@@ -543,6 +546,9 @@ export default function DetailKelas() {
     };
     
     const handleBack = () => {
+        setShowConfirmBack(true);
+    };
+    const confirmback = () => {
         router.push("/adminpage/tambahkelas");
     };
 
@@ -909,7 +915,7 @@ export default function DetailKelas() {
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={() => router.push("/adminpage/tambahkelas")}
+                        onClick={handleBack}
                         disabled={isSubmitting || isLoading}
                     >
                         Batal
@@ -1688,6 +1694,17 @@ export default function DetailKelas() {
             </div>
         </div>
         )}
+
+        {/* confirm back */}
+        <AlertConfirmationDialog 
+            open={showConfirmBack}
+            onOpenChange={setShowConfirmBack}
+            tittle="Kembali ke Daftar Kelas"
+            description="Perubahan yang belum disimpan akan hilang. Apakah Anda yakin ingin kembali?"
+            onConfirm={confirmback}
+            confirmText="Ya, Kembali"
+            cancelText="Lanjutkan Edit"
+        />
     </div>
     );
 }

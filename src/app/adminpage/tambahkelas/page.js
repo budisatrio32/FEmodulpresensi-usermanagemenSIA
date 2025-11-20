@@ -7,14 +7,21 @@ import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
 import { getAllClasses, toggleClassStatus } from '@/lib/ClassApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
+import { AlertConfirmationDialog, AlertSuccessDialog } from '@/components/ui/alert-dialog';
 
 export default function KelasDashboard() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
+  const [activateError, setActivateError] = useState(null);
+  const [activateSuccess, setActivateSuccess] = useState(null);
+  const [showActivateErrorDialog, setShowActivateErrorDialog] = useState(false);
+  const [showActivateSuccessDialog, setShowActivateSuccessDialog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(null);
   const [kelas, setKelas] = useState([]);
+  const [selectedKelas, setSelectedKelas] = useState(null);
+  const [showActivateDialog, setShowActivateDialog] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(null);
 
   // ambil data kelas dari API
@@ -123,41 +130,51 @@ export default function KelasDashboard() {
 
   // Handle detail action - redirect to detail page
   const handleDetail = (kelasItem, index) => {
-    console.log('Detail kelas:', kelasItem, 'at index:', index);
     router.push(`/adminpage/tambahkelas/detail?id=${kelasItem.id_class}`);
   };
 
   // Handle toggle status active/inactive
   const handleActivate = async (kelasItem, index) => {
-    const newStatus = !kelasItem.is_active ? 'Aktif' : 'Non-Aktif';
+    setSelectedKelas(kelasItem);
+    setShowActivateDialog(true);
+  };
 
-    if (!window.confirm(`Apakah Anda yakin ingin mengubah status kelas "${kelasItem.code_class}" menjadi ${newStatus}?`)) {
-      return;
-    }
+  const confirmActivate = async () => {
+    const newStatus = !selectedKelas.is_active ? 'Aktif' : 'Non-Aktif';
 
-    setIsTogglingStatus(kelasItem.id_class);
+    setIsTogglingStatus(selectedKelas.id_class);
 
     try {
-      const response = await toggleClassStatus(kelasItem.id_class);
+      const response = await toggleClassStatus(selectedKelas.id_class);
 
       if (response.status === 'success') {
         // Update local state
         setKelas(kelas.map(k => 
-          k.id_class === kelasItem.id_class
+          k.id_class === selectedKelas.id_class
             ? { ...k, is_active: response.data.is_active }
             : k
         ));
-
-        alert(`Status kelas berhasil diubah menjadi ${response.data.is_active ? 'Aktif' : 'Non-Aktif'}`);
-      } 
-
+        setActivateSuccess(`Status kelas berhasil diubah menjadi ${response.data.is_active ? 'Aktif' : 'Non-Aktif'}`);
+        setShowActivateSuccessDialog(true);
+      } else {
+        setActivateError(`Gagal mengubah status kelas menjadi ${newStatus}`);
+        setShowActivateErrorDialog(true);
+      }
     } catch (error) {
-      console.error("Error toggling status:", error);
-      alert("Gagal mengubah status kelas: " + (error.message || 'Unknown error'));
+      setActivateError("Gagal mengubah status kelas: " + (error.message || 'Unknown error'));
+      setShowActivateErrorDialog(true);
     } finally {
       setIsTogglingStatus(null);
     }
   };
+  useEffect(() => {
+    if (!activateSuccess) return;
+    const timer = setTimeout(() => {
+        setActivateSuccess(null);
+        setShowActivateSuccessDialog(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [activateSuccess]);
 
   return (
     <div className="min-h-screen bg-brand-light-sage" style={{ fontFamily: 'Urbanist, sans-serif' }}>
@@ -250,6 +267,30 @@ export default function KelasDashboard() {
           />
         )}
       </div>
+      {/* Activate Confirmation Dialog */}
+      <AlertConfirmationDialog
+        open={showActivateDialog}
+        onOpenChange={setShowActivateDialog}
+        onConfirm={confirmActivate}
+        title="Konfirmasi Ubah Status Kelas"
+        description={`Apakah Anda yakin ingin mengubah status kelas "${selectedKelas ? selectedKelas.code_class : ''}" menjadi ${!selectedKelas?.is_active ? 'Aktif' : 'Non-Aktif'}?`}
+      />
+
+      {/* Activate Success Dialog */}
+      <AlertSuccessDialog
+        open={showActivateSuccessDialog}
+        onOpenChange={setShowActivateSuccessDialog}
+        title="Berhasil"
+        description={activateSuccess}
+      />
+
+      {/* Activate Error Dialog */}
+      <AlertConfirmationDialog
+        open={showActivateErrorDialog}
+        onOpenChange={setShowActivateErrorDialog}
+        title="Gagal"
+        description={activateError}
+      />
     </div>
   );
 }

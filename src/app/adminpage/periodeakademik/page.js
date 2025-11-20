@@ -167,7 +167,7 @@ export default function PeriodeAkademikDashboard() {
         setShowSuccessDialog(false);
         setSuccessActivate(null);
         setSuccessDelete(null);
-      }, 2000);
+      }, 3000);
     }
     return () => clearTimeout(timer);
   }, [showSuccessDialog]);
@@ -325,11 +325,7 @@ export default function PeriodeAkademikDashboard() {
         onOpenChange={setShowActivateDialog}
         title="Konformasi Ubah Status"
         description={
-          selectedPeriod && (
-            <>
-              Apakah Anda yakin ingin {selectedPeriod.is_active ? 'menonaktifkan' : 'mengaktifkan'} periode <strong>{selectedPeriod.name}</strong>?
-            </>
-          )
+          `Apakah Anda yakin ingin ${selectedPeriod?.is_active ? 'menonaktifkan' : 'mengaktifkan'} periode ${selectedPeriod?.name}?`
         }
         confirmText={selectedPeriod?.is_active ? 'Non-Aktifkan' : 'Aktifkan'}
         onConfirm={confirmActivate}
