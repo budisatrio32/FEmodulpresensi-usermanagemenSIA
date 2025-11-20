@@ -418,7 +418,7 @@ export default function AddKonversiNilaiForm() {
                 }}
               >
                 Pastikan rentang nilai tidak tumpang tindih dengan konversi nilai yang sudah ada.<br />
-                Nilai huruf yang valid: A, A-, B+, B, B-, C+, C, C-, D+, D, E, F.
+                Nilai huruf yang valid: A, A-, A/B, B+, B, B-, B/C, C+, C, C-, C/D, D+, D, D-, D/E, E+, E.
               </p>
             </div>
           </div>

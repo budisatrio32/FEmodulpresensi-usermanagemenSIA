@@ -83,11 +83,11 @@ export default function KonversiNilaiPage() {
       <span 
         className="px-3 py-1 rounded-full font-semibold"
         style={{
-          backgroundColor: value === 'A' || value === 'A-' ? '#E8F5E9' :
+          backgroundColor: value.startsWith('A') ? '#E8F5E9' :
                          value.startsWith('B') ? '#E3F2FD' :
                          value.startsWith('C') ? '#FFF3E0' :
                          value.startsWith('D') ? '#FFE0B2' : '#FFEBEE',
-          color: value === 'A' || value === 'A-' ? '#2E7D32' :
+          color: value.startsWith('A') ? '#2E7D32' :
                  value.startsWith('B') ? '#1565C0' :
                  value.startsWith('C') ? '#E65100' :
                  value.startsWith('D') ? '#E64A19' : '#C62828',
