@@ -14,6 +14,7 @@ import AdminNavbar from '@/components/ui/admin-navbar';
 import { ArrowLeft, Save, X, Info } from 'lucide-react';
 import { ErrorMessageBox, SuccessMessageBoxWithButton } from '@/components/ui/message-box';
 import LoadingEffect from '@/components/ui/loading-effect';
+import { AlertConfirmationDialog } from '@/components/ui/alert-dialog';
 
 export default function EditPeriodeForm() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function EditPeriodeForm() {
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -164,8 +166,12 @@ export default function EditPeriodeForm() {
   };
 
   const handleCancel = () => {
-    router.push('/adminpage/periodeakademik');
+    setShowCancelDialog(true);
   };
+
+  const confirmCancel = () => {
+    router.push('/adminpage/periodeakademik');
+  }
 
   const handleFinish = () => {
     router.push('/adminpage/periodeakademik');
@@ -185,7 +191,7 @@ export default function EditPeriodeForm() {
         <div className="mb-10">
           <Button
             variant="ghost"
-            onClick={() => router.push('/adminpage/periodeakademik')}
+            onClick={handleCancel}
             className="mb-6 -ml-4"
             style={{ fontFamily: 'Urbanist, sans-serif' }}
           >
@@ -434,6 +440,17 @@ export default function EditPeriodeForm() {
           </div>
         </div>
       </div>
+      
+      {/* Cancel Confirmation Dialog */}
+      <AlertConfirmationDialog 
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        title="Konfirmasi Pembatalan"
+        description="Apakah Anda yakin ingin membatalkan? Data yang diisi akan hilang."
+        onConfirm={confirmCancel}
+        confirmText="Ya, Batalkan"
+        cancelText="Lanjutkan Mengisi"
+      />
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import AdminNavbar from '@/components/ui/admin-navbar';
 import { ArrowLeft, Save, X, Info } from 'lucide-react';
 import { ErrorMessageBox, SuccessMessageBoxWithButton } from '@/components/ui/message-box';
+import { AlertConfirmationDialog } from '@/components/ui/alert-dialog';
 
 export default function AddKonversiNilaiForm() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function AddKonversiNilaiForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   
   const [formData, setFormData] = useState({
     min_grade: '',
@@ -132,10 +134,12 @@ export default function AddKonversiNilaiForm() {
   };
 
   const handleCancel = () => {
-    if (window.confirm('Apakah Anda yakin ingin membatalkan? Data yang telah diisi akan hilang.')) {
-      router.push('/adminpage/konversinilai');
-    }
+    setShowCancelDialog(true);
   };
+
+  const confirmCancel = () => {
+    router.push('/adminpage/konversinilai');
+  }
 
   const handleFinish = () => {
     router.push('/adminpage/konversinilai');
@@ -149,7 +153,7 @@ export default function AddKonversiNilaiForm() {
         <div className="mb-10">
           <Button
             variant="ghost"
-            onClick={() => router.push('/adminpage/konversinilai')}
+            onClick={handleCancel}
             className="mb-6 -ml-4"
             style={{ fontFamily: 'Urbanist, sans-serif' }}
           >
@@ -420,6 +424,16 @@ export default function AddKonversiNilaiForm() {
           </div>
         </div>
       </div>
+      {/* Cancel Confirmation Dialog */}
+      <AlertConfirmationDialog 
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        title="Konfirmasi Pembatalan"
+        description="Apakah Anda yakin ingin membatalkan? Data yang diisi akan hilang."
+        onConfirm={confirmCancel}
+        confirmText="Ya, Batalkan"
+        cancelText="Lanjutkan Mengisi"
+      />
     </div>
   );
 }

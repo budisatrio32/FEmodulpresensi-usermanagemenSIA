@@ -18,6 +18,7 @@ import { SuccessMessageBoxWithButton,
   ErrorMessageBoxWithButton 
 } from "@/components/ui/message-box";
 import LoadingEffect from "@/components/ui/loading-effect";
+import { AlertConfirmationDialog } from "@/components/ui/alert-dialog";
 
 export default function AddDosenForm() {
   const router = useRouter();
@@ -26,6 +27,7 @@ export default function AddDosenForm() {
   const [success, setSuccess] = useState(null);
   const [isFetching, setIsFetching] = useState(true);
   const [programs, setPrograms] = useState([]);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -171,9 +173,11 @@ export default function AddDosenForm() {
   };
 
   const handleCancel = () => {
-    if (window.confirm("Apakah Anda yakin ingin membatalkan? Data yang diisi akan hilang.")) {
-      router.push("/adminpage/tambahdosen");
-    }
+    setShowCancelDialog(true);
+  };
+
+  const confirmCancel = () => {
+    router.push("/adminpage/tambahdosen");
   };
 
   const handleFinish = () => {
@@ -209,7 +213,7 @@ export default function AddDosenForm() {
         <div className="mb-10">
           <Button
             variant="ghost"
-            onClick={() => router.push("/adminpage/tambahdosen")}
+            onClick={handleCancel}
             className="mb-6 -ml-4"
             style={{ fontFamily: 'Urbanist, sans-serif' }}
           >
@@ -643,6 +647,16 @@ export default function AddDosenForm() {
           </div>
         </div>
       </div>
+      {/* Cancel Confirmation Dialog */}
+      <AlertConfirmationDialog 
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        title="Konfirmasi Pembatalan"
+        description="Apakah Anda yakin ingin membatalkan? Data yang diisi akan hilang."
+        onConfirm={confirmCancel}
+        confirmText="Ya, Batalkan"
+        cancelText="Lanjutkan Mengisi"
+      />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
 import { getManagers, toggleManagerStatus } from '@/lib/adminApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
+import { AlertConfirmationDialog, AlertSuccessDialog } from '@/components/ui/alert-dialog';
 
 export default function AkunManagerDashboard() {
   const router = useRouter();
@@ -14,8 +15,14 @@ export default function AkunManagerDashboard() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(null);
+  const [errorActivate, setErrorActivate] = useState(null);
+  const [successActivate, setSuccessActivate] = useState(null);
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [managers, setManagers] = useState([]);
   const [isTogglingStatus, setIsTogglingStatus] = useState(null);
+  const [selectedManager, setSelectedManager] = useState(null);
+  const [showActivateDialog, setShowActivateDialog] = useState(false);
 
   //ambil data dari getManagers API
 
@@ -93,13 +100,13 @@ export default function AkunManagerDashboard() {
   };
 
   // Handle toggle status active/inactive for Manager (Admin only)
-  const handleActivate = async (manager, index) => {
-    const managerId = manager.id_user_si || manager.id;
-    const statusText = manager.is_active ? 'Non-Aktifkan' : 'Aktifkan';
-    
-    if (!window.confirm(`Apakah Anda yakin ingin ${statusText.toLowerCase()} akun manager ${manager.name}?`)) {
-      return;
-    }
+  const handleActivate = (manager, index) => {
+    setSelectedManager(manager);
+    setShowActivateDialog(true);
+  };
+
+  const confirmActivate = async () => {
+    const managerId = selectedManager.id_user_si;
 
     setIsTogglingStatus(managerId);
     
@@ -114,17 +121,28 @@ export default function AkunManagerDashboard() {
             : m
         ));
         
-        alert(`Status berhasil diubah menjadi ${response.data.is_active ? 'Aktif' : 'Non-Aktif'}`);
+        setSuccessActivate(`Status berhasil diubah menjadi ${response.data.is_active ? 'Aktif' : 'Non-Aktif'}`);
+        setShowSuccessDialog(true);
       } else {
-        alert('Gagal mengubah status manager');
+        setErrorActivate('Gagal mengubah status manager');
+        setShowErrorDialog(true);
       }
     } catch (error) {
-      console.error("Error toggling manager status:", error);
-      alert("Gagal mengubah status manager: " + (error.message || 'Unknown error'));
+      setErrorActivate("Gagal mengubah status manager: " + (error.message || 'Unknown error'));
+      setShowErrorDialog(true);
     } finally {
       setIsTogglingStatus(null);
     }
   };
+
+  useEffect(() => {
+    if (!successActivate) return;
+    const timer = setTimeout(() => {
+        setSuccessActivate(null);
+        setShowSuccessDialog(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [successActivate]);
 
   return (
     <div className="min-h-screen bg-brand-light-sage" style={{ fontFamily: 'Urbanist, sans-serif' }}>
@@ -215,6 +233,33 @@ export default function AkunManagerDashboard() {
           />
         )}
       </div>
+
+      {/* Activate Confirmation Dialog */}
+      <AlertConfirmationDialog
+        open={showActivateDialog}
+        onOpenChange={setShowActivateDialog}
+        title="Konfirmasi Ubah Status Akun Manager"
+        description={
+          <>
+            Apakah Anda yakin ingin <strong>{!selectedManager?.is_active ? 'Aktifkan' : 'Non-Aktifkan'}</strong> akun manager <strong>{selectedManager ? selectedManager.name : ''}</strong>?
+          </>
+        }
+        onConfirm={confirmActivate}
+        confirmText={selectedManager?.is_active ? 'Non-Aktifkan' : 'Aktifkan'}
+      />
+
+      <AlertSuccessDialog
+        open={showSuccessDialog}
+        onOpenChange={setShowSuccessDialog}
+        description={successActivate}
+      />
+
+      {/* Error dialog */}
+      <AlertConfirmationDialog
+        open={showErrorDialog}
+        onOpenChange={setShowErrorDialog}
+        description={errorActivate}
+      />
     </div>
   );
 }

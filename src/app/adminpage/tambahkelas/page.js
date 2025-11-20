@@ -273,14 +273,17 @@ export default function KelasDashboard() {
         onOpenChange={setShowActivateDialog}
         onConfirm={confirmActivate}
         title="Konfirmasi Ubah Status Kelas"
-        description={`Apakah Anda yakin ingin mengubah status kelas "${selectedKelas ? selectedKelas.code_class : ''}" menjadi ${!selectedKelas?.is_active ? 'Aktif' : 'Non-Aktif'}?`}
+        description={
+        <>
+        Apakah Anda yakin ingin <strong>{!selectedKelas?.is_active ? 'Aktifkan' : 'Non-Aktifkan'}</strong> kelas <strong>{selectedKelas ? selectedKelas.code_class : ''}</strong>?
+        </>}
+        confirmText={selectedKelas?.is_active ? 'Non-Aktifkan' : 'Aktifkan'}
       />
 
       {/* Activate Success Dialog */}
       <AlertSuccessDialog
         open={showActivateSuccessDialog}
         onOpenChange={setShowActivateSuccessDialog}
-        title="Berhasil"
         description={activateSuccess}
       />
 
@@ -288,7 +291,6 @@ export default function KelasDashboard() {
       <AlertConfirmationDialog
         open={showActivateErrorDialog}
         onOpenChange={setShowActivateErrorDialog}
-        title="Gagal"
         description={activateError}
       />
     </div>

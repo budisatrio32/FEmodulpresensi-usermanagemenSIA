@@ -14,6 +14,7 @@ import AdminNavbar from '@/components/ui/admin-navbar';
 import { ArrowLeft, Save, X, Info } from 'lucide-react';
 import { ErrorMessageBox, SuccessMessageBoxWithButton } from '@/components/ui/message-box';
 import {
+  AlertConfirmationDialog,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -413,26 +414,16 @@ export default function AddPeriodeForm() {
           </div>
         </div>
       </div>
-      
-
-      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Konfirmasi Pembatalan</AlertDialogTitle>
-            <AlertDialogDescription>
-              Apakah Anda yakin ingin membatalkan? Data yang diisi akan hilang.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel asChild>
-              <OutlineButton>Tetap Di Sini</OutlineButton>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <WarningButton onClick={confirmCancel}>Ya, Batalkan</WarningButton>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Cancel Confirmation Dialog */}
+      <AlertConfirmationDialog 
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        title="Konfirmasi Pembatalan"
+        description="Apakah Anda yakin ingin membatalkan? Data yang diisi akan hilang."
+        onConfirm={confirmCancel}
+        confirmText="Ya, Batalkan"
+        cancelText="Lanjutkan Mengisi"
+      />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import AdminNavbar from '@/components/ui/admin-navbar';
 import { ArrowLeft, Save, X, Info } from 'lucide-react';
 import { ErrorMessageBox, SuccessMessageBoxWithButton } from '@/components/ui/message-box';
 import LoadingEffect from '@/components/ui/loading-effect';
+import { AlertConfirmationDialog } from '@/components/ui/alert-dialog';
 
 export default function EditKonversiNilaiForm() {
 const router = useRouter();
@@ -24,6 +25,7 @@ const [isLoading, setIsLoading] = useState(false);
 const [errors, setErrors] = useState({});
 const [success, setSuccess] = useState(null);
 const [loading, setLoading] = useState(true);
+const [showCancelDialog, setShowCancelDialog] = useState(false);
 
 const [formData, setFormData] = useState({
 min_grade: '',
@@ -185,6 +187,10 @@ try {
 };
 
 const handleCancel = () => {
+setShowCancelDialog(true);
+};
+
+const confirmCancel = () => {
 router.push('/adminpage/konversinilai');
 };
 
@@ -206,7 +212,7 @@ return (
     <div className="mb-10">
         <Button
         variant="ghost"
-        onClick={() => router.push('/adminpage/konversinilai')}
+        onClick={handleCancel}
         className="mb-6 -ml-4"
         style={{ fontFamily: 'Urbanist, sans-serif' }}
         >
@@ -478,6 +484,15 @@ return (
             </div>
         </div>
     </div>
+    <AlertConfirmationDialog
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        title="Konfirmasi Pembatalan"
+        description="Apakah Anda yakin ingin membatalkan? Data yang diisi akan hilang."
+        onConfirm={confirmCancel}
+        confirmText="Ya, Batalkan"
+        cancelText="Lanjutkan Mengisi"
+    />
 </div>
 );
 }
