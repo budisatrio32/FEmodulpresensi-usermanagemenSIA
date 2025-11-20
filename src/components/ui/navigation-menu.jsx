@@ -172,7 +172,10 @@ const NavbarNotification = React.forwardRef(({ className, ...props }, ref) => {
           )}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
+      <DropdownMenuContent 
+        align="end" 
+        className="w-80 max-h-96 overflow-y-auto hide-scrollbar"
+      >
         <DropdownMenuLabel>
           <div className="flex items-center justify-between">
             <span className="text-base font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
@@ -194,7 +197,7 @@ const NavbarNotification = React.forwardRef(({ className, ...props }, ref) => {
         ) : (
           notifications.map((notification, index) => (
             <React.Fragment key={notification.id}>
-              <DropdownMenuItem className="flex-col items-start p-3 cursor-pointer hover:bg-gray-50" asChild>
+              <DropdownMenuItem className="flex-col items-start p-3 cursor-default" asChild>
                 <div>
                   <div className="flex items-start justify-between w-full mb-1">
                     <div className="flex items-center gap-2 flex-1">

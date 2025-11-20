@@ -136,11 +136,16 @@ export default function NotifikasiPage() {
           {/* Filter Tabs */}
           <div style={{ 
             display: 'flex', 
-            gap: '12px', 
+            gap: '8px', 
             marginBottom: '24px',
             borderBottom: '2px solid rgba(1, 80, 35, 0.1)',
-            paddingBottom: '0'
-          }}>
+            paddingBottom: '0',
+            overflowX: 'auto',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none'
+          }}
+          className="hide-scrollbar"
+          >
             {[
               { value: 'all', label: 'Semua', icon: Bell },
               { value: 'announcement', label: 'Pengumuman', icon: Bell },
@@ -152,27 +157,29 @@ export default function NotifikasiPage() {
                   key={tab.value}
                   onClick={() => setFilter(tab.value)}
                   style={{
-                    padding: '12px 24px',
+                    padding: '12px 16px',
                     background: 'none',
                     border: 'none',
                     borderBottom: filter === tab.value ? '3px solid #015023' : '3px solid transparent',
                     color: filter === tab.value ? '#015023' : 'rgba(1, 80, 35, 0.5)',
-                    fontSize: '16px',
+                    fontSize: '14px',
                     fontWeight: filter === tab.value ? '600' : '500',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                     fontFamily: 'Urbanist, sans-serif',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px'
+                    gap: '6px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0
                   }}
                 >
-                  <Icon size={18} />
-                  {tab.label}
+                  <Icon size={16} />
+                  <span style={{ fontSize: '14px' }}>{tab.label}</span>
                   {tab.value === 'all' && allNotifications.length > 0 && (
                     <span style={{ 
-                      marginLeft: '4px', 
-                      fontSize: '14px',
+                      marginLeft: '2px', 
+                      fontSize: '12px',
                       opacity: 0.7
                     }}>
                       ({allNotifications.length})
@@ -191,7 +198,7 @@ export default function NotifikasiPage() {
                 borderRadius: '16px',
                 padding: '48px',
                 textAlign: 'center',
-                border: '1px solid rgba(1, 80, 35, 0.1)'
+                border: '2px solid rgba(1, 80, 35, 0.2)'
               }}>
                 <Bell size={48} style={{ color: '#015023', opacity: 0.3, margin: '0 auto 16px' }} />
                 <p style={{ fontSize: '18px', color: '#015023', opacity: 0.7 }}>
@@ -208,13 +215,11 @@ export default function NotifikasiPage() {
                       backgroundColor: 'white',
                       borderRadius: '16px',
                       padding: '24px',
-                      border: notif.isRead ? '1px solid rgba(1, 80, 35, 0.1)' : '2px solid #015023',
-                      boxShadow: notif.isRead ? 'none' : '0 2px 8px rgba(1, 80, 35, 0.1)',
-                      position: 'relative',
-                      transition: 'all 0.2s'
+                      border: '2px solid rgba(1, 80, 35, 0.2)',
+                      position: 'relative'
                     }}
                   >
-                    {/* Type Badge */}
+                    {/* Type Badge & Unread Indicator */}
                     <div style={{
                       position: 'absolute',
                       top: '24px',
@@ -264,7 +269,8 @@ export default function NotifikasiPage() {
                         marginBottom: '12px',
                         fontSize: '14px',
                         color: '#015023',
-                        opacity: 0.7
+                        opacity: 0.7,
+                        flexWrap: 'wrap'
                       }}>
                         {notif.kelas && (
                           <>
