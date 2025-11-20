@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Send, User } from 'lucide-react';
 
 export default function ChatModal({ isOpen, onClose, userName, userNim = '', userId = '' }) {

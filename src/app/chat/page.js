@@ -151,7 +151,8 @@ export default function ChatPage() {
 					</div>
 
 					{/* Messages Area */}
-					<div className="flex-1 overflow-y-auto p-6 space-y-6">
+					<ScrollArea className="flex-1">
+						<div className="p-6 space-y-6">
 						{Object.entries(groupedMessages).map(([dateKey, dateMessages]) => (
 							<div key={dateKey}>
 								{/* Date Separator */}
@@ -203,9 +204,10 @@ export default function ChatPage() {
 									</div>
 								))}
 							</div>
-						))}
-						<div ref={messagesEndRef} />
-					</div>
+							))}
+							<div ref={messagesEndRef} />
+						</div>
+					</ScrollArea>
 
 					{/* Message Input */}
 					<div className="p-4 border-t border-gray-200">
