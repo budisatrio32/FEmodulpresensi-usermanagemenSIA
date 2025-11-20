@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
+  AlertConfirmationDialog,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -314,24 +315,15 @@ const NavbarProfile = React.forwardRef(({ className, userName, userImage, Name, 
       </DropdownMenuContent>
     </DropdownMenu>
 
-    <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Konfirmasi Logout</AlertDialogTitle>
-          <AlertDialogDescription>
-            Apakah Anda yakin ingin keluar dari sistem?
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel asChild>
-            <OutlineButton>Batal</OutlineButton>
-          </AlertDialogCancel>
-          <AlertDialogAction asChild>
-            <PrimaryButton onClick={confirmLogout}>Logout</PrimaryButton>
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    {/* Konfirmasi dialog */}
+    <AlertConfirmationDialog 
+      open={showLogoutDialog}
+      onOpenChange={setShowLogoutDialog}
+      title='Konfirmasi Logout'
+      description='Apakah Anda yakin ingin keluar dari sistem?'
+      confirmText='Logout'
+      onConfirm={confirmLogout}
+    />
     </>
   )
 })

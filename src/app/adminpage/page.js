@@ -128,7 +128,7 @@ const fetchStatistics = async () => {
   } catch (err) {
     // Tangani error
     console.error('Error fetching statistics:', err);
-    setError(err.response?.data?.message || 'Terjadi kesalahan saat mengambil data: ' + err.message);
+    setError(err.message || 'Terjadi kesalahan saat mengambil data: ' + err.message);
 
   } finally {
     // Hentikan loading

@@ -4,7 +4,7 @@ import * as React from "react"
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
 
 import { cn } from "@/lib/utils"
-import { PrimaryButton, OutlineButton } from "@/components/ui/button"
+import { PrimaryButton, OutlineButton, WarningButton } from "@/components/ui/button"
 
 function AlertDialog({
   ...props
@@ -131,6 +131,144 @@ function AlertDialogCancel({
   );
 }
 
+function AlertConfirmationDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmText,
+  cancelText,
+  onConfirm,
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {title || "Konfirmasikan"}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {description || "Apakah Anda yakin ingin melanjutkan?"}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel asChild>
+            <OutlineButton>{cancelText || "Batal"}</OutlineButton>
+          </AlertDialogCancel>
+          <AlertDialogAction asChild>
+            <WarningButton onClick={onConfirm}>{confirmText || "Lanjutkan"}</WarningButton>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function AlertErrorDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  closeText,
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle><span className='text-red-500'>{title || "Error"}</span></AlertDialogTitle>
+          <AlertDialogDescription>
+            {description || "Terjadi kesalahan. Silakan coba lagi."}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel asChild>
+            <OutlineButton>{closeText || "Tutup"}</OutlineButton>
+          </AlertDialogCancel>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function AlertSuccessDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  closeText,
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle><span className='text-green-500'>{title || "Success"}</span></AlertDialogTitle>
+          <AlertDialogDescription>
+            {description || "Operasi berhasil diselesaikan."}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel asChild>
+            <OutlineButton>{closeText || "Tutup"}</OutlineButton>
+          </AlertDialogCancel>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function AlertInfoDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  closeText,
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle><span className='text-yellow-500'>{title || "Info"}</span></AlertDialogTitle>
+          <AlertDialogDescription>
+            {description || "Informasi penting untuk diketahui."}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel asChild>
+            <OutlineButton>{closeText || "Tutup"}</OutlineButton>
+          </AlertDialogCancel>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+function AlertWarningDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  closeText,
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle><span className='text-yellow-500'>{title || "Info"}</span></AlertDialogTitle>
+          <AlertDialogDescription>
+            <span style={{ color: '#BE0414', fontWeight: '600' }}>
+              {description || "Informasi penting untuk diketahui."}
+            </span>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel asChild>
+            <OutlineButton>{closeText || "Tutup"}</OutlineButton>
+          </AlertDialogCancel>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 export {
   AlertDialog,
   AlertDialogPortal,
@@ -143,4 +281,9 @@ export {
   AlertDialogDescription,
   AlertDialogAction,
   AlertDialogCancel,
+  AlertConfirmationDialog,
+  AlertErrorDialog,
+  AlertSuccessDialog,
+  AlertInfoDialog,
+  AlertWarningDialog,
 }

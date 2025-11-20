@@ -6,14 +6,10 @@ import { Calendar, Search, X, ArrowLeft } from 'lucide-react';
 import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertConfirmationDialog,
+  AlertErrorDialog,
+  AlertSuccessDialog,
+  AlertWarningDialog,
 } from '@/components/ui/alert-dialog';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import { getAcademicPeriods, deleteAcademicPeriod } from '@/lib/adminApi';
@@ -296,105 +292,62 @@ export default function PeriodeAkademikDashboard() {
         )}
       </div>
 
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {selectedPeriod?.is_active ? 'Tidak Dapat Menghapus' : 'Konfirmasi Hapus'}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {selectedPeriod?.is_active ? (
-                <>Tidak dapat menghapus periode yang sedang aktif!</>
-              ) : (
-                <>
-                  Apakah Anda yakin ingin menghapus periode <strong>{selectedPeriod?.name}</strong>?
-                  <br />
-                  <span style={{ color: '#BE0414', fontWeight: '600', marginTop: '8px', display: 'block' }}>
-                    Tindakan ini tidak dapat dibatalkan.
-                  </span>
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            {selectedPeriod?.is_active ? (
-              <AlertDialogCancel asChild>
-                <PrimaryButton>Tutup</PrimaryButton>
-              </AlertDialogCancel>
-            ) : (
-              <>
-                <AlertDialogCancel asChild>
-                  <OutlineButton>Batal</OutlineButton>
-                </AlertDialogCancel>
-                <AlertDialogAction asChild>
-                  <WarningButton onClick={confirmDelete}>Hapus</WarningButton>
-                </AlertDialogAction>
-              </>
-            )}
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
-      <AlertDialog open={showActivateDialog} onOpenChange={setShowActivateDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Konfirmasi Ubah Status</AlertDialogTitle>
-            <AlertDialogDescription>
-              {selectedPeriod && (
-                <>
-                  Apakah Anda yakin ingin {selectedPeriod.is_active ? 'menonaktifkan' : 'mengaktifkan'} periode <strong>{selectedPeriod.name}</strong>?
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel asChild>
-              <OutlineButton>Batal</OutlineButton>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <WarningButton onClick={confirmActivate}>
-                {selectedPeriod?.is_active ? 'Non-Aktifkan' : 'Aktifkan'}
-              </WarningButton>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Alert Dialogs konfirm */}
+      {selectedPeriod?.is_active ? (
+        <AlertWarningDialog 
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          title={'Tidak Dapat Menghapus'}
+          description="Tidak dapat menghapus periode yang sedang aktif!"
+        />
+      ) : (
+        <AlertConfirmationDialog 
+          open={showDeleteDialog} 
+          onOpenChange={setShowDeleteDialog}
+          title={'Konfirmasi Hapus'}
+          description={
+            <>
+              Apakah Anda yakin ingin menghapus periode <strong>{selectedPeriod?.name}</strong>?
+              <br />
+              <span style={{ color: '#BE0414', fontWeight: '600', marginTop: '8px', display: 'block' }}>
+                Tindakan ini tidak dapat dibatalkan.
+              </span>
+            </>
+          }
+          confirmText="Hapus"
+          onConfirm={confirmDelete}
+        />
+      )}
 
-      <AlertDialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle><span className='text-red-500'>Error</span></AlertDialogTitle>
-            <AlertDialogDescription>
-              {(errorDelete || errorActivate) && (
-                errorDelete ? <>{errorDelete}</> : <>{errorActivate}</>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel asChild>
-              <OutlineButton>Tutup</OutlineButton>
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Konfirmasi Ubah Status */}
+      <AlertConfirmationDialog 
+        open={showActivateDialog}
+        onOpenChange={setShowActivateDialog}
+        title="Konformasi Ubah Status"
+        description={
+          selectedPeriod && (
+            <>
+              Apakah Anda yakin ingin {selectedPeriod.is_active ? 'menonaktifkan' : 'mengaktifkan'} periode <strong>{selectedPeriod.name}</strong>?
+            </>
+          )
+        }
+        confirmText={selectedPeriod?.is_active ? 'Non-Aktifkan' : 'Aktifkan'}
+        onConfirm={confirmActivate}
+      />
 
-      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle><span className='text-green-500'>Success</span></AlertDialogTitle>
-            <AlertDialogDescription>
-              {(successActivate || successDelete) && (
-                successActivate ? <>{successActivate}</> : <>{successDelete}</>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel asChild>
-              <OutlineButton>Tutup</OutlineButton>
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Error Dialog */}
+      <AlertErrorDialog 
+        open={showErrorDialog}
+        onOpenChange={setShowErrorDialog}
+        description={errorDelete || errorActivate}
+      />
+
+      {/* Success Dialog */}
+      <AlertSuccessDialog 
+        open={showSuccessDialog}
+        onOpenChange={setShowSuccessDialog}
+        description={successActivate || successDelete}
+      />
     </div>
   );
 }
