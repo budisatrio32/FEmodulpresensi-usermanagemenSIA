@@ -14,12 +14,14 @@ import { Button } from "@/components/ui/button";
 import AdminNavbar from "@/components/ui/admin-navbar";
 import { ArrowLeft, Save, X, Info } from "lucide-react";
 import { ErrorMessageBox, SuccessMessageBoxWithButton } from "@/components/ui/message-box";
+import { AlertConfirmationDialog } from "@/components/ui/alert-dialog";
 
 export default function AddMatkulForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   
   const [formData, setFormData] = useState({
     name_subject: "",
@@ -116,10 +118,11 @@ export default function AddMatkulForm() {
   };
 
   const handleCancel = () => {
-    if (window.confirm("Apakah Anda yakin ingin membatalkan? Data yang diisi akan hilang.")) {
-      router.push("/adminpage/tambahmatkul");
-    }
+    setShowCancelDialog(true);
   };
+  const confirmCancel = () => {
+    router.push("/adminpage/tambahmatkul");
+  }
   const handleFinish = () => {
     router.push("/adminpage/tambahmatkul");
   };
@@ -133,7 +136,7 @@ export default function AddMatkulForm() {
         <div className="mb-10">
           <Button
             variant="ghost"
-            onClick={() => router.push("/adminpage/tambahmatkul")}
+            onClick={handleCancel}
             className="mb-6 -ml-4"
             style={{ fontFamily: 'Urbanist, sans-serif' }}
           >
@@ -422,6 +425,16 @@ export default function AddMatkulForm() {
           </div>
         </div>
       </div>
+      {/* Cancel Confirmation Dialog */}
+      <AlertConfirmationDialog
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        onConfirm={confirmCancel}
+        title="Konfirmasi Pembatalan"
+        description="Apakah Anda yakin ingin membatalkan? Perubahan tidak akan disimpan."
+        confirmText="Ya, Batalkan"
+        cancelText="Lanjutkan Mengisi"
+      />
     </div>
   );
 }

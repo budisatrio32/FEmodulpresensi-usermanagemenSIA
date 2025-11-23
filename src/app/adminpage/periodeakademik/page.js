@@ -1,58 +1,50 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, Search, X, ArrowLeft } from 'lucide-react';
 import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
+import {
+  AlertConfirmationDialog,
+  AlertErrorDialog,
+  AlertSuccessDialog,
+  AlertWarningDialog,
+} from '@/components/ui/alert-dialog';
+import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
+import { getAcademicPeriods, deleteAcademicPeriod } from '@/lib/adminApi';
+import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 
 export default function PeriodeAkademikDashboard() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
+  const [errorDelete, setErrorDelete] = useState(null);
+  const [errorActivate, setErrorActivate] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [successActivate, setSuccessActivate] = useState(null);
+  const [successDelete, setSuccessDelete] = useState(null);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [periods, setPeriods] = useState([]);
-
-  // Dummy data periode akademik
-  const dummyPeriods = [
-    {
-      id: 1,
-      name: 'Semester Ganjil 2024/2025',
-      start_date: '2024-09-01',
-      end_date: '2025-01-31',
-      active: true
-    },
-    {
-      id: 2,
-      name: 'Semester Genap 2023/2024',
-      start_date: '2024-02-01',
-      end_date: '2024-08-31',
-      active: false
-    },
-    {
-      id: 3,
-      name: 'Semester Ganjil 2023/2024',
-      start_date: '2023-09-01',
-      end_date: '2024-01-31',
-      active: false
-    },
-    {
-      id: 4,
-      name: 'Semester Genap 2022/2023',
-      start_date: '2023-02-01',
-      end_date: '2023-08-31',
-      active: false
-    }
-  ];
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showActivateDialog, setShowActivateDialog] = useState(false);
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState(null);
 
   // Fetch periods from API
   const indexPeriods = async () => {
     setLoading(true);
     try {
       setError(null);
-      // TODO: Replace with actual API call
-      // const response = await getAcademicPeriods();
-      setPeriods(dummyPeriods);
+      const response = await getAcademicPeriods();
+      if (response.status === 'success') {
+        setSuccess(true);
+        setPeriods(response.data);
+      } else {
+        setError('Gagal mengambil data periode akademik: ' + response.message);
+      }
     } catch (error) {
       setError('Terjadi kesalahan saat mengambil data: ' + error.message);
     } finally {
@@ -85,23 +77,23 @@ export default function PeriodeAkademikDashboard() {
     { key: 'name', label: 'Nama Periode' },
     { key: 'start_date', label: 'Tanggal Mulai' },
     { key: 'end_date', label: 'Tanggal Selesai' },
-    { key: 'active', label: 'Status' },
+    { key: 'is_active', label: 'Status' },
   ];
 
   // Custom render untuk status dan tanggal
   const customRender = {
     start_date: (value) => formatDate(value),
     end_date: (value) => formatDate(value),
-    active: (value) => (
+    is_active: (value) => (
       <span 
-        className={`px-3 py-1 rounded-lg font-semibold text-sm`}
-        style={{
-          backgroundColor: value ? '#dcfce7' : '#fee2e2',
-          color: value ? '#16874B' : '#991b1b',
+      className="px-2 py-1 rounded text-xs font-semibold"
+      style={{
+          backgroundColor: value ? '#16874B' : '#BE0414',
+          color: '#FFFFFF',
           borderRadius: '12px'
-        }}
+      }}
       >
-        {value ? 'Aktif' : 'Nonaktif'}
+      {value ? 'Active' : 'Inactive'}
       </span>
     ),
   };
@@ -123,28 +115,85 @@ export default function PeriodeAkademikDashboard() {
 
   // Handle edit action
   const handleEdit = (period, index) => {
-    console.log('Edit period:', period, 'at index:', index);
-    router.push(`/adminpage/periodeakademik/editform?id=${period.id}`);
+    router.push(`/adminpage/periodeakademik/editform?id=${period.id_academic_period}`);
   };
 
   // Handle delete action
   const handleDelete = async (period, index) => {
-    if (period.active) {
-      alert('Tidak dapat menghapus periode yang sedang aktif!');
+    setSelectedPeriod(period);
+    setSelectedIndex(index);
+    setShowDeleteDialog(true);
+  };
+
+  const handleActivate = (period, index) => {
+    setSelectedPeriod(period);
+    setSelectedIndex(index);
+    setShowActivateDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedPeriod || selectedPeriod.is_active) {
+      setShowDeleteDialog(false);
       return;
     }
 
-    if (window.confirm(`Apakah Anda yakin ingin menghapus periode "${period.name}"?`)) {
-      try {
-        // TODO: Replace with actual API call
-        // await deleteAcademicPeriod(period.id);
-        
-        // Remove from local state
-        setPeriods(prevPeriods => prevPeriods.filter((_, i) => i !== index));
-        alert('Periode akademik berhasil dihapus!');
-      } catch (error) {
-        alert('Gagal menghapus periode akademik: ' + error.message);
+    setShowDeleteDialog(false);
+    
+    try {
+      const response = await deleteAcademicPeriod(selectedPeriod.id_academic_period);
+      if (response.status === 'success') {
+        // Update local state
+        setPeriods(prevPeriods => prevPeriods.filter((_, i) => i !== selectedIndex));
+        setSuccessDelete('Periode akademik ' + selectedPeriod.name + ' berhasil dihapus.');
+        setShowSuccessDialog(true);
+      } else {
+        setErrorDelete('Gagal menghapus periode akademik: ' + response.message);
+        setShowErrorDialog(true);
       }
+    } catch (error) {
+      setErrorDelete('Gagal menghapus periode akademik: ' + error.message);
+      setShowErrorDialog(true);
+    } finally {
+      setSelectedPeriod(null);
+      setSelectedIndex(null);
+    }
+  };
+
+  // show activate dialog hilang setelah 2 detik tambahkan juga menghilangkan success message
+  useEffect(() => {
+    let timer;
+    if (showSuccessDialog) {
+      timer = setTimeout(() => {
+        setShowSuccessDialog(false);
+        setSuccessActivate(null);
+        setSuccessDelete(null);
+      }, 3000);
+    }
+    return () => clearTimeout(timer);
+  }, [showSuccessDialog]);
+  
+  const confirmActivate = async () => {
+    if (!selectedPeriod) {
+      setShowActivateDialog(false);
+      return;
+    }
+    
+    setShowActivateDialog(false);
+    
+    try {
+      // TODO: Replace with actual API call
+      // await activateAcademicPeriod(selectedPeriod.id);
+      
+      // Update local state
+      setPeriods(prevPeriods => prevPeriods.map((period, i) => i === selectedIndex ? { ...period, is_active: true } : period));
+      setSuccessActivate('Periode akademik ' + selectedPeriod.name + ' berhasil diaktifkan.');
+      setShowSuccessDialog(true);
+    } catch (error) {
+      setErrorActivate('Gagal mengaktifkan periode akademik: ' + error.message);
+      setShowErrorDialog(true);
+    } finally {
+      setSelectedPeriod(null);
+      setSelectedIndex(null);
     }
   };
 
@@ -178,7 +227,6 @@ export default function PeriodeAkademikDashboard() {
             </h2>
             <button 
               onClick={handleAddPeriod}
-              disabled={loading}
               className="text-white px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition shadow-md hover:opacity-90 disabled:opacity-50" 
               style={{ backgroundColor: '#015023', borderRadius: '12px' }}
             >
@@ -186,6 +234,11 @@ export default function PeriodeAkademikDashboard() {
             </button>
           </div>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <ErrorMessageBoxWithButton message={error} action={indexPeriods} />
+        )}
 
         {/* Stats Card */}
         <div className="rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-xl" style={{ background: 'linear-gradient(to bottom right, #015023, #013d1c)' }}>
@@ -226,15 +279,71 @@ export default function PeriodeAkademikDashboard() {
         </div>
 
         {/* Data Table */}
+        {success && (
         <DataTable
           columns={columns}
           data={filteredPeriods}
-          actions={['edit', 'delete']}
+          actions={['edit', 'delete', 'activate']}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onActivate={handleActivate}
           customRender={customRender}
         />
+        )}
       </div>
+
+      {/* Alert Dialogs konfirm */}
+      {selectedPeriod?.is_active ? (
+        <AlertWarningDialog 
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          title={'Tidak Dapat Menghapus'}
+          description="Tidak dapat menghapus periode yang sedang aktif!"
+        />
+      ) : (
+        <AlertConfirmationDialog 
+          open={showDeleteDialog} 
+          onOpenChange={setShowDeleteDialog}
+          title={'Konfirmasi Hapus'}
+          description={
+            <>
+              Apakah Anda yakin ingin menghapus periode <strong>{selectedPeriod?.name}</strong>?
+              <br />
+              <span style={{ color: '#BE0414', fontWeight: '600', marginTop: '8px', display: 'block' }}>
+                Tindakan ini tidak dapat dibatalkan.
+              </span>
+            </>
+          }
+          confirmText="Hapus"
+          onConfirm={confirmDelete}
+        />
+      )}
+
+      {/* Konfirmasi Ubah Status */}
+      <AlertConfirmationDialog 
+        open={showActivateDialog}
+        onOpenChange={setShowActivateDialog}
+        title="Konformasi Ubah Status"
+        description={
+          `Apakah Anda yakin ingin ${selectedPeriod?.is_active ? 'menonaktifkan' : 'mengaktifkan'} periode ${selectedPeriod?.name}?`
+        }
+        confirmText={selectedPeriod?.is_active ? 'Non-Aktifkan' : 'Aktifkan'}
+        onConfirm={confirmActivate}
+      />
+
+      {/* Error Dialog */}
+      <AlertErrorDialog 
+        open={showErrorDialog}
+        onOpenChange={setShowErrorDialog}
+        description={errorDelete || errorActivate}
+      />
+
+      {/* Success Dialog */}
+      <AlertSuccessDialog 
+        open={showSuccessDialog}
+        onOpenChange={setShowSuccessDialog}
+        description={successActivate || successDelete}
+      />
     </div>
   );
 }

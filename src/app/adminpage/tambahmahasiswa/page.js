@@ -7,6 +7,12 @@ import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
 import { getMahasiswa, toggleUserStatus } from '@/lib/adminApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
+import {
+  AlertConfirmationDialog,
+  AlertErrorDialog,
+  AlertSuccessDialog,
+} from '@/components/ui/alert-dialog';
+import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 
 export default function StudentDashboard() {
 const router = useRouter();
@@ -15,7 +21,12 @@ const [error, setError] = useState(null);
 const [loading, setLoading] = useState(true);
 const [success, setSuccess] = useState(null);
 const [students, setStudents] = useState([]);
-const [isTogglingStatus, setIsTogglingStatus] = useState(null);
+const [errorActivate, setErrorActivate] = useState(null);
+const [successActivate, setSuccessActivate] = useState(null);
+const [showSuccessActivateDialog, setShowSuccessActivateDialog] = useState(false);
+const [showErrorDialog, setShowErrorDialog] = useState(false);
+const [showStatusDialog, setShowStatusDialog] = useState(false);
+const [selectedStudent, setSelectedStudent] = useState(null);
 
 // Fetch students from API
 const indexStudents = async () => {
@@ -96,14 +107,15 @@ const handleClearSearch = () => {
 
 // Handle toggle status active/inactive
 const handleActivate = async (student, index) => {
-  const userId = student.id_user_si || student.id;
-  const statusText = student.is_active ? 'Non-Aktifkan' : 'Aktifkan';
-  
-  if (!window.confirm(`Apakah Anda yakin ingin ${statusText.toLowerCase()} akun ${student.name}?`)) {
-    return;
-  }
+  setSelectedStudent(student);
+  setShowStatusDialog(true);
+};
 
-  setIsTogglingStatus(userId);
+const confirmToggleStatus = async () => {
+  if (!selectedStudent) return;
+  
+  const userId = selectedStudent.id_user_si;
+  setShowStatusDialog(false);
   
   try {
     const response = await toggleUserStatus(userId);
@@ -111,24 +123,36 @@ const handleActivate = async (student, index) => {
     if (response.status === 'success') {
       // Update local state
       setStudents(students.map(s => 
-        (s.id_user_si || s.id) === userId
+        (s.id_user_si) === userId
           ? { ...s, is_active: response.data.is_active }
           : s
       ));
-      
-      alert(`Status berhasil diubah menjadi ${response.data.is_active ? 'Aktif' : 'Non-Aktif'}`);
+      setSuccessActivate(`Berhasil mengubah status mahasiswa: ${selectedStudent.name} menjadi ${response.data.is_active ? 'Aktif' : 'Non-Aktif'}.`);
+      setShowSuccessActivateDialog(true);
     } else {
-      alert('Gagal mengubah status user');
+      setErrorActivate('Gagal mengubah status mahasiswa: ' + response.message);
+      setShowErrorDialog(true);
     }
   } catch (error) {
-    console.error("Error toggling status:", error);
-    alert("Gagal mengubah status user: " + (error.message || 'Unknown error'));
+    setErrorActivate('Gagal mengubah status mahasiswa: ' + error.message);
+    setShowErrorDialog(true);
   } finally {
     setIsTogglingStatus(null);
+    setSelectedStudent(null);
   }
 };
 
+useEffect(() => {
+  if (!successActivate) return;
+  const timer = setTimeout(() => {
+      setSuccessActivate(null);
+      setShowSuccessActivateDialog(false);
+  }, 3000);
+  return () => clearTimeout(timer);
+}, [successActivate]);
+
 return (
+  <>
 <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100" style={{ fontFamily: 'Urbanist, sans-serif' }}>
     {/* Admin Navbar */}
     <AdminNavbar title="Dashboard Admin - Mahasiswa" />
@@ -218,6 +242,31 @@ return (
       />
     }
     </div>
+    <AlertConfirmationDialog 
+      open={showStatusDialog}
+      onOpenChange={setShowStatusDialog}
+      title="Konfirmasi Ubah Status"
+      description={
+        <>
+          Apakah Anda yakin ingin <strong>{selectedStudent?.is_active ? 'Non-Aktifkan' : 'Aktifkan'}</strong> akun <strong>{selectedStudent?.name}</strong>?
+        </>
+      }
+      onConfirm={confirmToggleStatus}
+      confirmText={selectedStudent?.is_active ? 'Non-Aktifkan' : 'Aktifkan'}
+    />
+
+    <AlertErrorDialog 
+      open={showErrorDialog}
+      onOpenChange={setShowErrorDialog}
+      description={errorActivate}
+    />
+
+    <AlertSuccessDialog
+      open={showSuccessActivateDialog}
+      onOpenChange={setShowSuccessActivateDialog}
+      description={successActivate}
+    />
 </div>
+</>
 );
 }

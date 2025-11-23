@@ -222,10 +222,19 @@ return (
         {/* Sign In Button */}
         <SecondaryButton
           type="submit"
-          disabled={isLoading}
+          disabled={isSubmitting}
           className="text-lg w-full py-3 px-4 shadow-md font-urbanist"
         >
-          {isSubmitting ? 'Signing in...' : 'Sign In'}
+          {isSubmitting ? (
+            <>
+                <span className="animate-spin mr-2">⏳</span>
+                Signing in...
+            </>
+            ) : (
+            <>
+                Sign In
+            </>
+            )}
         </SecondaryButton>
 </form>
     {/* Error Message */}

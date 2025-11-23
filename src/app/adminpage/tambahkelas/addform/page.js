@@ -15,6 +15,7 @@ import { ArrowLeft, Save, X, Info } from "lucide-react";
 import { getSubjects, getAcademicPeriods, storeClass } from "@/lib/adminApi";
 import LoadingEffect from "@/components/ui/loading-effect";
 import { ErrorMessageBox, ErrorMessageBoxWithButton, SuccessMessageBoxWithButton } from "@/components/ui/message-box";
+import { AlertConfirmationDialog } from "@/components/ui/alert-dialog";
 
 export default function AddKelasForm() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function AddKelasForm() {
   const [isFetching, setIsFetching] = useState(true);
   const [success, setSuccess] = useState(null);
   const [subjects, setSubjects] = useState([]);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [academic_period, setAcademicPeriod] = useState([]);
 
   
@@ -206,9 +208,11 @@ export default function AddKelasForm() {
   };
 
   const handleCancel = () => {
-    if (window.confirm("Apakah Anda yakin ingin membatalkan? Data yang diisi akan hilang.")) {
-      router.push("/adminpage/tambahkelas");
-    }
+    setShowCancelDialog(true);
+  };
+
+  const confirmCancel = () => {
+    router.push("/adminpage/tambahkelas");
   };
 
   if (isFetching) {
@@ -240,7 +244,7 @@ export default function AddKelasForm() {
         <div className="mb-10">
           <Button
             variant="ghost"
-            onClick={() => router.push("/adminpage/tambahkelas")}
+            onClick={handleCancel}
             className="mb-6 -ml-4"
             style={{ fontFamily: 'Urbanist, sans-serif' }}
           >
@@ -781,6 +785,16 @@ export default function AddKelasForm() {
           </div>
         </div>
       </div>
+      {/* Cancel Confirmation Dialog */}
+      <AlertConfirmationDialog 
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        title="Batalkan Penambahan Kelas"
+        description="Apakah Anda yakin ingin membatalkan penambahan kelas? Semua data akan hilang."
+        onConfirm={confirmCancel}
+        confirmText="Ya, Batalkan"
+        cancelText="Lanjutkan Mengisi"
+      />
     </div>
   );
 }

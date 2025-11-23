@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import DetailNilaiMahasiswa from '@/components/ui/detail-nilai-mahasiswa';
 import DetailNilaiDosen from '@/components/ui/detail-nilai-dosen';
 import RoleSwitcher from '@/components/ui/role-switcher';
+import Footer from '@/components/ui/footer';
 
 export default function AkademikPage() {
 const [userRole, setUserRole] = useState(null);
@@ -46,9 +47,15 @@ const [isLoading, setIsLoading] = useState(true);
     return (
     <>
         {userRole === 'mahasiswa' ? (
-        <DetailNilaiMahasiswa />
+        <>
+            <DetailNilaiMahasiswa />
+            <Footer />
+        </>
         ) : userRole === 'dosen' ? (
-        <DetailNilaiDosen />
+        <>
+            <DetailNilaiDosen />
+            <Footer />
+        </>
         ) : (
         <div className="min-h-screen bg-brand-light-sage flex items-center justify-center">
             <div className="bg-white rounded-2xl shadow-lg p-8 text-center" style={{ borderRadius: '16px' }}>

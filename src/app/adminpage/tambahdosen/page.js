@@ -7,6 +7,7 @@ import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
 import { getDosen, toggleUserStatus } from '@/lib/adminApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
+import { AlertConfirmationDialog, AlertErrorDialog, AlertSuccessDialog } from '@/components/ui/alert-dialog';
 
 export default function DosenDashboard() {
 const router = useRouter();
@@ -16,6 +17,12 @@ const [loading, setLoading] = useState(true);
 const [success, setSuccess] = useState(null);
 const [dosens, setDosens] = useState([]);
 const [isTogglingStatus, setIsTogglingStatus] = useState(null);
+const [selectedDosen, setSelectedDosen] = useState(null);
+const [showActivateDialog, setShowActivateDialog] = useState(false);
+const [errorActivate, setErrorActivate] = useState(null);
+const [successActivate, setSuccessActivate] = useState(null);
+const [showErrorDialog, setShowErrorDialog] = useState(false);
+const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
 // Fetch dosens from API
   const indexDosens = async () => {
@@ -94,15 +101,13 @@ const handleClearSearch = () => {
 
 // Handle toggle status active/inactive
 const handleActivate = async (dosen, index) => {
-  const userId = dosen.id_user_si || dosen.id;
-  const statusText = dosen.is_active ? 'Non-Aktifkan' : 'Aktifkan';
-  
-  if (!window.confirm(`Apakah Anda yakin ingin ${statusText.toLowerCase()} akun ${dosen.name}?`)) {
-    return;
-  }
+  setSelectedDosen(dosen);
+  setShowActivateDialog(true);
+};
 
+const confirmActivate = async () => {
+  const userId = selectedDosen.id_user_si;
   setIsTogglingStatus(userId);
-  
   try {
     const response = await toggleUserStatus(userId);
     
@@ -114,17 +119,30 @@ const handleActivate = async (dosen, index) => {
           : d
       ));
       
-      alert(`Status berhasil diubah menjadi ${response.data.is_active ? 'Aktif' : 'Non-Aktif'}`);
+      setSuccessActivate(`Status berhasil diubah menjadi ${response.data.is_active ? 'Aktif' : 'Non-Aktif'}`);
+      setShowSuccessDialog(true);
     } else {
-      alert('Gagal mengubah status user');
+      setErrorActivate('Gagal mengubah status user');
+      setShowErrorDialog(true);
     }
   } catch (error) {
-    console.error("Error toggling status:", error);
-    alert("Gagal mengubah status user: " + (error.message || 'Unknown error'));
+    setErrorActivate("Gagal mengubah status user: " + (error.message || 'Unknown error'));
+    setShowErrorDialog(true);
   } finally {
     setIsTogglingStatus(null);
   }
 };
+
+useEffect(() => {
+  let timer;
+  if (showSuccessDialog) {
+    timer = setTimeout(() => {
+      setShowSuccessDialog(false);
+      setSuccessActivate(null);
+    }, 3000);
+  }
+  return () => clearTimeout(timer);
+}, [showSuccessDialog]);
 
 return (
 <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100" style={{ fontFamily: 'Urbanist, sans-serif' }}>
@@ -214,6 +232,33 @@ return (
       />
     }
     </div>
+    {/* Activate Confirmation Dialog */}
+    <AlertConfirmationDialog 
+      open={showActivateDialog}
+      onOpenChange={setShowActivateDialog}
+      title="Konformasi Ubah Status"
+      description={
+        <>
+          Apakah Anda yakin ingin <strong>{selectedDosen?.is_active ? 'menonaktifkan' : 'mengaktifkan'}</strong> akun dosen <strong>{selectedDosen?.name}</strong>?
+        </>
+      }
+      confirmText={selectedDosen?.is_active ? 'Non-Aktifkan' : 'Aktifkan'}
+      onConfirm={confirmActivate}
+    />
+
+    {/* Success Activate Dialog */}
+    <AlertSuccessDialog 
+      open={showSuccessDialog}
+      onOpenChange={setShowSuccessDialog}
+      description={successActivate}
+    />
+
+    {/* Error Activate Dialog */}
+    <AlertErrorDialog 
+      open={showErrorDialog}
+      onOpenChange={setShowErrorDialog}
+      description={errorActivate}
+    />
 </div>
 );
 }

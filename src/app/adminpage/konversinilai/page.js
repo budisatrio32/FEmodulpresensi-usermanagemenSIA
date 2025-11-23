@@ -1,54 +1,81 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
 import { Search, X, ArrowLeft, FileText } from 'lucide-react';
+import { deleteGradeConversion, getGradeConversions } from '@/lib/gradeConv';
+import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
+import { AlertConfirmationDialog, AlertErrorDialog, AlertSuccessDialog } from '@/components/ui/alert-dialog';
 
 export default function KonversiNilaiPage() {
   const router = useRouter();
   
   // Dummy data - 12 grade conversion rules
-  const [gradeRules, setGradeRules] = useState([
-    { id: 1, min_grade: 95, max_grade: 100, letter: 'A', ip_skor: 4.00 },
-    { id: 2, min_grade: 90, max_grade: 94, letter: 'A-', ip_skor: 3.75 },
-    { id: 3, min_grade: 85, max_grade: 89, letter: 'B+', ip_skor: 3.50 },
-    { id: 4, min_grade: 80, max_grade: 84, letter: 'B', ip_skor: 3.00 },
-    { id: 5, min_grade: 75, max_grade: 79, letter: 'B-', ip_skor: 2.75 },
-    { id: 6, min_grade: 70, max_grade: 74, letter: 'C+', ip_skor: 2.50 },
-    { id: 7, min_grade: 65, max_grade: 69, letter: 'C', ip_skor: 2.00 },
-    { id: 8, min_grade: 60, max_grade: 64, letter: 'C-', ip_skor: 1.75 },
-    { id: 9, min_grade: 55, max_grade: 59, letter: 'D+', ip_skor: 1.50 },
-    { id: 10, min_grade: 50, max_grade: 54, letter: 'D', ip_skor: 1.00 },
-    { id: 11, min_grade: 40, max_grade: 49, letter: 'E', ip_skor: 0.50 },
-    { id: 12, min_grade: 0, max_grade: 39, letter: 'F', ip_skor: 0.00 }
-  ]);
+  const [gradeRules, setGradeRules] = useState([]);
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [Loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [selectedRule, setSelectedRule] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteSuccess, setDeleteSuccess] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
+  const [showDeleteSuccessDialog, setShowDeleteSuccessDialog] = useState(false);
+  const [showDeleteErrorDialog, setShowDeleteErrorDialog] = useState(false);
+
+  // Fetch periods from API
+  const indexGradeConversions = async () => {
+    setLoading(true);
+    try {
+      setError(null);
+      const response = await getGradeConversions();
+      if (response.status === 'success') {
+        setSuccess(true);
+        setGradeRules(response.data);
+      } else {
+        setError('Gagal mengambil data konversi nilai: ' + response.message);
+      }
+    } catch (error) {
+      setError('Terjadi kesalahan saat mengambil data: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    indexGradeConversions();
+  }, []);
 
   const handleEdit = (rule) => {
-    router.push(`/adminpage/konversinilai/editform?id=${rule.id}`);
+    router.push(`/adminpage/konversinilai/editform?id=${rule.id_grades}`);
   };
 
   const handleDelete = async (rule) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus konversi nilai untuk ${rule.letter}?`)) {
-      setIsLoading(true);
-      try {
-        // TODO: Replace with actual API call
-        // await deleteGradeConversion(rule.id);
-        
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        setGradeRules(prev => prev.filter(r => r.id !== rule.id));
-      } catch (error) {
-        setError('Gagal menghapus konversi nilai: ' + error.message);
-      } finally {
-        setIsLoading(false);
+    setSelectedRule(rule);
+    setShowDeleteDialog(true);
+  };
+  
+  const confirmDelete = async () => {
+    setLoading(true);
+    try {
+      const response = await deleteGradeConversion(selectedRule.id_grades);
+      if (response.status === 'success') {
+        setDeleteSuccess('Periode akademik ' + selectedRule.letter + ' berhasil dihapus.');
+        setGradeRules(prev => prev.filter(r => r.id_grades !== selectedRule.id_grades));
+        setShowDeleteSuccessDialog(true);
+      } else {
+        setDeleteError('Gagal menghapus konversi nilai: ' + response.message);
+        setShowDeleteErrorDialog(true);
       }
+    } catch (error) {
+      setDeleteError('Gagal menghapus konversi nilai: ' + error.message);
+      setShowDeleteErrorDialog(true);
+    } finally {
+      setLoading(false);
+      setSelectedRule(null);
     }
   };
 
@@ -83,11 +110,11 @@ export default function KonversiNilaiPage() {
       <span 
         className="px-3 py-1 rounded-full font-semibold"
         style={{
-          backgroundColor: value === 'A' || value === 'A-' ? '#E8F5E9' :
+          backgroundColor: value.startsWith('A') ? '#E8F5E9' :
                          value.startsWith('B') ? '#E3F2FD' :
                          value.startsWith('C') ? '#FFF3E0' :
                          value.startsWith('D') ? '#FFE0B2' : '#FFEBEE',
-          color: value === 'A' || value === 'A-' ? '#2E7D32' :
+          color: value.startsWith('A') ? '#2E7D32' :
                  value.startsWith('B') ? '#1565C0' :
                  value.startsWith('C') ? '#E65100' :
                  value.startsWith('D') ? '#E64A19' : '#C62828',
@@ -136,7 +163,6 @@ export default function KonversiNilaiPage() {
             </h2>
             <button 
               onClick={() => router.push('/adminpage/konversinilai/addform')}
-              disabled={isLoading}
               className="text-white px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition shadow-md hover:opacity-90 disabled:opacity-50" 
               style={{ backgroundColor: '#015023', borderRadius: '12px' }}
             >
@@ -145,14 +171,18 @@ export default function KonversiNilaiPage() {
           </div>
         </div>
 
+        {error && (
+          <ErrorMessageBoxWithButton message={error} action={indexGradeConversions} />
+        )}
+
         {/* Stats Card */}
         <div className="rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-xl" style={{ background: 'linear-gradient(to bottom right, #015023, #013d1c)' }}>
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-white text-base sm:text-lg font-semibold mb-2">Total Konversi Nilai</h3>
-              <p className="text-white text-3xl sm:text-4xl font-bold mb-1">{filteredRules.length}</p>
+              <p className="text-white text-3xl sm:text-4xl font-bold mb-1">{Loading ? '...' : filteredRules.length}</p>
               <p className="text-sm" style={{ color: '#DABC4E' }}>
-                {searchQuery ? 'Hasil pencarian' : 'Aturan konversi terdaftar'}
+                {Loading ? 'Loading...' : searchQuery ? 'Hasil pencarian' : 'Aturan konversi terdaftar'}
               </p>
             </div>
             <div className="p-3 sm:p-4 rounded-2xl shadow-lg" style={{ backgroundColor: '#DABC4E' }}>
@@ -184,15 +214,38 @@ export default function KonversiNilaiPage() {
         </div>
 
         {/* Data Table */}
-        <DataTable
-          columns={columns}
-          data={filteredRules}
-          actions={['edit', 'delete']}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          customRender={customRender}
-        />
+        {success && (
+          <DataTable
+            columns={columns}
+            data={filteredRules}
+            actions={['edit', 'delete']}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            customRender={customRender}
+          />
+        )}
       </div>
+      <AlertConfirmationDialog 
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Konfirmasi Hapus Konversi Nilai"
+        description={`Apakah Anda yakin ingin menghapus konversi nilai untuk ${selectedRule?.letter}? Tindakan ini tidak dapat dibatalkan.`}
+        onConfirm={confirmDelete}
+        confirmText="Hapus"
+        cancelText="Batal"
+      />
+
+      <AlertSuccessDialog 
+        open={showDeleteSuccessDialog}
+        onOpenChange={setShowDeleteSuccessDialog}
+        description={deleteSuccess}
+      />
+
+      <AlertErrorDialog 
+        open={showDeleteErrorDialog}
+        onOpenChange={setShowDeleteErrorDialog}
+        description={deleteError}
+      />
     </div>
   );
 }

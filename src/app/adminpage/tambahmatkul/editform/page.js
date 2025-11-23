@@ -15,6 +15,7 @@ import { ArrowLeft, Save, X, Info } from "lucide-react";
 import { getSubjectById, updateSubject } from "@/lib/adminApi";
 import LoadingEffect from "@/components/ui/loading-effect";
 import { ErrorMessageBox, SuccessMessageBoxWithButton, ErrorMessageBoxWithButton } from "@/components/ui/message-box";
+import { AlertConfirmationDialog } from "@/components/ui/alert-dialog";
 
 export default function EditMatkulForm() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function EditMatkulForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [errors, setErrors] = useState({});
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [success, setSuccess] = useState(null);
   const [countdown, setCountdown] = useState(5);
   
@@ -151,9 +153,10 @@ export default function EditMatkulForm() {
   };
 
   const handleCancel = () => {
-    if (window.confirm("Apakah Anda yakin ingin membatalkan? Perubahan tidak akan disimpan.")) {
-      router.push("/adminpage/tambahmatkul");
-    }
+    setShowCancelDialog(true);
+  };
+  const confirmCancel = () => {
+    router.push("/adminpage/tambahmatkul");
   };
 
   const handleFinish = () => {
@@ -189,7 +192,7 @@ export default function EditMatkulForm() {
         <div className="mb-10">
           <Button
             variant="ghost"
-            onClick={() => router.push("/adminpage/tambahmatkul")}
+            onClick={handleCancel}
             className="mb-6 -ml-4"
             style={{ fontFamily: 'Urbanist, sans-serif' }}
           >
@@ -478,6 +481,16 @@ export default function EditMatkulForm() {
           </div>
         </div>
       </div>
+      {/* Cancel Confirmation Dialog */}
+      <AlertConfirmationDialog
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        onConfirm={confirmCancel}
+        title="Konfirmasi Pembatalan"
+        description="Apakah Anda yakin ingin membatalkan? Perubahan tidak akan disimpan."
+        confirmText="Ya, Batalkan"
+        cancelText="Lanjutkan Mengisi"
+      />
     </div>
   );
 }

@@ -19,6 +19,7 @@ import LoadingEffect from "@/components/ui/loading-effect";
 import { getClassById, getAcademicPeriods, getSubjects, getMahasiswa, getDosen, updateClass } from "@/lib/adminApi";
 import { ErrorMessageBoxWithButton, SuccessMessageBox, ErrorMessageBox } from "@/components/ui/message-box";
 import { assignStudentsToClass, assignLecturersToClass, removeLecturerFromClass, removeStudentFromClass, generateSchedule } from "@/lib/adminApi";
+import { AlertConfirmationDialog } from "@/components/ui/alert-dialog";
 
 export default function DetailKelas() {
     const router = useRouter();
@@ -37,6 +38,8 @@ export default function DetailKelas() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [generateSuccess, setGenerateSuccess] = useState('');
     const [generateErrors, setGenerateErrors] = useState({});
+
+    const [showConfirmBack, setShowConfirmBack] = useState(false);
 
     // Data kelas
     const [formData, setFormData] = useState({
@@ -543,6 +546,9 @@ export default function DetailKelas() {
     };
     
     const handleBack = () => {
+        setShowConfirmBack(true);
+    };
+    const confirmback = () => {
         router.push("/adminpage/tambahkelas");
     };
 
@@ -909,7 +915,7 @@ export default function DetailKelas() {
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={() => router.push("/adminpage/tambahkelas")}
+                        onClick={handleBack}
                         disabled={isSubmitting || isLoading}
                     >
                         Batal
@@ -965,7 +971,8 @@ export default function DetailKelas() {
                     <ErrorMessageBox message={removeErrors.dosen} />
                 )}
 
-                <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '280px' }}>
+                <ScrollArea style={{ maxHeight: '280px' }}>
+                    <div className="space-y-2">
                     {assignedDosen.length === 0 ? (
                     <p className="text-gray-500 text-center py-4" style={{ fontFamily: 'Urbanist, sans-serif' }}>
                         Belum ada dosen pengampu
@@ -995,14 +1002,15 @@ export default function DetailKelas() {
                             style={{ backgroundColor: '#BE0414', borderRadius: '8px' }}
                         >
                             <Trash2 className="w-4 h-4" />
-                        </button>
-                        </div>
-                    ))
-                    )}
-                </div>
-                </div>
+						</button>
+						</div>
+					))
+					)}
+					</div>
+				</ScrollArea>
+				</div>
 
-                {/* Mahasiswa Section */}
+			{/* Mahasiswa Section */}
                 <div className="bg-white border-2 p-6 shadow-lg" style={{ borderColor: '#015023', borderRadius: '12px', cursor: 'default' }}>
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
@@ -1030,7 +1038,8 @@ export default function DetailKelas() {
                     <ErrorMessageBox message={removeErrors.mahasiswa} />
                 )}
 
-                <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '280px' }}>
+                <ScrollArea style={{ maxHeight: '280px' }}>
+                    <div className="space-y-2">
                     {assignedMahasiswa.length === 0 ? (
                     <p className="text-gray-500 text-center py-4" style={{ fontFamily: 'Urbanist, sans-serif' }}>
                         Belum ada mahasiswa terdaftar
@@ -1063,9 +1072,9 @@ export default function DetailKelas() {
                         </div>
                     ))
                     )}
+                    </div>
+                </ScrollArea>
                 </div>
-                </div>
-            </div>
             </div>
 
         {/* Jadwal Kelas Section */}
@@ -1137,7 +1146,6 @@ export default function DetailKelas() {
             </div>
             )}
         </div>
-        </div>
 
         {/* Modal Tambah Dosen */}
         {showDosenModal && (
@@ -1192,7 +1200,8 @@ export default function DetailKelas() {
             )}
 
             {/* Dosen List */}
-            <div className="flex-1 overflow-y-auto mb-4 border-2 p-2" style={{ borderRadius: '12px', borderColor: '#E5E7EB' }}>
+            <ScrollArea className="flex-1 mb-4">
+                <div className="border-2 p-2" style={{ borderRadius: '12px', borderColor: '#E5E7EB' }}>
                 <div className="space-y-2">
                 {dosenOptions
                     .filter(d => !assignedDosen.find(ad => (ad.id_user_si) === (d.id_user_si)))
@@ -1250,7 +1259,8 @@ export default function DetailKelas() {
                     </p>
                 )}
                 </div>
-            </div>
+                </div>
+            </ScrollArea>
 
             {/* Error Messsage */}
             {assignErrors.dosen && (
@@ -1368,7 +1378,8 @@ export default function DetailKelas() {
             )}
 
             {/* Mahasiswa List */}
-            <div className="flex-1 overflow-y-auto mb-4 border-2 p-2" style={{ borderRadius: '12px', borderColor: '#E5E7EB' }}>
+            <ScrollArea className="flex-1 mb-4">
+                <div className="border-2 p-2" style={{ borderRadius: '12px', borderColor: '#E5E7EB' }}>
                 <div className="space-y-2">
                 {mahasiswaOptions
                     .filter(m => !assignedMahasiswa.find(am => am.id_user_si === m.id_user_si))
@@ -1441,7 +1452,8 @@ export default function DetailKelas() {
                     </p>
                 )}
                 </div>
-            </div>
+                </div>
+            </ScrollArea>
 
             {/* Error Messages */}
             {assignErrors.mahasiswa && (
@@ -1688,6 +1700,19 @@ export default function DetailKelas() {
             </div>
         </div>
         )}
+
+        {/* confirm back */}
+        <AlertConfirmationDialog 
+            open={showConfirmBack}
+            onOpenChange={setShowConfirmBack}
+            tittle="Kembali ke Daftar Kelas"
+            description="Perubahan yang belum disimpan akan hilang. Apakah Anda yakin ingin kembali?"
+            onConfirm={confirmback}
+            confirmText="Ya, Kembali"
+            cancelText="Lanjutkan Edit"
+        />
+        </div>
+        </div>
     </div>
     );
 }

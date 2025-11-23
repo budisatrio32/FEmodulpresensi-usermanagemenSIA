@@ -100,19 +100,6 @@ export const updateSubject = async (subjectId, subjectData) => {
 };
 
 /**
- * Get all academic periods
- * @returns {Promise} Response dengan data academic periods
- */
-export const getAcademicPeriods = async () => {
-  try {
-    const response = await api.get('/manager/academic-periods');
-    return response.data;
-  } catch (error) {
-    throw (error.response?.data ?? error);
-  }
-};
-
-/**
  * Get all classes
  * @returns {Promise} Response dengan data kelas
  */
@@ -371,6 +358,47 @@ export const toggleManagerStatus = async (managerId) => {
   }
 };
 
+/**
+ * Get all academic periods
+ * @returns {Promise} Response dengan data academic periods
+ */
+export const getAcademicPeriods = async () => {
+  try {
+    const response = await api.get('/academic-periods');
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error);
+  }
+};
+
+/**
+ * Create new academic period
+ * @param {Object} periodData - Data academic period baru
+ * @returns {Promise} Response hasil create
+ */
+export const storeAcademicPeriod = async (periodData) => {
+  try {
+    const response = await api.post('/academic-periods', periodData);
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error);
+  }
+};
+
+/**
+ * Delete academic period by ID
+ * @param {number} periodId - ID academic period yang akan dihapus
+ * @returns {Promise} Response hasil delete
+ */
+export const deleteAcademicPeriod = async (periodId) => {
+  try {
+    const response = await api.delete(`/academic-periods/${periodId}`);
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error);
+  }
+};
+
 export default {
   getDashboardStatistics,
   getDetailedStatistics,
@@ -389,7 +417,6 @@ export default {
   storeMahasiswa,
   toggleUserStatus,
   toggleManagerStatus,
-  getAcademicPeriods,
   storeClass,
   getClassById,
   updateClass,
@@ -398,4 +425,7 @@ export default {
   removeLecturerFromClass,
   removeStudentFromClass,
   generateSchedule,
+  getAcademicPeriods,
+  storeAcademicPeriod,
+  deleteAcademicPeriod,
 };

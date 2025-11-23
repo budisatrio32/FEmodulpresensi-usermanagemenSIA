@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import AdminNavbar from '@/components/ui/admin-navbar';
 import { ArrowLeft, Save, X, Info } from 'lucide-react';
 import { ErrorMessageBox, SuccessMessageBoxWithButton } from '@/components/ui/message-box';
+import LoadingEffect from '@/components/ui/loading-effect';
+import { AlertConfirmationDialog } from '@/components/ui/alert-dialog';
 
 export default function EditPeriodeForm() {
   const router = useRouter();
@@ -23,6 +25,7 @@ export default function EditPeriodeForm() {
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -163,8 +166,12 @@ export default function EditPeriodeForm() {
   };
 
   const handleCancel = () => {
-    router.push('/adminpage/periodeakademik');
+    setShowCancelDialog(true);
   };
+
+  const confirmCancel = () => {
+    router.push('/adminpage/periodeakademik');
+  }
 
   const handleFinish = () => {
     router.push('/adminpage/periodeakademik');
@@ -172,14 +179,7 @@ export default function EditPeriodeForm() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-brand-light-sage flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#015023] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-            Memuat data...
-          </p>
-        </div>
-      </div>
+      <LoadingEffect />
     );
   }
 
@@ -191,7 +191,7 @@ export default function EditPeriodeForm() {
         <div className="mb-10">
           <Button
             variant="ghost"
-            onClick={() => router.push('/adminpage/periodeakademik')}
+            onClick={handleCancel}
             className="mb-6 -ml-4"
             style={{ fontFamily: 'Urbanist, sans-serif' }}
           >
@@ -223,55 +223,14 @@ export default function EditPeriodeForm() {
             </div>
           </div>
         </div>
-
-        {errors.form && (
-          <div className="mb-6">
-            <ErrorMessageBox message={errors.form} />
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-6">
-            <SuccessMessageBoxWithButton
-              message={success}
-              action={handleFinish}
-              btntext="Kembali ke Daftar"
-            />
-          </div>
-        )}
-
         <div 
           className="bg-white rounded-3xl shadow-xl p-8"
-          style={{ borderRadius: '24px' }}
+          style={{ 
+            borderRadius: '24px',
+            border: '2px solid #015023'
+          }}
         >
           <form onSubmit={handleSubmit} className="space-y-8">
-            <div 
-              className="flex items-start gap-3 p-4 rounded-xl"
-              style={{ backgroundColor: '#f0f9ff' }}
-            >
-              <Info 
-                className="w-5 h-5 flex-shrink-0 mt-0.5"
-                style={{ color: '#015023' }}
-              />
-              <div>
-                <p 
-                  className="font-semibold mb-1"
-                  style={{ 
-                    color: '#015023',
-                    fontFamily: 'Urbanist, sans-serif'
-                  }}
-                >
-                  Informasi Penting
-                </p>
-                <p 
-                  className="text-sm text-gray-700"
-                  style={{ fontFamily: 'Urbanist, sans-serif' }}
-                >
-                  Pastikan tanggal periode tidak tumpang tindih dengan periode lain. Hanya satu periode yang bisa aktif dalam satu waktu.
-                </p>
-              </div>
-            </div>
-
             <Field>
               <FieldLabel required>Nama Periode</FieldLabel>
               <FieldDescription>
@@ -283,13 +242,14 @@ export default function EditPeriodeForm() {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all ${
-                    errors.name 
-                      ? 'border-red-500 focus:border-red-500' 
-                      : 'border-gray-300 focus:border-[#015023]'
-                  }`}
+                  className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
+                  style={{
+                    fontFamily: 'Urbanist, sans-serif',
+                    borderColor: errors.name ? '#BE0414' : '#015023',
+                    borderRadius: '12px',
+                    opacity: errors.name ? 1 : 0.7
+                  }}
                   placeholder="Semester Ganjil 2024/2025"
-                  style={{ fontFamily: 'Urbanist, sans-serif' }}
                   disabled={isLoading}
                 />
               </FieldContent>
@@ -308,12 +268,13 @@ export default function EditPeriodeForm() {
                     name="start_date"
                     value={formData.start_date}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all ${
-                      errors.start_date 
-                        ? 'border-red-500 focus:border-red-500' 
-                        : 'border-gray-300 focus:border-[#015023]'
-                    }`}
-                    style={{ fontFamily: 'Urbanist, sans-serif' }}
+                    className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
+                    style={{
+                      fontFamily: 'Urbanist, sans-serif',
+                      borderColor: errors.start_date ? '#BE0414' : '#015023',
+                      borderRadius: '12px',
+                      opacity: errors.start_date ? 1 : 0.7
+                    }}
                     disabled={isLoading}
                   />
                 </FieldContent>
@@ -331,12 +292,13 @@ export default function EditPeriodeForm() {
                     name="end_date"
                     value={formData.end_date}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all ${
-                      errors.end_date 
-                        ? 'border-red-500 focus:border-red-500' 
-                        : 'border-gray-300 focus:border-[#015023]'
-                    }`}
-                    style={{ fontFamily: 'Urbanist, sans-serif' }}
+                    className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
+                    style={{
+                      fontFamily: 'Urbanist, sans-serif',
+                      borderColor: errors.end_date ? '#BE0414' : '#015023',
+                      borderRadius: '12px',
+                      opacity: errors.end_date ? 1 : 0.7
+                    }}
                     disabled={isLoading}
                   />
                 </FieldContent>
@@ -345,7 +307,13 @@ export default function EditPeriodeForm() {
             </div>
 
             <Field>
-              <div className="flex items-center gap-3">
+              <div 
+                className="flex items-center gap-3 p-4 rounded-xl"
+                style={{
+                  border: '2px solid #015023',
+                  backgroundColor: formData.active ? 'rgba(1, 80, 35, 0.05)' : 'transparent'
+                }}
+              >
                 <input
                   type="checkbox"
                   name="active"
@@ -355,21 +323,42 @@ export default function EditPeriodeForm() {
                   className="w-5 h-5 rounded border-2 border-gray-300 text-[#015023] focus:ring-[#015023] focus:ring-offset-0"
                   disabled={isLoading}
                 />
-                <label 
-                  htmlFor="active"
-                  className="font-semibold cursor-pointer"
-                  style={{ 
-                    color: '#015023',
-                    fontFamily: 'Urbanist, sans-serif'
-                  }}
-                >
-                  Aktifkan periode ini
-                </label>
+                <div className="flex-1">
+                  <label 
+                    htmlFor="active"
+                    className="font-semibold cursor-pointer block"
+                    style={{ 
+                      color: '#015023',
+                      fontFamily: 'Urbanist, sans-serif'
+                    }}
+                  >
+                    Aktifkan periode ini
+                  </label>
+                  <p 
+                    className="text-sm mt-1"
+                    style={{ 
+                      color: '#015023',
+                      opacity: 0.7,
+                      fontFamily: 'Urbanist, sans-serif'
+                    }}
+                  >
+                    Jika dicentang, periode ini akan menjadi periode aktif dan periode lain akan dinonaktifkan
+                  </p>
+                </div>
               </div>
-              <FieldDescription className="mt-2 ml-8">
-                Jika dicentang, periode ini akan menjadi periode aktif dan periode lain akan dinonaktifkan
-              </FieldDescription>
             </Field>
+
+            {errors.form && (
+              <ErrorMessageBox message={errors.form} />
+            )}
+
+            {success && (
+              <SuccessMessageBoxWithButton
+                message={success}
+                action={handleFinish}
+                btntext="Kembali ke Daftar"
+              />
+            )}
 
             <div className="flex gap-4 pt-6 border-t border-gray-200">
               <Button
@@ -396,7 +385,7 @@ export default function EditPeriodeForm() {
               >
                 {isLoading ? (
                   <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    <span className="animate-spin mr-2">⏳</span>
                     Menyimpan...
                   </>
                 ) : (
@@ -409,7 +398,59 @@ export default function EditPeriodeForm() {
             </div>
           </form>
         </div>
+        {/* Info Box */}
+        <div 
+          className="mt-8 p-6 border-2 shadow-md"
+          style={{
+            borderColor: '#DABC4E',
+            borderRadius: '12px',
+            background: 'linear-gradient(135deg, #FFFEF7 0%, #FFF9E6 100%)'
+          }}
+        >
+          <div className="flex items-start gap-4">
+            <div 
+              className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{
+                backgroundColor: '#DABC4E',
+                color: '#ffffffff'
+              }}
+            >
+              <Info className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 
+                className="font-bold text-lg mb-2"
+                style={{ 
+                  fontFamily: 'Urbanist, sans-serif',
+                  color: '#015023'
+                }}
+              >
+                Informasi Penting
+              </h3>
+              <p 
+                className="text-sm leading-relaxed"
+                style={{ 
+                  fontFamily: 'Urbanist, sans-serif',
+                  color: '#015023'
+                }}
+              >
+                Pastikan tanggal periode tidak tumpang tindih dengan periode lain. Hanya satu periode yang bisa aktif dalam satu waktu.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
+      
+      {/* Cancel Confirmation Dialog */}
+      <AlertConfirmationDialog 
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        title="Konfirmasi Pembatalan"
+        description="Apakah Anda yakin ingin membatalkan? Data yang diisi akan hilang."
+        onConfirm={confirmCancel}
+        confirmText="Ya, Batalkan"
+        cancelText="Lanjutkan Mengisi"
+      />
     </div>
   );
 }
