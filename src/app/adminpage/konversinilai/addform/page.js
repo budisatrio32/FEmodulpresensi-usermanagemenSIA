@@ -14,6 +14,7 @@ import AdminNavbar from '@/components/ui/admin-navbar';
 import { ArrowLeft, Save, X, Info } from 'lucide-react';
 import { ErrorMessageBox, SuccessMessageBoxWithButton } from '@/components/ui/message-box';
 import { AlertConfirmationDialog } from '@/components/ui/alert-dialog';
+import { createGradeConversion } from '@/lib/gradeConv';
 
 export default function AddKonversiNilaiForm() {
   const router = useRouter();
@@ -109,27 +110,38 @@ export default function AddKonversiNilaiForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
-    setIsLoading(true);
 
+    setIsLoading(true);
     const newErrors = {};
     try {
-      // TODO: Replace with actual API call
-      // const response = await createGradeConversion(formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSuccess('Konversi nilai berhasil ditambahkan');
+      const response = await createGradeConversion({
+        min_grade: parseFloat(formData.min_grade),
+        max_grade: parseFloat(formData.max_grade),
+        letter: formData.letter.toUpperCase(),
+        ip_skor: formData.ip_skor
+      });
+
+      if (response.status === 'success') {
+        setSuccess('Konversi nilai berhasil ditambahkan');
+        // reset form mirip halaman periode akademik
+        setFormData({
+          min_grade: '',
+          max_grade: '',
+          letter: '',
+          ip_skor: ''
+        });
+      } else {
+        newErrors.form = response.message || 'Gagal menyimpan data.';
+      }
     } catch (error) {
-      newErrors.form = 'Gagal menyimpan data: ' + (error.message || 'Unknown error');
+      newErrors.form = error?.message || 'Gagal menyimpan data.';
     } finally {
       setIsLoading(false);
-      setErrors(prev => ({...prev, ...newErrors}));
+      setErrors(prev => ({ ...prev, ...newErrors }));
     }
   };
 
@@ -414,9 +426,9 @@ export default function AddKonversiNilaiForm() {
             {/* success message */}
             {success && (
               <SuccessMessageBoxWithButton
-                message={success}
+                message={success + ' Lihat Data atau tambahkan konversi nilai lain.'}
                 action={handleFinish}
-                btntext="Kembali ke Daftar"
+                btntext="Lihat Data"
               />
             )}
 
