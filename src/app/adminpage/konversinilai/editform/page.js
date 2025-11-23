@@ -26,6 +26,7 @@ const ruleId = searchParams.get('id');
 const [isLoading, setIsLoading] = useState(false);
 const [errors, setErrors] = useState({});
 const [success, setSuccess] = useState(null);
+const [countdown, setCountdown] = useState(10);
 const [loading, setLoading] = useState(true);
 const [fetching, setFetching] = useState(true);
 const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -166,6 +167,7 @@ const handleSubmit = async (e) => {
 
         if (response.status === 'success') {
             setSuccess('Konversi nilai berhasil diperbarui');
+            setCountdown(5);
         } else {
             newErrors.form = response.message;
         }
@@ -186,8 +188,23 @@ router.push('/adminpage/konversinilai');
 };
 
 const handleFinish = () => {
-router.push('/adminpage/konversinilai');
+    router.push('/adminpage/konversinilai');
 };
+
+// Countdown effect for success redirect
+useEffect(() => {
+    let timer;
+    if (success) {
+        if (countdown > 0) {
+            timer = setTimeout(() => {
+                setCountdown((prev) => prev - 1);
+            }, 1000);
+        } else {
+            handleFinish();
+        }
+    }
+    return () => clearTimeout(timer);
+}, [success, countdown]);
 
 const handleBack = () => {
 router.push('/adminpage/konversinilai');
@@ -479,15 +496,13 @@ return (
             </div>
         )}
 
-                {success && (
-                    <div className="mb-6">
-                        <SuccessMessageBoxWithButton
-                            message={success + ' Lihat Data atau edit konversi nilai lain.'}
-                            action={handleFinish}
-                            btntext="Lihat Data"
-                        />
-                    </div>
-                )}
+        {success && (
+            <SuccessMessageBoxWithButton
+                message={success + `\nAkan dialihkan ke halaman data konversi nilai dalam ${countdown} detik.`}
+                action={handleFinish}
+                btntext={countdown > 0 ? `Lihat Data (${countdown})` : 'Lihat Data'}
+            />
+        )}
 
         {/* Action Buttons */}
         <div className="pt-8">

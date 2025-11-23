@@ -388,9 +388,13 @@ export default function EditMatkulForm() {
               <ErrorMessageBox message={errors.form} />
             )}
 
-            {/* Success Message */}
+            {/* Success Message*/}
             {success && (
-              <SuccessMessageBoxWithButton message={`${success}. Kembali dalam ${countdown} detik atau klik`} action={handleFinish} />
+              <SuccessMessageBoxWithButton
+                message={`${success}\nAkan dialihkan ke halaman data mata kuliah dalam ${countdown} detik.`}
+                action={handleFinish}
+                btntext={countdown > 0 ? `Lihat Data (${countdown})` : 'Lihat Data'}
+              />
             )}
 
             {/* Action Buttons */}
