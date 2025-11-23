@@ -187,60 +187,102 @@ export default function AddKonversiNilaiForm() {
         </div>
 
         <div 
-          className="bg-white rounded-3xl shadow-xl p-8"
+          className="bg-white border-2 p-8 md:p-10 shadow-lg"
           style={{ 
-            borderRadius: '24px',
-            border: '2px solid #015023'
+            borderColor: '#015023',
+            borderRadius: '12px'
           }}
         >
+          <div className="mb-8">
+            <h2 
+              className="text-2xl font-bold mb-2"
+              style={{ 
+                fontFamily: 'Urbanist, sans-serif',
+                color: '#015023'
+              }}
+            >
+              Informasi Konversi Nilai
+            </h2>
+            <div 
+              className="w-20 h-1 rounded-full"
+              style={{ backgroundColor: '#DABC4E' }}
+            />
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Field>
-                <FieldLabel required>Nilai Minimal</FieldLabel>
+                <FieldLabel htmlFor="min_grade">
+                  Nilai Minimal <span className="text-red-500">*</span>
+                </FieldLabel>
                 <FieldDescription>
                   Masukkan nilai minimal (0-100)
                 </FieldDescription>
                 <FieldContent>
-                  <input
-                    type="text"
-                    name="min_grade"
-                    value={formData.min_grade}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
-                    style={{
-                      fontFamily: 'Urbanist, sans-serif',
-                      borderColor: errors.min_grade ? '#BE0414' : '#015023',
-                      borderRadius: '12px',
-                      opacity: errors.min_grade ? 1 : 0.7
-                    }}
-                    placeholder="0"
-                    disabled={isLoading}
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      id="min_grade"
+                      name="min_grade"
+                      value={formData.min_grade}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100"
+                      style={{
+                        fontFamily: 'Urbanist, sans-serif',
+                        borderColor: errors.min_grade ? '#BE0414' : '#015023',
+                        borderRadius: '12px',
+                        opacity: errors.min_grade ? 1 : 0.7
+                      }}
+                      placeholder="0"
+                      disabled={isLoading}
+                    />
+                    {formData.min_grade && !errors.min_grade && parseFloat(formData.min_grade) >= 0 && parseFloat(formData.min_grade) <= 100 && (
+                      <div 
+                        className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                        style={{ backgroundColor: '#16874B' }}
+                      >
+                        ✓
+                      </div>
+                    )}
+                  </div>
                 </FieldContent>
                 {errors.min_grade && <FieldError>{errors.min_grade}</FieldError>}
               </Field>
 
               <Field>
-                <FieldLabel required>Nilai Maksimal</FieldLabel>
+                <FieldLabel htmlFor="max_grade">
+                  Nilai Maksimal <span className="text-red-500">*</span>
+                </FieldLabel>
                 <FieldDescription>
                   Masukkan nilai maksimal (0-100)
                 </FieldDescription>
                 <FieldContent>
-                  <input
-                    type="text"
-                    name="max_grade"
-                    value={formData.max_grade}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
-                    style={{
-                      fontFamily: 'Urbanist, sans-serif',
-                      borderColor: errors.max_grade ? '#BE0414' : '#015023',
-                      borderRadius: '12px',
-                      opacity: errors.max_grade ? 1 : 0.7
-                    }}
-                    placeholder="100"
-                    disabled={isLoading}
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      id="max_grade"
+                      name="max_grade"
+                      value={formData.max_grade}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100"
+                      style={{
+                        fontFamily: 'Urbanist, sans-serif',
+                        borderColor: errors.max_grade ? '#BE0414' : '#015023',
+                        borderRadius: '12px',
+                        opacity: errors.max_grade ? 1 : 0.7
+                      }}
+                      placeholder="100"
+                      disabled={isLoading}
+                    />
+                    {formData.max_grade && !errors.max_grade && parseFloat(formData.max_grade) >= 0 && parseFloat(formData.max_grade) <= 100 && (
+                      <div 
+                        className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                        style={{ backgroundColor: '#16874B' }}
+                      >
+                        ✓
+                      </div>
+                    )}
+                  </div>
                 </FieldContent>
                 {errors.max_grade && <FieldError>{errors.max_grade}</FieldError>}
               </Field>
@@ -248,62 +290,97 @@ export default function AddKonversiNilaiForm() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Field>
-                <FieldLabel required>Nilai Huruf</FieldLabel>
+                <FieldLabel htmlFor="letter">
+                  Nilai Huruf <span className="text-red-500">*</span>
+                </FieldLabel>
                 <FieldDescription>
                   Masukkan nilai huruf (contoh: A, B+, C)
                 </FieldDescription>
                 <FieldContent>
-                  <input
-                    type="text"
-                    name="letter"
-                    value={formData.letter}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition uppercase"
-                    style={{
-                      fontFamily: 'Urbanist, sans-serif',
-                      borderColor: errors.letter ? '#BE0414' : '#015023',
-                      borderRadius: '12px',
-                      opacity: errors.letter ? 1 : 0.7
-                    }}
-                    placeholder="A"
-                    disabled={isLoading}
-                    maxLength={2}
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      id="letter"
+                      name="letter"
+                      value={formData.letter}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100 uppercase"
+                      style={{
+                        fontFamily: 'Urbanist, sans-serif',
+                        borderColor: errors.letter ? '#BE0414' : '#015023',
+                        borderRadius: '12px',
+                        opacity: errors.letter ? 1 : 0.7
+                      }}
+                      placeholder="A"
+                      disabled={isLoading}
+                      maxLength={2}
+                    />
+                    {formData.letter && !errors.letter && ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'E', 'F'].includes(formData.letter.toUpperCase()) && (
+                      <div 
+                        className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                        style={{ backgroundColor: '#16874B' }}
+                      >
+                        ✓
+                      </div>
+                    )}
+                  </div>
                 </FieldContent>
                 {errors.letter && <FieldError>{errors.letter}</FieldError>}
               </Field>
 
               <Field>
-                <FieldLabel required>Nilai IP</FieldLabel>
+                <FieldLabel htmlFor="ip_skor">
+                  Nilai IP <span className="text-red-500">*</span>
+                </FieldLabel>
                 <FieldDescription>
                   Masukkan nilai IP (0.00-4.00)
                 </FieldDescription>
                 <FieldContent>
-                  <input
-                    type="text"
-                    name="weight"
-                    value={formData.weight}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
-                    style={{
-                      fontFamily: 'Urbanist, sans-serif',
-                      borderColor: errors.weight ? '#BE0414' : '#015023',
-                      borderRadius: '12px',
-                      opacity: errors.weight ? 1 : 0.7
-                    }}
-                    placeholder="4.00"
-                    disabled={isLoading}
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      id="ip_skor"
+                      name="ip_skor"
+                      value={formData.ip_skor}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100"
+                      style={{
+                        fontFamily: 'Urbanist, sans-serif',
+                        borderColor: errors.ip_skor ? '#BE0414' : '#015023',
+                        borderRadius: '12px',
+                        opacity: errors.ip_skor ? 1 : 0.7
+                      }}
+                      placeholder="4.00"
+                      disabled={isLoading}
+                    />
+                    {formData.ip_skor && !errors.ip_skor && !isNaN(parseFloat(formData.ip_skor)) && parseFloat(formData.ip_skor) >= 0 && parseFloat(formData.ip_skor) <= 4 && (
+                      <div 
+                        className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                        style={{ backgroundColor: '#16874B' }}
+                      >
+                        ✓
+                      </div>
+                    )}
+                  </div>
                 </FieldContent>
                 {errors.ip_skor && <FieldError>{errors.ip_skor}</FieldError>}
               </Field>
             </div>
 
+            {/* Separator */}
             <div 
-              className="p-4 rounded-xl border-2"
+              className="w-full h-px my-8"
+              style={{ 
+                background: 'linear-gradient(to right, transparent, #DABC4E, transparent)'
+              }}
+            />
+
+            <div 
+              className="p-4 border-2"
               style={{ 
                 backgroundColor: '#FFF8E1',
-                borderColor: '#FFE082'
+                borderColor: '#FFE082',
+                borderRadius: '12px'
               }}
             >
               <p 
@@ -343,41 +420,47 @@ export default function AddKonversiNilaiForm() {
               />
             )}
 
-            <div className="flex gap-4 pt-6 border-t border-gray-200">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={isLoading}
-                className="flex-1"
-                style={{ fontFamily: 'Urbanist, sans-serif' }}
-              >
-                <X className="w-5 h-5 mr-2" />
-                Batal
-              </Button>
-              
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1"
-                style={{
-                  backgroundColor: '#015023',
-                  color: 'white',
-                  fontFamily: 'Urbanist, sans-serif'
+            {/* Action Buttons */}
+            <div className="pt-8">
+              <div 
+                className="w-full h-px mb-8"
+                style={{ 
+                  background: 'linear-gradient(to right, transparent, #015023, transparent)',
+                  opacity: 0.3
                 }}
-              >
-                {isLoading ? (
-                  <>
-                    <span className="animate-spin mr-2">⏳</span>
-                    Menyimpan...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-5 h-5 mr-2" />
-                    Simpan Data
-                  </>
-                )}
-              </Button>
+              />
+              
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button
+                  type="submit"
+                  variant="default"
+                  disabled={isLoading}
+                  className="flex-1 sm:flex-none sm:min-w-[200px]"
+                >
+                  {isLoading ? (
+                    <>
+                      <span className="animate-spin mr-2">⏳</span>
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-5 h-5 mr-2" />
+                      Simpan Data
+                    </>
+                  )}
+                </Button>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={isLoading}
+                  className="flex-1 sm:flex-none sm:min-w-[200px]"
+                >
+                  <X className="w-5 h-5 mr-2" />
+                  Batal
+                </Button>
+              </div>
             </div>
           </form>
         </div>
@@ -395,7 +478,7 @@ export default function AddKonversiNilaiForm() {
               className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
               style={{
                 backgroundColor: '#DABC4E',
-                color: '#ffffffff'
+                color: '#015023'
               }}
             >
               <Info className="w-5 h-5" />

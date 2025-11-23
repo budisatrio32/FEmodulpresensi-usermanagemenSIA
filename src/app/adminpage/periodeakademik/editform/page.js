@@ -224,94 +224,159 @@ export default function EditPeriodeForm() {
           </div>
         </div>
         <div 
-          className="bg-white rounded-3xl shadow-xl p-8"
+          className="bg-white border-2 p-8 md:p-10 shadow-lg"
           style={{ 
-            borderRadius: '24px',
-            border: '2px solid #015023'
+            borderColor: '#015023',
+            borderRadius: '12px'
           }}
         >
+          <div className="mb-8">
+            <h2 
+              className="text-2xl font-bold mb-2"
+              style={{ 
+                fontFamily: 'Urbanist, sans-serif',
+                color: '#015023'
+              }}
+            >
+              Informasi Periode Akademik
+            </h2>
+            <div 
+              className="w-20 h-1 rounded-full"
+              style={{ backgroundColor: '#DABC4E' }}
+            />
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-8">
             <Field>
-              <FieldLabel required>Nama Periode</FieldLabel>
+              <FieldLabel htmlFor="name">
+                Nama Periode <span className="text-red-500">*</span>
+              </FieldLabel>
               <FieldDescription>
                 Masukkan nama periode akademik (contoh: Semester Ganjil 2024/2025)
               </FieldDescription>
               <FieldContent>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
-                  style={{
-                    fontFamily: 'Urbanist, sans-serif',
-                    borderColor: errors.name ? '#BE0414' : '#015023',
-                    borderRadius: '12px',
-                    opacity: errors.name ? 1 : 0.7
-                  }}
-                  placeholder="Semester Ganjil 2024/2025"
-                  disabled={isLoading}
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100"
+                    style={{
+                      fontFamily: 'Urbanist, sans-serif',
+                      borderColor: errors.name ? '#BE0414' : '#015023',
+                      borderRadius: '12px',
+                      opacity: errors.name ? 1 : 0.7
+                    }}
+                    placeholder="Semester Ganjil 2024/2025"
+                    disabled={isLoading}
+                  />
+                  {formData.name && !errors.name && formData.name.length >= 5 && (
+                    <div 
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                      style={{ backgroundColor: '#16874B' }}
+                    >
+                      ✓
+                    </div>
+                  )}
+                </div>
               </FieldContent>
               {errors.name && <FieldError>{errors.name}</FieldError>}
             </Field>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Field>
-                <FieldLabel required>Tanggal Mulai</FieldLabel>
+                <FieldLabel htmlFor="start_date">
+                  Tanggal Mulai <span className="text-red-500">*</span>
+                </FieldLabel>
                 <FieldDescription>
                   Pilih tanggal mulai periode
                 </FieldDescription>
                 <FieldContent>
-                  <input
-                    type="date"
-                    name="start_date"
-                    value={formData.start_date}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
-                    style={{
-                      fontFamily: 'Urbanist, sans-serif',
-                      borderColor: errors.start_date ? '#BE0414' : '#015023',
-                      borderRadius: '12px',
-                      opacity: errors.start_date ? 1 : 0.7
-                    }}
-                    disabled={isLoading}
-                  />
+                  <div className="relative">
+                    <input
+                      type="date"
+                      id="start_date"
+                      name="start_date"
+                      value={formData.start_date}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100"
+                      style={{
+                        fontFamily: 'Urbanist, sans-serif',
+                        borderColor: errors.start_date ? '#BE0414' : '#015023',
+                        borderRadius: '12px',
+                        opacity: errors.start_date ? 1 : 0.7
+                      }}
+                      disabled={isLoading}
+                    />
+                    {formData.start_date && !errors.start_date && (
+                      <div 
+                        className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                        style={{ backgroundColor: '#16874B' }}
+                      >
+                        ✓
+                      </div>
+                    )}
+                  </div>
                 </FieldContent>
                 {errors.start_date && <FieldError>{errors.start_date}</FieldError>}
               </Field>
 
               <Field>
-                <FieldLabel required>Tanggal Selesai</FieldLabel>
+                <FieldLabel htmlFor="end_date">
+                  Tanggal Selesai <span className="text-red-500">*</span>
+                </FieldLabel>
                 <FieldDescription>
                   Pilih tanggal selesai periode
                 </FieldDescription>
                 <FieldContent>
-                  <input
-                    type="date"
-                    name="end_date"
-                    value={formData.end_date}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
-                    style={{
-                      fontFamily: 'Urbanist, sans-serif',
-                      borderColor: errors.end_date ? '#BE0414' : '#015023',
-                      borderRadius: '12px',
-                      opacity: errors.end_date ? 1 : 0.7
-                    }}
-                    disabled={isLoading}
-                  />
+                  <div className="relative">
+                    <input
+                      type="date"
+                      id="end_date"
+                      name="end_date"
+                      value={formData.end_date}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3.5 border-2 focus:outline-none focus:border-opacity-100"
+                      style={{
+                        fontFamily: 'Urbanist, sans-serif',
+                        borderColor: errors.end_date ? '#BE0414' : '#015023',
+                        borderRadius: '12px',
+                        opacity: errors.end_date ? 1 : 0.7
+                      }}
+                      disabled={isLoading}
+                    />
+                    {formData.end_date && !errors.end_date && (
+                      <div 
+                        className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                        style={{ backgroundColor: '#16874B' }}
+                      >
+                        ✓
+                      </div>
+                    )}
+                  </div>
                 </FieldContent>
                 {errors.end_date && <FieldError>{errors.end_date}</FieldError>}
               </Field>
             </div>
 
+            {/* Separator */}
+            <div 
+              className="w-full h-px my-8"
+              style={{ 
+                background: 'linear-gradient(to right, transparent, #DABC4E, transparent)'
+              }}
+            />
+
             <Field>
               <div 
-                className="flex items-center gap-3 p-4 rounded-xl"
+                className="flex items-center gap-4 p-5 border-2 cursor-pointer"
                 style={{
                   border: '2px solid #015023',
-                  backgroundColor: formData.active ? 'rgba(1, 80, 35, 0.05)' : 'transparent'
+                  borderRadius: '12px',
+                  backgroundColor: formData.active ? 'rgba(1, 80, 35, 0.05)' : 'transparent',
+                  opacity: 0.7
                 }}
               >
                 <input
@@ -320,7 +385,10 @@ export default function EditPeriodeForm() {
                   id="active"
                   checked={formData.active}
                   onChange={handleChange}
-                  className="w-5 h-5 rounded border-2 border-gray-300 text-[#015023] focus:ring-[#015023] focus:ring-offset-0"
+                  className="w-6 h-6 cursor-pointer accent-[#015023]"
+                  style={{
+                    borderRadius: '6px'
+                  }}
                   disabled={isLoading}
                 />
                 <div className="flex-1">
@@ -345,6 +413,18 @@ export default function EditPeriodeForm() {
                     Jika dicentang, periode ini akan menjadi periode aktif dan periode lain akan dinonaktifkan
                   </p>
                 </div>
+                {formData.active && (
+                  <div 
+                    className="px-3 py-1 rounded text-xs font-semibold"
+                    style={{
+                      backgroundColor: '#16874B',
+                      color: '#FFFFFF',
+                      borderRadius: '12px'
+                    }}
+                  >
+                    Active
+                  </div>
+                )}
               </div>
             </Field>
 
@@ -360,41 +440,47 @@ export default function EditPeriodeForm() {
               />
             )}
 
-            <div className="flex gap-4 pt-6 border-t border-gray-200">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={isLoading}
-                className="flex-1"
-                style={{ fontFamily: 'Urbanist, sans-serif' }}
-              >
-                <X className="w-5 h-5 mr-2" />
-                Batal
-              </Button>
-              
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1"
-                style={{
-                  backgroundColor: '#015023',
-                  color: 'white',
-                  fontFamily: 'Urbanist, sans-serif'
+            {/* Action Buttons */}
+            <div className="pt-8">
+              <div 
+                className="w-full h-px mb-8"
+                style={{ 
+                  background: 'linear-gradient(to right, transparent, #015023, transparent)',
+                  opacity: 0.3
                 }}
-              >
-                {isLoading ? (
-                  <>
-                    <span className="animate-spin mr-2">⏳</span>
-                    Menyimpan...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-5 h-5 mr-2" />
-                    Simpan Perubahan
-                  </>
-                )}
-              </Button>
+              />
+              
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button
+                  type="submit"
+                  variant="default"
+                  disabled={isLoading}
+                  className="flex-1 sm:flex-none sm:min-w-[200px]"
+                >
+                  {isLoading ? (
+                    <>
+                      <span className="animate-spin mr-2">⏳</span>
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-5 h-5 mr-2" />
+                      Simpan Perubahan
+                    </>
+                  )}
+                </Button>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={isLoading}
+                  className="flex-1 sm:flex-none sm:min-w-[200px]"
+                >
+                  <X className="w-5 h-5 mr-2" />
+                  Batal
+                </Button>
+              </div>
             </div>
           </form>
         </div>
@@ -412,7 +498,7 @@ export default function EditPeriodeForm() {
               className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
               style={{
                 backgroundColor: '#DABC4E',
-                color: '#ffffffff'
+                color: '#015023'
               }}
             >
               <Info className="w-5 h-5" />
