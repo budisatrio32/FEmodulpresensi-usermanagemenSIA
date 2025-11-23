@@ -29,7 +29,7 @@ function ScrollBar({
   ...props
 }) {
   return (
-    <ScrollAreaPrimitive.ScrollAreaScrollbar
+    <ScrollAreaPrimitive.Scrollbar
       data-slot="scroll-area-scrollbar"
       orientation={orientation}
       className={cn(
@@ -44,7 +44,7 @@ function ScrollBar({
         padding: '2px'
       }}
       {...props}>
-      <ScrollAreaPrimitive.ScrollAreaThumb
+      <ScrollAreaPrimitive.Thumb
         data-slot="scroll-area-thumb"
         className="relative flex-1 rounded-full transition-colors"
         style={{
@@ -58,7 +58,7 @@ function ScrollBar({
           e.currentTarget.style.opacity = '0.3'
         }}
       />
-    </ScrollAreaPrimitive.ScrollAreaScrollbar>
+    </ScrollAreaPrimitive.Scrollbar>
   );
 }
 
