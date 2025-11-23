@@ -18,6 +18,20 @@ export const getGradeConversions = async () => {
 }
 
 /**
+ * Get a grade conversion by ID
+ * @param {number} id 
+ * @returns {Promise<Object>} The grade conversion object
+ */
+export const getGradeConversionById = async (id) => {
+    try {
+        const response = await api.get(`/grade-conversions/${id}`);
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
+}
+
+/**
  * Create a new grade conversion
  * @param {Object} data 
  * @returns {Promise<Object>} The created grade conversion object

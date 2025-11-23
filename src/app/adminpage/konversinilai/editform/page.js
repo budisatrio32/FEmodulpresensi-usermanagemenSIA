@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
 Field, 
@@ -12,9 +12,11 @@ FieldContent
 import { Button } from '@/components/ui/button';
 import AdminNavbar from '@/components/ui/admin-navbar';
 import { ArrowLeft, Save, X, Info } from 'lucide-react';
-import { ErrorMessageBox, SuccessMessageBoxWithButton } from '@/components/ui/message-box';
+import { ErrorMessageBox, ErrorMessageBoxWithButton, SuccessMessageBoxWithButton } from '@/components/ui/message-box';
 import LoadingEffect from '@/components/ui/loading-effect';
 import { AlertConfirmationDialog } from '@/components/ui/alert-dialog';
+import { rule } from 'postcss/lib/postcss';
+import { getGradeConversionById, updateGradeConversion } from '@/lib/gradeConv';
 
 export default function EditKonversiNilaiForm() {
 const router = useRouter();
@@ -25,6 +27,7 @@ const [isLoading, setIsLoading] = useState(false);
 const [errors, setErrors] = useState({});
 const [success, setSuccess] = useState(null);
 const [loading, setLoading] = useState(true);
+const [fetching, setFetching] = useState(true);
 const [showCancelDialog, setShowCancelDialog] = useState(false);
 
 const [formData, setFormData] = useState({
@@ -34,78 +37,61 @@ letter: '',
 ip_skor: ''
 });
 
-// Dummy data untuk simulasi
-const dummyRules = {
-1: { id: 1, min_grade: 95, max_grade: 100, letter: 'A', ip_skor: 4.00 },
-2: { id: 2, min_grade: 90, max_grade: 94, letter: 'A-', ip_skor: 3.75 },
-3: { id: 3, min_grade: 85, max_grade: 89, letter: 'B+', ip_skor: 3.50 },
-4: { id: 4, min_grade: 80, max_grade: 84, letter: 'B', ip_skor: 3.00 },
-5: { id: 5, min_grade: 75, max_grade: 79, letter: 'B-', ip_skor: 2.75 },
-6: { id: 6, min_grade: 70, max_grade: 74, letter: 'C+', ip_skor: 2.50 },
-7: { id: 7, min_grade: 65, max_grade: 69, letter: 'C', ip_skor: 2.00 },
-8: { id: 8, min_grade: 60, max_grade: 64, letter: 'C-', ip_skor: 1.75 },
-9: { id: 9, min_grade: 55, max_grade: 59, letter: 'D+', ip_skor: 1.50 },
-10: { id: 10, min_grade: 50, max_grade: 54, letter: 'D', ip_skor: 1.00 },
-11: { id: 11, min_grade: 40, max_grade: 49, letter: 'E', ip_skor: 0.50 },
-12: { id: 12, min_grade: 0, max_grade: 39, letter: 'F', ip_skor: 0.00 }
+const fetchgrade = async () => {
+    setFetching(true);
+    try {
+        const response = await getGradeConversionById(ruleId);
+    
+    if (response.status === 'success') {
+        setFormData({
+            min_grade: response.data.min_grade.toString(),
+            max_grade: response.data.max_grade.toString(),
+            letter: response.data.letter,
+            ip_skor: response.data.ip_skor.toString()
+        });
+    } else {
+        setErrors({ fetch: 'Konversi nilai tidak ditemukan' });
+    }
+    } catch (error) {
+    setErrors({ fetch: 'Gagal mengambil data: ' + error.message });
+    } finally {
+    setFetching(false);
+    }
 };
 
 useEffect(() => {
-const fetchRule = async () => {
-    setLoading(true);
-    try {
-    // TODO: Replace with actual API call
-    // const response = await getGradeConversion(ruleId);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const rule = dummyRules[ruleId];
-    
-    if (rule) {
-        setFormData({
-        min_grade: rule.min_grade.toString(),
-        max_grade: rule.max_grade.toString(),
-        letter: rule.letter,
-        ip_skor: rule.ip_skor.toString()
-        });
-    } else {
-        setErrors({ form: 'Konversi nilai tidak ditemukan' });
+    if (ruleId) {
+        fetchgrade();
     }
-    } catch (error) {
-    setErrors({ form: 'Gagal mengambil data: ' + error.message });
-    } finally {
-    setLoading(false);
-    }
-};
-
-if (ruleId) {
-    fetchRule();
-}
 }, [ruleId]);
 
 const handleChange = (e) => {
-const { name, value } = e.target;
+    const { name, value } = e.target;
 
-// For numeric fields, ensure only numbers and decimal points
-if (name === 'min_grade' || name === 'max_grade') {
-    if (value && !/^\d*$/.test(value)) return;
-}
+    // Validasi input numerik
+    if (name === 'min_grade' || name === 'max_grade') {
+        if (value && !/^\d*$/.test(value)) return;
+    }
+    if (name === 'ip_skor') {
+        if (value && !/^\d*\.?\d*$/.test(value)) return;
+    }
 
-if (name === 'ip_skor') {
-    if (value && !/^\d*\.?\d*$/.test(value)) return;
-}
+    setFormData(prev => ({
+        ...prev,
+        [name]: value
+    }));
 
-setFormData(prev => ({
-    ...prev,
-    [name]: value
-}));
-
-if (errors[name]) {
-    setErrors(prev => ({ ...prev, [name]: null }));
-}
-if (errors.form) {
-    setErrors(prev => ({ ...prev, form: null }));
-}
+    // Bersihkan error spesifik & form error
+    if (errors[name]) {
+        setErrors(prev => ({ ...prev, [name]: null }));
+    }
+    if (errors.form) {
+        setErrors(prev => ({ ...prev, form: null }));
+    }
+    // Jika ada success sebelumnya, hilangkan agar user tahu perubahan belum disimpan
+    if (success) {
+        setSuccess(null);
+    }
 };
 
 const validateForm = () => {
@@ -161,29 +147,34 @@ return Object.keys(newErrors).length === 0;
 };
 
 const handleSubmit = async (e) => {
-e.preventDefault();
+    e.preventDefault();
 
-if (!validateForm()) {
-    return;
-}
+    if (!validateForm()) {
+        return;
+    }
 
-setIsLoading(true);
+    setIsLoading(true);
+    const newErrors = {};
+    try {
+        const sendData = {
+            min_grade: parseFloat(formData.min_grade),
+            max_grade: parseFloat(formData.max_grade),
+            letter: formData.letter.toUpperCase(),
+            ip_skor: formData.ip_skor
+        };
+        const response = await updateGradeConversion(ruleId, sendData);
 
-const newErrors = {};
-try {
-    // TODO: Replace with actual API call
-    // const response = await updateGradeConversion(ruleId, formData);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setSuccess('Konversi nilai berhasil diperbarui');
-} catch (error) {
-    newErrors.form = 'Gagal memperbarui data: ' + (error.message || 'Unknown error');
-} finally {
-    setIsLoading(false);
-    setErrors(prev => ({...prev, ...newErrors}));
-}
+        if (response.status === 'success') {
+            setSuccess('Konversi nilai berhasil diperbarui');
+        } else {
+            newErrors.form = response.message;
+        }
+    } catch (error) {
+        newErrors.form = error.message;
+    } finally {
+        setIsLoading(false);
+        setErrors(prev => ({ ...prev, ...newErrors }));
+    }
 };
 
 const handleCancel = () => {
@@ -198,10 +189,28 @@ const handleFinish = () => {
 router.push('/adminpage/konversinilai');
 };
 
-if (loading) {
-return (
-    <LoadingEffect />
-);
+const handleBack = () => {
+router.push('/adminpage/konversinilai');
+};
+
+if (fetching) {
+    return (
+        <LoadingEffect message='Memuat data nilai konversi...'/>
+    );
+} else if (errors.fetch) {
+    return (
+    <div className="min-h-screen bg-brand-light-sage">
+        <AdminNavbar title="Dashboard Admin - Edit Konversi Nilai" />
+        <div className="container mx-auto px-4 py-8 max-w-5xl">
+        <ErrorMessageBoxWithButton
+            message={errors.fetch}
+            action={fetchgrade}
+            back={true}
+            actionback={handleBack}
+        />
+        </div>
+    </div>
+    );
 }
 
 return (
@@ -470,15 +479,15 @@ return (
             </div>
         )}
 
-        {success && (
-            <div className="mb-6">
-            <SuccessMessageBoxWithButton
-                message={success}
-                action={handleFinish}
-                btntext="Kembali ke Daftar"
-            />
-            </div>
-        )}
+                {success && (
+                    <div className="mb-6">
+                        <SuccessMessageBoxWithButton
+                            message={success + ' Lihat Data atau edit konversi nilai lain.'}
+                            action={handleFinish}
+                            btntext="Lihat Data"
+                        />
+                    </div>
+                )}
 
         {/* Action Buttons */}
         <div className="pt-8">
