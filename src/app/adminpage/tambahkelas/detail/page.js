@@ -20,6 +20,7 @@ import { getClassById, getAcademicPeriods, getSubjects, getMahasiswa, getDosen, 
 import { ErrorMessageBoxWithButton, SuccessMessageBox, ErrorMessageBox } from "@/components/ui/message-box";
 import { assignStudentsToClass, assignLecturersToClass, removeLecturerFromClass, removeStudentFromClass, generateSchedule } from "@/lib/adminApi";
 import { AlertConfirmationDialog } from "@/components/ui/alert-dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function DetailKelas() {
     const router = useRouter();
@@ -1076,9 +1077,10 @@ export default function DetailKelas() {
                 </ScrollArea>
                 </div>
             </div>
+        </div>
 
-        {/* Jadwal Kelas Section */}
-        <div className="bg-white border-2 p-6 shadow-lg my-5" style={{ borderColor: '#015023', borderRadius: '12px', cursor: 'default' }}>
+        {/* Jadwal Kelas Section - Full Width */}
+        <div className="bg-white border-2 p-6 shadow-lg" style={{ borderColor: '#015023', borderRadius: '12px', cursor: 'default' }}>
             <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                 Daftar Jadwal Kelas
@@ -1711,7 +1713,6 @@ export default function DetailKelas() {
             confirmText="Ya, Kembali"
             cancelText="Lanjutkan Edit"
         />
-        </div>
         </div>
     </div>
     );
