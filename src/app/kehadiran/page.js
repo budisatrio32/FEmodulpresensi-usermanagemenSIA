@@ -4,72 +4,107 @@ import { useRouter } from 'next/navigation';
 import Navbar from '@/components/ui/navigation-menu';
 import DataTable from '@/components/ui/table';
 import { Eye } from 'lucide-react';
-import { useMemo, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getLecturerClasses, getAcademicPeriods } from '@/lib/attendanceApi';
+import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 
 export default function KehadiranPage() {
 	const router = useRouter();
-	const [selectedSemester, setSelectedSemester] = useState('2024-ganjil');
+	const [selectedSemester, setSelectedSemester] = useState('');
+	const [semesterOptions, setSemesterOptions] = useState([]);
+	const [classes, setClasses] = useState([]);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
 
-// Data semester options
-const semesterOptions = [
-{ value: '2024-ganjil', label: 'Semester Ganjil 2024/2025' },
-{ value: '2023-genap', label: 'Semester Genap 2023/2024' },
-{ value: '2023-ganjil', label: 'Semester Ganjil 2023/2024' },
-{ value: '2022-genap', label: 'Semester Genap 2022/2023' },
-{ value: '2022-ganjil', label: 'Semester Ganjil 2022/2023' },
-];
+	// Fetch academic periods and classes data
+	useEffect(() => {
+		fetchAcademicPeriods();
+		fetchClasses();
+	}, []);
 
-// Handle semester change
-useEffect(() => {
-// Simulasi fetch data berdasarkan semester
-console.log('Fetching data for semester:', selectedSemester);
-// TODO: Replace dengan API call
-// fetchNilaiData(selectedSemester);
-}, [selectedSemester]);
+	const fetchClasses = async () => {
+		setLoading(true);
+		try {
+			setError(null);
+			console.log('Fetching lecturer classes...');
+			const response = await getLecturerClasses();
+			console.log('API Response:', response);
+			console.log('Response type:', typeof response);
+			console.log('Response keys:', Object.keys(response));
+			console.log('Response.status:', response.status);
+			console.log('Response.data:', response.data);
 
-	// Dummy data daftar mata kuliah (presensi)
-	const data = useMemo(() => [
-		{
-			kode_matkul: 'IF301',
-			nama_matkul: 'Metode dan Model Pengembangan Perangkat Lunak',
-			sks: 3,
-			kelas: 'PL3AA',
-			dosen: 'Dr. Ahmad Wijaya',
-			jumlah_pertemuan: 8,
-		},
-		{
-			kode_matkul: 'IF210',
-			nama_matkul: 'Basis Data',
-			sks: 3,
-			kelas: 'BD2AB',
-			dosen: 'Dra. Rina Pratiwi',
-			jumlah_pertemuan: 9,
-		},
-		{
-			kode_matkul: 'IF220',
-			nama_matkul: 'Jaringan Komputer',
-			sks: 3,
-			kelas: 'JK2AA',
-			dosen: 'Budi Santoso, M.Kom',
-			jumlah_pertemuan: 7,
-		},
-		{
-			kode_matkul: 'IF205',
-			nama_matkul: 'Matematika Diskrit',
-			sks: 3,
-			kelas: 'MD2AC',
-			dosen: 'Ayu Lestari, M.Si',
-			jumlah_pertemuan: 10,
-		},
-		{
-			kode_matkul: 'IF230',
-			nama_matkul: 'Pemrograman Web Lanjut',
-			sks: 3,
-			kelas: 'PW3AB',
-			dosen: 'Rahmat Hidayat, M.Kom',
-			jumlah_pertemuan: 6,
-		},
-	], []);
+			if (response.status === 'success') {
+				// Transform API data to match table format
+				const formattedClasses = response.data.map(cls => ({
+					id_class: cls.id_class,
+					kode_matkul: cls.subject?.code_subject || '-',
+					nama_matkul: cls.subject?.name_subject || '-',
+					sks: cls.subject?.sks || 0,
+					kelas: cls.code_class,
+					dosen: cls.lecturers?.map(l => l.name).join(', ') || '-',
+					jumlah_pertemuan: cls.schedules?.length || 0,
+				}));
+				setClasses(formattedClasses);
+				console.log('Formatted classes:', formattedClasses);
+			} else {
+				const errorMsg = `API returned status: ${response.status}`;
+				console.error('API Error:', errorMsg, response);
+				setError(errorMsg);
+			}
+		} catch (err) {
+			console.error('Error fetching classes:', err);
+			console.error('Error details:', {
+				message: err.message,
+				response: err.response?.data,
+				status: err.response?.status,
+				statusText: err.response?.statusText
+			});
+
+			// More detailed error message
+			let errorMessage = 'Terjadi kesalahan saat mengambil data';
+			if (err.response) {
+				// Server responded with error
+				errorMessage = `Server Error (${err.response.status}): ${err.response.data?.message || err.response.statusText}`;
+			} else if (err.request) {
+				// Request made but no response
+				errorMessage = 'Tidak dapat terhubung ke server. Pastikan backend Laravel berjalan.';
+			} else {
+				// Something else happened
+				errorMessage = err.message;
+			}
+
+			setError(errorMessage);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const fetchAcademicPeriods = async () => {
+		try {
+			const response = await getAcademicPeriods();
+
+			if (response.status === 'success') {
+				// Transform to dropdown options
+				const options = response.data.map(period => ({
+					value: period.id_academic_period.toString(),
+					label: period.name,
+					is_active: period.is_active
+				}));
+				setSemesterOptions(options);
+
+				// Auto-select active period
+				const activePeriod = options.find(opt => opt.is_active);
+				if (activePeriod) {
+					setSelectedSemester(activePeriod.value);
+				}
+			}
+		} catch (err) {
+			console.error('Error fetching academic periods:', err);
+			// Fallback to default if API fails
+			setSemesterOptions([{ value: '', label: 'Semua Periode' }]);
+		}
+	};
 
 	const columns = [
 		{ key: 'kode_matkul', label: 'Kode Matkul', width: '130px', cellClassName: 'font-medium' },
@@ -85,7 +120,7 @@ console.log('Fetching data for semester:', selectedSemester);
 		detail: (_value, item) => (
 			<div className="flex items-center justify-center">
 				<button
-					onClick={() => router.push(`/kehadiran/${item.kode_matkul}?nama=${encodeURIComponent(item.nama_matkul)}&kelas=${encodeURIComponent(item.kelas)}&sks=${item.sks}&dosen=${encodeURIComponent(item.dosen)}`)}
+					onClick={() => router.push(`/kehadiran/${item.kode_matkul}?id_class=${item.id_class}&nama=${encodeURIComponent(item.nama_matkul)}&kelas=${encodeURIComponent(item.kelas)}&sks=${item.sks}&dosen=${encodeURIComponent(item.dosen)}`)}
 					className="flex items-center gap-2 text-white px-4 py-2 transition shadow-sm hover:opacity-90 font-semibold"
 					style={{ backgroundColor: '#015023', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
 				>
@@ -106,37 +141,38 @@ console.log('Fetching data for semester:', selectedSemester);
 			<Navbar />
 			<div className="container mx-auto px-4 py-8 max-w-7xl">
 
-                {/* Semester Selector */}
-    <div className="bg-white rounded-2xl shadow-lg p-4 mb-6" style={{ borderRadius: '16px' }}>
-        <div className="flex items-center gap-4">
-        <label 
-            htmlFor="semester-select"
-            className="text-sm font-semibold whitespace-nowrap"
-            style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}
-        >
-            Pilih Periode:
-        </label>
-        <select
-            id="semester-select"
-            value={selectedSemester}
-            onChange={(e) => setSelectedSemester(e.target.value)}
-            className="flex-1 px-4 py-2.5 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
-            style={{
-            fontFamily: 'Urbanist, sans-serif',
-            borderColor: '#015023',
-            color: '#015023',
-            fontWeight: '600',
-            maxWidth: '400px'
-            }}
-        >
-            {semesterOptions.map(option => (
-            <option key={option.value} value={option.value}>
-                {option.label}
-            </option>
-            ))}
-        </select>
-        </div>
-    </div>
+				{/* Semester Selector */}
+				<div className="bg-white rounded-2xl shadow-lg p-4 mb-6" style={{ borderRadius: '16px' }}>
+					<div className="flex items-center gap-4">
+						<label
+							htmlFor="semester-select"
+							className="text-sm font-semibold whitespace-nowrap"
+							style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}
+						>
+							Pilih Periode:
+						</label>
+						<select
+							id="semester-select"
+							value={selectedSemester}
+							onChange={(e) => setSelectedSemester(e.target.value)}
+							className="flex-1 px-4 py-2.5 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
+							style={{
+								fontFamily: 'Urbanist, sans-serif',
+								borderColor: '#015023',
+								color: '#015023',
+								fontWeight: '600',
+								maxWidth: '400px'
+							}}
+						>
+							{semesterOptions.map(option => (
+								<option key={option.value} value={option.value}>
+									{option.label}
+								</option>
+							))}
+						</select>
+					</div>
+				</div>
+
 				{/* Header */}
 				<div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ borderRadius: '16px' }}>
 					<h1 className="text-3xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
@@ -147,16 +183,29 @@ console.log('Fetching data for semester:', selectedSemester);
 					</p>
 				</div>
 
+				{ /* Error Message */}
+				{error && (
+					<ErrorMessageBoxWithButton message={error} action={fetchClasses} />
+				)}
+
+				{/* Loading State */}
+				{loading && (
+					<div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+						<p className="text-lg" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>Memuat data...</p>
+					</div>
+				)}
+
 				{/* Tabel Daftar Matkul */}
-				<DataTable
-					columns={columns}
-					data={data}
-					actions={[]}
-					pagination={false}
-					customRender={customRender}
-				/>
+				{!loading && !error && (
+					<DataTable
+						columns={columns}
+						data={classes}
+						actions={[]}
+						pagination={false}
+						customRender={customRender}
+					/>
+				)}
 			</div>
 		</div>
 	);
 }
-
