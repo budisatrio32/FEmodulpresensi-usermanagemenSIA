@@ -399,6 +399,48 @@ export const deleteAcademicPeriod = async (periodId) => {
   }
 };
 
+/**
+ * Get academic period by ID
+ * @param {number} periodId - ID academic period
+ * @returns {Promise} Response dengan data academic period
+ */
+export const getAcademicPeriodById = async (periodId) => {
+  try {
+    const response = await api.get(`/academic-periods/${periodId}`);
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error);
+  }
+};
+
+/**
+ * Update academic period by ID
+ * @param {number} periodId - ID academic period
+ * @param {Object} periodData - Data academic period yang diupdate
+ */
+export const updateAcademicPeriod = async (periodId, periodData) => {
+  try {
+    const response = await api.put(`/academic-periods/${periodId}`, periodData);
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error);
+  }
+};
+
+/**
+ * Toggle status aktif/non-aktif academic period
+ * @param {number} periodId - ID academic period yang akan diubah statusnya
+ * @returns {Promise} Response hasil update
+ */
+export const toggleAcademicPeriodStatus = async (periodId) => {
+  try {
+    const response = await api.put(`/academic-periods/${periodId}/toggle-status`);
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error);
+  }
+};
+
 export default {
   getDashboardStatistics,
   getDetailedStatistics,
@@ -428,4 +470,7 @@ export default {
   getAcademicPeriods,
   storeAcademicPeriod,
   deleteAcademicPeriod,
+  getAcademicPeriodById,
+  updateAcademicPeriod,
+  toggleAcademicPeriodStatus,
 };

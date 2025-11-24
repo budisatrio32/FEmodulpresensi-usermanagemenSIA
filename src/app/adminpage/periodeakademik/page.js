@@ -12,7 +12,7 @@ import {
   AlertWarningDialog,
 } from '@/components/ui/alert-dialog';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
-import { getAcademicPeriods, deleteAcademicPeriod } from '@/lib/adminApi';
+import { getAcademicPeriods, deleteAcademicPeriod, toggleAcademicPeriodStatus } from '@/lib/adminApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 
 export default function PeriodeAkademikDashboard() {
@@ -32,6 +32,7 @@ export default function PeriodeAkademikDashboard() {
   const [showErrorDialog, setShowErrorDialog] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(null);
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
 
   // Fetch periods from API
   const indexPeriods = async () => {
@@ -177,23 +178,30 @@ export default function PeriodeAkademikDashboard() {
       setShowActivateDialog(false);
       return;
     }
-    
+
     setShowActivateDialog(false);
-    
+    setIsTogglingStatus(true);
+
     try {
-      // TODO: Replace with actual API call
-      // await activateAcademicPeriod(selectedPeriod.id);
-      
-      // Update local state
-      setPeriods(prevPeriods => prevPeriods.map((period, i) => i === selectedIndex ? { ...period, is_active: true } : period));
-      setSuccessActivate('Periode akademik ' + selectedPeriod.name + ' berhasil diaktifkan.');
-      setShowSuccessDialog(true);
+      const response = await toggleAcademicPeriodStatus(selectedPeriod.id_academic_period);
+      if (response.status === 'success') {
+        // Update local state with new status
+        setPeriods(prevPeriods => prevPeriods.map((period, i) => 
+          i === selectedIndex ? { ...period, is_active: response.data.is_active } : period
+        ));
+        setSuccessActivate('Status periode akademik berhasil diubah menjadi ' + (response.data.is_active ? 'Aktif' : 'Non-Aktif'));
+        setShowSuccessDialog(true);
+      } else {
+        setErrorActivate('Gagal mengubah status periode akademik: ' + (response.message || 'Terjadi kesalahan'));
+        setShowErrorDialog(true);
+      }
     } catch (error) {
-      setErrorActivate('Gagal mengaktifkan periode akademik: ' + error.message);
+      setErrorActivate('Gagal mengubah status periode akademik: ' + (error.message || 'Terjadi kesalahan'));
       setShowErrorDialog(true);
     } finally {
       setSelectedPeriod(null);
       setSelectedIndex(null);
+      setIsTogglingStatus(false);
     }
   };
 
