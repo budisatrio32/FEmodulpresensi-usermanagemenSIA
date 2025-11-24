@@ -4,7 +4,7 @@ import * as React from "react"
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
 
 import { cn } from "@/lib/utils"
-import { PrimaryButton, OutlineButton, WarningButton } from "@/components/ui/button"
+import { PrimaryButton, OutlineButton, WarningButton, SecondaryButton, GhostButton } from "@/components/ui/button"
 
 function AlertDialog({
   ...props
@@ -163,6 +163,43 @@ function AlertConfirmationDialog({
     </AlertDialog>
   );
 }
+function AlertConfirmationDialogTwoOption({
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmText,
+  closeText,
+  cancelText,
+  onConfirm,
+  onCancel,
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {title || "Konfirmasikan"}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {description || "Apakah Anda yakin ingin melanjutkan?"}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel asChild>
+            <OutlineButton>{closeText || "Batal"}</OutlineButton>
+          </AlertDialogCancel>
+          <AlertDialogAction asChild>
+            <WarningButton onClick={onCancel}>{cancelText || "Lanjutkan"}</WarningButton>
+          </AlertDialogAction>
+          <AlertDialogAction asChild>
+            <WarningButton onClick={onConfirm}>{confirmText || "Lanjutkan"}</WarningButton>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
 
 function AlertErrorDialog({
   open,
@@ -286,4 +323,5 @@ export {
   AlertSuccessDialog,
   AlertInfoDialog,
   AlertWarningDialog,
+  AlertConfirmationDialogTwoOption,
 }

@@ -430,11 +430,12 @@ export const updateAcademicPeriod = async (periodId, periodData) => {
 /**
  * Toggle status aktif/non-aktif academic period
  * @param {number} periodId - ID academic period yang akan diubah statusnya
+ * @param {object} data - Data yang diaktifkan
  * @returns {Promise} Response hasil update
  */
-export const toggleAcademicPeriodStatus = async (periodId) => {
+export const toggleAcademicPeriodStatus = async (periodId, data) => {
   try {
-    const response = await api.put(`/academic-periods/${periodId}/toggle-status`);
+    const response = await api.put(`/academic-periods/${periodId}/toggle-status`, data);
     return response.data;
   } catch (error) {
     throw (error.response?.data ?? error);

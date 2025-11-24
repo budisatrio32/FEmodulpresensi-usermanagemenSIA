@@ -7,6 +7,7 @@ import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
 import {
   AlertConfirmationDialog,
+  AlertConfirmationDialogTwoOption,
   AlertErrorDialog,
   AlertSuccessDialog,
   AlertWarningDialog,
@@ -25,7 +26,7 @@ export default function PeriodeAkademikDashboard() {
   const [successActivate, setSuccessActivate] = useState(null);
   const [successDelete, setSuccessDelete] = useState(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [periods, setPeriods] = useState([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showActivateDialog, setShowActivateDialog] = useState(false);
@@ -33,6 +34,7 @@ export default function PeriodeAkademikDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+  const [showAllClassDialog, setShowAllClassDialog] = useState(false);
 
   // Fetch periods from API
   const indexPeriods = async () => {
@@ -172,23 +174,42 @@ export default function PeriodeAkademikDashboard() {
     }
     return () => clearTimeout(timer);
   }, [showSuccessDialog]);
+
   
-  const confirmActivate = async () => {
-    if (!selectedPeriod) {
-      setShowActivateDialog(false);
+  const handleToSetAreTheUserNeedToActivateAllClassesWhenActivatingPeriod = () => {
+    setShowActivateDialog(false);
+    // Jika periode saat ini aktif maka aksi berikutnya adalah menonaktifkan -> tidak perlu tanya all_class
+    if (selectedPeriod.is_active) {
+      confirmActivate();
       return;
     }
+    // Jika periode saat ini non-aktif dan akan diaktifkan -> tanya apakah semua kelas juga diaktifkan
+    setShowAllClassDialog(true);
+  }
 
+  const handleCheckToAllClassBecauseApiWantToKnowIfAllClassesNeedToBeActiveOrNotWhenClassAreGoingToActivateByUser = () => {
+    confirmActivate(true);
+  };
+
+  const handleSkipToActivateAllClassWhenActivatingPeriod = () => {
+    confirmActivate();
+  };
+  
+  const confirmActivate = async (allClass = null) => {
     setShowActivateDialog(false);
+    setShowAllClassDialog(false);
+    if (!selectedPeriod) {
+      return;
+    }
+    
     setIsTogglingStatus(true);
 
     try {
-      const response = await toggleAcademicPeriodStatus(selectedPeriod.id_academic_period);
+      const senddata = { all_class: allClass };
+      const response = await toggleAcademicPeriodStatus(selectedPeriod.id_academic_period, senddata);
       if (response.status === 'success') {
-        // Update local state with new status
-        setPeriods(prevPeriods => prevPeriods.map((period, i) => 
-          i === selectedIndex ? { ...period, is_active: response.data.is_active } : period
-        ));
+        // Karena mengaktifkan satu periode menonaktifkan periode lain, lebih aman re-fetch
+        await indexPeriods();
         setSuccessActivate('Status periode akademik berhasil diubah menjadi ' + (response.data.is_active ? 'Aktif' : 'Non-Aktif'));
         setShowSuccessDialog(true);
       } else {
@@ -331,12 +352,30 @@ export default function PeriodeAkademikDashboard() {
       <AlertConfirmationDialog 
         open={showActivateDialog}
         onOpenChange={setShowActivateDialog}
-        title="Konformasi Ubah Status"
+        title="Konfirmasi Ubah Status"
         description={
           `Apakah Anda yakin ingin ${selectedPeriod?.is_active ? 'menonaktifkan' : 'mengaktifkan'} periode ${selectedPeriod?.name}?`
         }
         confirmText={selectedPeriod?.is_active ? 'Non-Aktifkan' : 'Aktifkan'}
-        onConfirm={confirmActivate}
+        onConfirm={handleToSetAreTheUserNeedToActivateAllClassesWhenActivatingPeriod}
+      />
+
+      {/* Konfirmasi Aktivasi Semua Kelas */}
+      <AlertConfirmationDialogTwoOption 
+        open={showAllClassDialog}
+        onOpenChange={setShowAllClassDialog}
+        title="Konfirmasi Aktivasi Semua Kelas"
+        description={
+          <>
+            Apakah Anda ingin mengaktifkan semua kelas yang terkait dengan periode <strong>{selectedPeriod?.name}</strong>?<br />
+            <span className="text-xs mt-2 block">Memilih "Lewati" tetap mengaktifkan periode tanpa mengaktifkan kelas.</span>
+          </>
+        }
+        confirmText="Ya, Aktifkan Semua Kelas"
+        onConfirm={handleCheckToAllClassBecauseApiWantToKnowIfAllClassesNeedToBeActiveOrNotWhenClassAreGoingToActivateByUser}
+        cancelText="Lewati"
+        onCancel={handleSkipToActivateAllClassWhenActivatingPeriod}
+        closeText="Batalkan"
       />
 
       {/* Error Dialog */}
