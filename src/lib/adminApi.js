@@ -98,6 +98,19 @@ export const updateSubject = async (subjectId, subjectData) => {
     throw (error.response?.data ?? error);
   }
 };
+/**
+ * Delete matkul yang ada
+ * @param {number} subjectId - id matkul yang akan dihapus
+ * @returns {Promise} Response hasil delete
+ */
+export const deleteSubject = async (subjectId) => {
+  try {
+    const response = await api.delete(`/manager/subjects/${subjectId}`);
+    return response.data;
+  } catch (error) {
+    throw (error.response?.data ?? error);
+  }
+};
 
 /**
  * Get all classes
@@ -453,6 +466,7 @@ export default {
   storeSubject,
   getSubjectById,
   updateSubject,
+  deleteSubject,
   getClasses,
   getDosen,
   storeDosen,

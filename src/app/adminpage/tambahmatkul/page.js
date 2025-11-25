@@ -5,16 +5,28 @@ import { useRouter } from 'next/navigation';
 import { BookOpen, Search, X, ArrowLeft } from 'lucide-react';
 import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
-import { getSubjects } from '@/lib/adminApi';
+import { getSubjects, deleteSubject } from '@/lib/adminApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
+import {
+  AlertConfirmationDialog,
+  AlertErrorDialog,
+  AlertSuccessDialog,
+} from '@/components/ui/alert-dialog';
 
 export default function MatkulDashboard() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
+  const [errorDelete, setErrorDelete] = useState(null);
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(null);
+  const [successDelete, setSuccessDelete] = useState(null);
   const [matkuls, setMatkuls] = useState([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [selectedMatkul, setSelectedMatkul] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState(null);
 
   // Fetch subjects from API
   const indexMatkuls = async () => {
@@ -39,6 +51,18 @@ export default function MatkulDashboard() {
   useEffect(() => {
     indexMatkuls();
   }, []);
+
+  // Auto-hide success dialog after 3 seconds
+  useEffect(() => {
+    let timer;
+    if (showSuccessDialog) {
+      timer = setTimeout(() => {
+        setShowSuccessDialog(false);
+        setSuccessDelete(null);
+      }, 3000);
+    }
+    return () => clearTimeout(timer);
+  }, [showSuccessDialog]);
 
   // Filter matkul berdasarkan search query
   const filteredMatkuls = matkuls.filter(matkul => {
@@ -95,28 +119,36 @@ export default function MatkulDashboard() {
 
   // Handle delete action
   const handleDelete = async (matkul, index) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus mata kuliah "${matkul.name_subject}"?`)) {
-      try {
-        // TODO: Replace with actual API call
-        // const response = await fetch(`/api/matkul/${matkul.id}`, {
-        //   method: 'DELETE',
-        //   headers: {
-        //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-        //   }
-        // });
-        
-        // if (!response.ok) throw new Error('Gagal menghapus data');
-        
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Remove matkul from state
-        setMatkuls(prevMatkuls => prevMatkuls.filter((_, i) => i !== index));
-        
-        alert(`Mata kuliah "${matkul.name_subject}" berhasil dihapus!`);
-      } catch (error) {
-        alert("Gagal menghapus data: " + error.message);
+    setSelectedMatkul(matkul);
+    setSelectedIndex(index);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedMatkul) {
+      setShowDeleteDialog(false);
+      return;
+    }
+
+    setShowDeleteDialog(false);
+    
+    try {
+      const response = await deleteSubject(selectedMatkul.id_subject);
+      if (response.status === 'success') {
+        // Update local state
+        setMatkuls(prevMatkuls => prevMatkuls.filter((_, i) => i !== selectedIndex));
+        setSuccessDelete('Mata kuliah "' + selectedMatkul.name_subject + '" berhasil dihapus.');
+        setShowSuccessDialog(true);
+      } else {
+        setErrorDelete('Gagal menghapus mata kuliah: ' + response.message);
+        setShowErrorDialog(true);
       }
+    } catch (error) {
+      setErrorDelete('Gagal menghapus mata kuliah: ' + error.message);
+      setShowErrorDialog(true);
+    } finally {
+      setSelectedMatkul(null);
+      setSelectedIndex(null);
     }
   };
 
@@ -211,6 +243,38 @@ export default function MatkulDashboard() {
           />
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertConfirmationDialog 
+        open={showDeleteDialog} 
+        onOpenChange={setShowDeleteDialog}
+        title={'Konfirmasi Hapus'}
+        description={
+          <>
+            Apakah Anda yakin ingin menghapus mata kuliah <strong>{selectedMatkul?.name_subject}</strong>?
+            <br />
+            <span style={{ color: '#BE0414', fontWeight: '600', marginTop: '8px', display: 'block' }}>
+              Tindakan ini tidak dapat dibatalkan.
+            </span>
+          </>
+        }
+        confirmText="Hapus"
+        onConfirm={confirmDelete}
+      />
+
+      {/* Error Dialog */}
+      <AlertErrorDialog 
+        open={showErrorDialog}
+        onOpenChange={setShowErrorDialog}
+        description={errorDelete}
+      />
+
+      {/* Success Dialog */}
+      <AlertSuccessDialog 
+        open={showSuccessDialog}
+        onOpenChange={setShowSuccessDialog}
+        description={successDelete}
+      />
     </div>
   );
 }
