@@ -38,7 +38,7 @@ export default function AddPeriodeForm() {
     name: '',
     start_date: '',
     end_date: '',
-    active: false
+    active: false,
   });
 
   const handleChange = (e) => {
@@ -61,7 +61,8 @@ export default function AddPeriodeForm() {
         name: '',
         start_date: '',
         end_date: '',
-        active: false
+        active: false,
+        all_class: false
       });
     }
   };
@@ -111,7 +112,8 @@ export default function AddPeriodeForm() {
         name: formData.name,
         start_date: formData.start_date,
         end_date: formData.end_date,
-        is_active: formData.active
+        is_active: formData.active,
+        all_class: null, // selalu kirim null
       });
       if (response.status === 'success') {
         setSuccess('Periode akademik berhasil ditambahkan');
@@ -119,7 +121,7 @@ export default function AddPeriodeForm() {
           name: '',
           start_date: '',
           end_date: '',
-          active: false
+          active: false,
         });
       } else {
         newErrors.form = response.message || 'Unknown error';

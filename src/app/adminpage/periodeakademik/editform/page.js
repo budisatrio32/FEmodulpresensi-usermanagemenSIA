@@ -12,9 +12,10 @@ import {
 import { Button } from '@/components/ui/button';
 import AdminNavbar from '@/components/ui/admin-navbar';
 import { ArrowLeft, Save, X, Info } from 'lucide-react';
-import { ErrorMessageBox, SuccessMessageBoxWithButton } from '@/components/ui/message-box';
+import { ErrorMessageBox, ErrorMessageBoxWithButton, SuccessMessageBoxWithButton } from '@/components/ui/message-box';
 import LoadingEffect from '@/components/ui/loading-effect';
 import { AlertConfirmationDialog } from '@/components/ui/alert-dialog';
+import { getAcademicPeriodById, updateAcademicPeriod } from '@/lib/adminApi';
 
 export default function EditPeriodeForm() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function EditPeriodeForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(null);
+  const [countdown, setCountdown] = useState(5);
   const [loading, setLoading] = useState(true);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   
@@ -31,64 +33,34 @@ export default function EditPeriodeForm() {
     name: '',
     start_date: '',
     end_date: '',
-    active: false
+    active: false,
+    all_class: false,
   });
 
-  // Dummy data untuk simulasi
-  const dummyPeriods = {
-    1: {
-      id: 1,
-      name: 'Semester Ganjil 2024/2025',
-      start_date: '2024-09-01',
-      end_date: '2025-01-31',
-      active: true
-    },
-    2: {
-      id: 2,
-      name: 'Semester Genap 2023/2024',
-      start_date: '2024-02-01',
-      end_date: '2024-08-31',
-      active: false
-    },
-    3: {
-      id: 3,
-      name: 'Semester Ganjil 2023/2024',
-      start_date: '2023-09-01',
-      end_date: '2024-01-31',
-      active: false
-    },
-    4: {
-      id: 4,
-      name: 'Semester Genap 2022/2023',
-      start_date: '2023-02-01',
-      end_date: '2023-08-31',
-      active: false
+  const fetchPeriod = async () => {
+    setLoading(true);
+    try {
+      const response = await getAcademicPeriodById(periodId);
+      if (response.status === 'success') {
+        setFormData({
+          name: response.data.name,
+          start_date: response.data.start_date,
+          end_date: response.data.end_date,
+          active: response.data.is_active,
+          all_class: false,
+        });
+      } else {
+        setErrors({ fetch: 'Periode tidak ditemukan' });
+      }
+    } catch (error) {
+      setErrors({ fetch: 'Gagal mengambil data: ' + error.message });
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    const fetchPeriod = async () => {
-      setLoading(true);
-      try {
-        // TODO: Replace with actual API call
-        // const response = await getAcademicPeriod(periodId);
-        
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        const period = dummyPeriods[periodId];
-        
-        if (period) {
-          setFormData(period);
-        } else {
-          setErrors({ form: 'Periode tidak ditemukan' });
-        }
-      } catch (error) {
-        setErrors({ form: 'Gagal mengambil data: ' + error.message });
-      } finally {
-        setLoading(false);
-      }
-    };
 
+  useEffect(() => {
     if (periodId) {
       fetchPeriod();
     }
@@ -100,6 +72,10 @@ export default function EditPeriodeForm() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+
+    if (!formData.active) {
+      setFormData(prev => ({ ...prev, all_class: false }));
+    }
     
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
@@ -150,13 +126,19 @@ export default function EditPeriodeForm() {
 
     const newErrors = {};
     try {
-      // TODO: Replace with actual API call
-      // const response = await updateAcademicPeriod(periodId, formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSuccess('Periode akademik berhasil diperbarui');
+      const response = await updateAcademicPeriod(periodId, {
+        name: formData.name,
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        is_active: formData.active,
+        all_class: formData.all_class ?? null
+      });
+      if (response.status === 'success') {
+        setSuccess('Periode akademik berhasil diperbarui');
+        setCountdown(5);
+      } else {
+        newErrors.form = response.message || 'Unknown error';
+      }
     } catch (error) {
       newErrors.form = 'Gagal memperbarui data: ' + (error.message || 'Unknown error');
     } finally {
@@ -164,6 +146,19 @@ export default function EditPeriodeForm() {
       setErrors(prev => ({...prev, ...newErrors}));
     }
   };
+
+  // Countdown redirect effect ketika sukses
+  useEffect(() => {
+    let timer;
+    if (success) {
+      if (countdown > 0) {
+        timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+      } else {
+        handleFinish();
+      }
+    }
+    return () => clearTimeout(timer);
+  }, [success, countdown]);
 
   const handleCancel = () => {
     setShowCancelDialog(true);
@@ -180,6 +175,20 @@ export default function EditPeriodeForm() {
   if (loading) {
     return (
       <LoadingEffect />
+    );
+  } else if (errors.fetch) {
+    return (
+      <div className="min-h-screen bg-brand-light-sage">
+        <AdminNavbar title="Dashboard Admin - Edit Periode Akademik" />
+        <div className="container mx-auto px-4 py-8 max-w-5xl">
+          <ErrorMessageBoxWithButton
+            message={errors.fetch}
+            action={fetchPeriod}
+            back={true}
+            actionback={handleCancel}
+          />
+        </div>
+      </div>
     );
   }
 
@@ -427,6 +436,67 @@ export default function EditPeriodeForm() {
                 )}
               </div>
             </Field>
+            {/* Aktifkan semua kelas */}
+            {formData.active && (
+              <Field>
+                <div 
+                  className="flex items-center gap-4 p-5 border-2 cursor-pointer"
+                  style={{
+                    border: '2px solid #015023',
+                    borderRadius: '12px',
+                  backgroundColor: formData.all_class ? 'rgba(1, 80, 35, 0.05)' : 'transparent',
+                  opacity: 0.7
+                }}
+              >
+                <input
+                  type="checkbox"
+                  name="all_class"
+                  id="all_class"
+                  checked={formData.all_class}
+                  onChange={handleChange}
+                  className="w-6 h-6 cursor-pointer accent-[#015023]"
+                  style={{
+                    borderRadius: '6px'
+                  }}
+                  disabled={isLoading}
+                />
+                <div className="flex-1">
+                  <label 
+                    htmlFor="active"
+                    className="font-semibold cursor-pointer block"
+                    style={{ 
+                      color: '#015023',
+                      fontFamily: 'Urbanist, sans-serif'
+                    }}
+                  >
+                    Aktifkan semua kelas di periode ini
+                  </label>
+                  <p 
+                    className="text-sm mt-1"
+                    style={{ 
+                      color: '#015023',
+                      opacity: 0.7,
+                      fontFamily: 'Urbanist, sans-serif'
+                    }}
+                  >
+                    Jika dicentang, semua kelas di periode ini akan diaktifkan
+                  </p>
+                </div>
+                {formData.all_class && (
+                  <div 
+                    className="px-3 py-1 rounded text-xs font-semibold"
+                    style={{
+                      backgroundColor: '#16874B',
+                      color: '#FFFFFF',
+                      borderRadius: '12px'
+                    }}
+                  >
+                    Active
+                  </div>
+                )}
+              </div>
+            </Field> 
+            )}
 
             {errors.form && (
               <ErrorMessageBox message={errors.form} />
@@ -434,9 +504,9 @@ export default function EditPeriodeForm() {
 
             {success && (
               <SuccessMessageBoxWithButton
-                message={success}
+                message={success + `\nAkan dialihkan ke halaman data periode akademik dalam ${countdown} detik.`}
                 action={handleFinish}
-                btntext="Kembali ke Daftar"
+                btntext={countdown > 0 ? `Kembali ke Daftar (${countdown})` : 'Kembali ke Daftar'}
               />
             )}
 

@@ -27,7 +27,6 @@ const [isLoading, setIsLoading] = useState(false);
 const [errors, setErrors] = useState({});
 const [success, setSuccess] = useState(null);
 const [countdown, setCountdown] = useState(10);
-const [loading, setLoading] = useState(true);
 const [fetching, setFetching] = useState(true);
 const [showCancelDialog, setShowCancelDialog] = useState(false);
 
