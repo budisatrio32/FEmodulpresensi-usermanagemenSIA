@@ -1,12 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/ui/navigation-menu';
-import DataTable from '@/components/ui/table';
 import { Eye } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getLecturerClasses, getAcademicPeriods } from '@/lib/attendanceApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
+import Navbar from '@/components/ui/navigation-menu';
+import DataTable from '@/components/ui/table';
+import Footer from '@/components/ui/footer';
 
 export default function KehadiranPage() {
 	const router = useRouter();
@@ -137,9 +138,9 @@ export default function KehadiranPage() {
 	};
 
 	return (
-		<div className="min-h-screen bg-brand-light-sage">
+		<div className="min-h-screen bg-brand-light-sage flex flex-col">
 			<Navbar />
-			<div className="container mx-auto px-4 py-8 max-w-7xl">
+			<div className="container mx-auto px-4 py-8 max-w-7xl flex-grow">
 
 				{/* Semester Selector */}
 				<div className="bg-white rounded-2xl shadow-lg p-4 mb-6" style={{ borderRadius: '16px' }}>
@@ -206,6 +207,7 @@ export default function KehadiranPage() {
 					/>
 				)}
 			</div>
+			<Footer />
 		</div>
 	);
 }
