@@ -14,12 +14,15 @@ import api from './axios';
  * @returns {Promise} - Classes data
  */
 export async function getLecturerClasses(academicPeriodId = '') {
-    const url = academicPeriodId 
-        ? `/lecturer/classes/attendance-list?id_academic_period=${academicPeriodId}`
-        : `/lecturer/classes/attendance-list`;
-    
-    const response = await api.get(url);
-    return response.data;
+    try {
+        const url = academicPeriodId 
+            ? `/lecturer/classes/attendance-list?id_academic_period=${academicPeriodId}`
+            : `/lecturer/classes/attendance-list`;
+        const response = await api.get(url);
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
 }
 
 /**
@@ -28,8 +31,12 @@ export async function getLecturerClasses(academicPeriodId = '') {
  * @returns {Promise} - Class detail with schedules
  */
 export const getClassSchedules = async (classId) => {
-    const response = await api.get(`/lecturer/classes/${classId}/schedules`);
-    return response.data;
+    try {
+        const response = await api.get(`/lecturer/classes/${classId}/schedules`);
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
 };
 
 /**
@@ -38,8 +45,12 @@ export const getClassSchedules = async (classId) => {
  * @returns {Promise} - Class detail data
  */
 export const getClassDetail = async (classId) => {
-    const response = await api.get(`/lecturer/classes/${classId}`);
-    return response.data;
+    try {
+        const response = await api.get(`/lecturer/classes/${classId}`);
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
 };
 
 /**
@@ -48,8 +59,12 @@ export const getClassDetail = async (classId) => {
  * @returns {Promise} - QR session data
  */
 export const openQRSession = async (scheduleId) => {
-    const response = await api.post(`/lecturer/schedules/${scheduleId}/open-qr`);
-    return response.data;
+    try {
+        const response = await api.post(`/lecturer/schedules/${scheduleId}/open-qr`);
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
 };
 
 /**
@@ -58,8 +73,12 @@ export const openQRSession = async (scheduleId) => {
  * @returns {Promise} - Active QR data
  */
 export const getActiveQR = async (scheduleId) => {
-    const response = await api.get(`/lecturer/schedules/${scheduleId}/qr`);
-    return response.data;
+    try {
+        const response = await api.get(`/lecturer/schedules/${scheduleId}/qr`);
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
 };
 
 /**
@@ -69,10 +88,14 @@ export const getActiveQR = async (scheduleId) => {
  * @returns {Promise} - Success response
  */
 export const sendManualAttendance = async (scheduleId, studentIds) => {
-    const response = await api.post(`/lecturer/schedules/${scheduleId}/presences`, {
-        student_ids: studentIds
-    });
-    return response.data;
+    try {
+        const response = await api.post(`/lecturer/schedules/${scheduleId}/presences`, {
+            student_ids: studentIds
+        });
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
 };
 
 /**
@@ -81,8 +104,12 @@ export const sendManualAttendance = async (scheduleId, studentIds) => {
  * @returns {Promise} - Success response
  */
 export const closeAttendanceSession = async (scheduleId) => {
-    const response = await api.post(`/lecturer/schedules/${scheduleId}/close`);
-    return response.data;
+    try {
+        const response = await api.post(`/lecturer/schedules/${scheduleId}/close`);
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
 };
 
 // ========================================
@@ -94,8 +121,12 @@ export const closeAttendanceSession = async (scheduleId) => {
  * @returns {Promise} - Student classes data
  */
 export const getStudentClasses = async () => {
-    const response = await api.get('/student/classes');
-    return response.data;
+    try {
+        const response = await api.get('/student/classes');
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
 };
 
 /**
@@ -105,8 +136,12 @@ export const getStudentClasses = async () => {
  * @returns {Promise} - Attendance history data
  */
 export const getAttendanceHistory = async (studentId, classId) => {
-    const response = await api.get(`/student/${studentId}/classes/${classId}/attendances`);
-    return response.data;
+    try {
+        const response = await api.get(`/student/${studentId}/classes/${classId}/attendances`);
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
 };
 
 /**
@@ -116,11 +151,15 @@ export const getAttendanceHistory = async (studentId, classId) => {
  * @returns {Promise} - Scan result
  */
 export const scanQRAttendance = async (key, studentId) => {
-    const response = await api.post('/student/attendances/scan', {
-        key,
-        id_student: studentId
-    });
-    return response.data;
+    try {
+        const response = await api.post('/student/attendances/scan', {
+            key,
+            id_student: studentId
+        });
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
 };
 
 // ========================================
@@ -132,6 +171,10 @@ export const scanQRAttendance = async (key, studentId) => {
  * @returns {Promise} - Academic periods data
  */
 export const getAcademicPeriods = async () => {
-    const response = await api.get('/academic-periods');
-    return response.data;
+    try {
+        const response = await api.get('/academic-periods');
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
 };
