@@ -23,6 +23,7 @@ const [errorActivate, setErrorActivate] = useState(null);
 const [successActivate, setSuccessActivate] = useState(null);
 const [showErrorDialog, setShowErrorDialog] = useState(false);
 const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+const [countdown, setCountdown] = useState(5);
 
 // Fetch dosens from API
   const indexDosens = async () => {
@@ -120,6 +121,7 @@ const confirmActivate = async () => {
       ));
       
       setSuccessActivate(`Status berhasil diubah menjadi ${response.data.is_active ? 'Aktif' : 'Non-Aktif'}`);
+      setCountdown(5);
       setShowSuccessDialog(true);
     } else {
       setErrorActivate('Gagal mengubah status user');
@@ -136,13 +138,16 @@ const confirmActivate = async () => {
 useEffect(() => {
   let timer;
   if (showSuccessDialog) {
-    timer = setTimeout(() => {
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+    } else {
       setShowSuccessDialog(false);
       setSuccessActivate(null);
-    }, 3000);
+      setCountdown(5);
+    }
   }
   return () => clearTimeout(timer);
-}, [showSuccessDialog]);
+}, [showSuccessDialog, countdown]);
 
 return (
 <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100" style={{ fontFamily: 'Urbanist, sans-serif' }}>
@@ -250,7 +255,16 @@ return (
     <AlertSuccessDialog 
       open={showSuccessDialog}
       onOpenChange={setShowSuccessDialog}
-      description={successActivate}
+      description={
+        <>
+          {successActivate}
+          <br />
+          <span className="text-xs mt-2 block">
+            Pesan akan ditutup dalam {countdown} detik
+          </span>
+        </>
+      }
+      closeText={'Tutup' + (countdown > 0 ? ` (${countdown})` : '')}
     />
 
     {/* Error Activate Dialog */}

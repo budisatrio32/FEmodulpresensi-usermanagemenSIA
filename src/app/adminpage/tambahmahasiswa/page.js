@@ -27,6 +27,7 @@ const [showSuccessActivateDialog, setShowSuccessActivateDialog] = useState(false
 const [showErrorDialog, setShowErrorDialog] = useState(false);
 const [showStatusDialog, setShowStatusDialog] = useState(false);
 const [selectedStudent, setSelectedStudent] = useState(null);
+const [countdown, setCountdown] = useState(5);
 
 // Fetch students from API
 const indexStudents = async () => {
@@ -128,6 +129,7 @@ const confirmToggleStatus = async () => {
           : s
       ));
       setSuccessActivate(`Berhasil mengubah status mahasiswa: ${selectedStudent.name} menjadi ${response.data.is_active ? 'Aktif' : 'Non-Aktif'}.`);
+      setCountdown(5);
       setShowSuccessActivateDialog(true);
     } else {
       setErrorActivate('Gagal mengubah status mahasiswa: ' + response.message);
@@ -143,13 +145,18 @@ const confirmToggleStatus = async () => {
 };
 
 useEffect(() => {
-  if (!successActivate) return;
-  const timer = setTimeout(() => {
-      setSuccessActivate(null);
+  let timer;
+  if (showSuccessActivateDialog) {
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+    } else {
       setShowSuccessActivateDialog(false);
-  }, 3000);
+      setSuccessActivate(null);
+      setCountdown(5);
+    }
+  }
   return () => clearTimeout(timer);
-}, [successActivate]);
+}, [showSuccessActivateDialog, countdown]);
 
 return (
   <>
@@ -264,7 +271,16 @@ return (
     <AlertSuccessDialog
       open={showSuccessActivateDialog}
       onOpenChange={setShowSuccessActivateDialog}
-      description={successActivate}
+      description={
+        <>
+          {successActivate}
+          <br />
+          <span className="text-xs mt-2 block">
+            Pesan akan ditutup dalam {countdown} detik
+          </span>
+        </>
+      }
+      closeText={'Tutup' + (countdown > 0 ? ` (${countdown})` : '')}
     />
 </div>
 </>

@@ -23,6 +23,7 @@ export default function AkunManagerDashboard() {
   const [isTogglingStatus, setIsTogglingStatus] = useState(null);
   const [selectedManager, setSelectedManager] = useState(null);
   const [showActivateDialog, setShowActivateDialog] = useState(false);
+  const [countdown, setCountdown] = useState(5);
 
   //ambil data dari getManagers API
 
@@ -122,6 +123,7 @@ export default function AkunManagerDashboard() {
         ));
         
         setSuccessActivate(`Status berhasil diubah menjadi ${response.data.is_active ? 'Aktif' : 'Non-Aktif'}`);
+        setCountdown(5);
         setShowSuccessDialog(true);
       } else {
         setErrorActivate('Gagal mengubah status manager');
@@ -136,13 +138,18 @@ export default function AkunManagerDashboard() {
   };
 
   useEffect(() => {
-    if (!successActivate) return;
-    const timer = setTimeout(() => {
-        setSuccessActivate(null);
+    let timer;
+    if (showSuccessDialog) {
+      if (countdown > 0) {
+        timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+      } else {
         setShowSuccessDialog(false);
-    }, 3000);
+        setSuccessActivate(null);
+        setCountdown(5);
+      }
+    }
     return () => clearTimeout(timer);
-  }, [successActivate]);
+  }, [showSuccessDialog, countdown]);
 
   return (
     <div className="min-h-screen bg-brand-light-sage" style={{ fontFamily: 'Urbanist, sans-serif' }}>
@@ -251,7 +258,16 @@ export default function AkunManagerDashboard() {
       <AlertSuccessDialog
         open={showSuccessDialog}
         onOpenChange={setShowSuccessDialog}
-        description={successActivate}
+        description={
+          <>
+            {successActivate}
+            <br />
+            <span className="text-xs mt-2 block">
+              Pesan akan ditutup dalam {countdown} detik
+            </span>
+          </>
+        }
+        closeText={'Tutup' + (countdown > 0 ? ` (${countdown})` : '')}
       />
 
       {/* Error dialog */}

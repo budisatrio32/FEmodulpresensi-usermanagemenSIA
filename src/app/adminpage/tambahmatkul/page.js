@@ -27,6 +27,7 @@ export default function MatkulDashboard() {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [selectedMatkul, setSelectedMatkul] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(null);
+  const [countdown, setCountdown] = useState(5);
 
   // Fetch subjects from API
   const indexMatkuls = async () => {
@@ -52,17 +53,20 @@ export default function MatkulDashboard() {
     indexMatkuls();
   }, []);
 
-  // Auto-hide success dialog after 3 seconds
+  // Auto-hide success dialog with countdown
   useEffect(() => {
     let timer;
     if (showSuccessDialog) {
-      timer = setTimeout(() => {
+      if (countdown > 0) {
+        timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+      } else {
         setShowSuccessDialog(false);
         setSuccessDelete(null);
-      }, 3000);
+        setCountdown(5);
+      }
     }
     return () => clearTimeout(timer);
-  }, [showSuccessDialog]);
+  }, [showSuccessDialog, countdown]);
 
   // Filter matkul berdasarkan search query
   const filteredMatkuls = matkuls.filter(matkul => {
@@ -138,6 +142,7 @@ export default function MatkulDashboard() {
         // Update local state
         setMatkuls(prevMatkuls => prevMatkuls.filter((_, i) => i !== selectedIndex));
         setSuccessDelete('Mata kuliah "' + selectedMatkul.name_subject + '" berhasil dihapus.');
+        setCountdown(5);
         setShowSuccessDialog(true);
       } else {
         setErrorDelete('Gagal menghapus mata kuliah: ' + response.message);
@@ -273,7 +278,16 @@ export default function MatkulDashboard() {
       <AlertSuccessDialog 
         open={showSuccessDialog}
         onOpenChange={setShowSuccessDialog}
-        description={successDelete}
+        description={
+          <>
+            {successDelete}
+            <br />
+            <span className="text-xs mt-2 block">
+              Pesan akan ditutup dalam {countdown} detik
+            </span>
+          </>
+        }
+        closeText={'Tutup' + (countdown > 0 ? ` (${countdown})` : '')}
       />
     </div>
   );

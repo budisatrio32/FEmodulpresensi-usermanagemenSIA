@@ -23,6 +23,7 @@ export default function KelasDashboard() {
   const [selectedKelas, setSelectedKelas] = useState(null);
   const [showActivateDialog, setShowActivateDialog] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(null);
+  const [countdown, setCountdown] = useState(5);
 
   // ambil data kelas dari API
   const indexKelas = async () => {
@@ -155,6 +156,7 @@ export default function KelasDashboard() {
             : k
         ));
         setActivateSuccess(`Status kelas berhasil diubah menjadi ${response.data.is_active ? 'Aktif' : 'Non-Aktif'}`);
+        setCountdown(5);
         setShowActivateSuccessDialog(true);
       } else {
         setActivateError(`Gagal mengubah status kelas menjadi ${newStatus}`);
@@ -168,13 +170,18 @@ export default function KelasDashboard() {
     }
   };
   useEffect(() => {
-    if (!activateSuccess) return;
-    const timer = setTimeout(() => {
-        setActivateSuccess(null);
+    let timer;
+    if (showActivateSuccessDialog) {
+      if (countdown > 0) {
+        timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+      } else {
         setShowActivateSuccessDialog(false);
-    }, 3000);
+        setActivateSuccess(null);
+        setCountdown(5);
+      }
+    }
     return () => clearTimeout(timer);
-  }, [activateSuccess]);
+  }, [showActivateSuccessDialog, countdown]);
 
   return (
     <div className="min-h-screen bg-brand-light-sage" style={{ fontFamily: 'Urbanist, sans-serif' }}>
@@ -284,7 +291,16 @@ export default function KelasDashboard() {
       <AlertSuccessDialog
         open={showActivateSuccessDialog}
         onOpenChange={setShowActivateSuccessDialog}
-        description={activateSuccess}
+        description={
+          <>
+            {activateSuccess}
+            <br />
+            <span className="text-xs mt-2 block">
+              Pesan akan ditutup dalam {countdown} detik
+            </span>
+          </>
+        }
+        closeText={'Tutup' + (countdown > 0 ? ` (${countdown})` : '')}
       />
 
       {/* Activate Error Dialog */}
