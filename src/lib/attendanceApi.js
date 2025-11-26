@@ -25,6 +25,16 @@ export async function getLecturerClasses(academicPeriodId = '') {
 }
 
 /**
+ * Get class detail with schedules for attendance detail page
+ * @param {number} classId - The class ID
+ * @returns {Promise} - Class detail with schedules
+ */
+export const getClassSchedules = async (classId) => {
+    const response = await api.get(`/lecturer/classes/${classId}/schedules`);
+    return response.data;
+};
+
+/**
  * Get class detail with students and schedules
  * @param {number} classId - The class ID
  * @returns {Promise} - Class detail data
