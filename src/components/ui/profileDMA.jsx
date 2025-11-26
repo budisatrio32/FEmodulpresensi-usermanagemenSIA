@@ -11,6 +11,9 @@ import LoadingEffect from './loading-effect';
 import { buildImageUrl } from '@/lib/utils';
 import { ErrorMessageBoxWithButton, SuccessMessageBox, ErrorMessageBox } from './message-box';
 import { useAuth } from '@/lib/auth-context';
+import {
+  AlertConfirmationDialog,
+} from '@/components/ui/alert-dialog';
 
 export default function ProfileDMA() {
 const router = useRouter();
@@ -26,6 +29,8 @@ const [showOldPassword, setShowOldPassword] = useState(false);
 const [showPassword, setShowPassword] = useState(false);
 const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 const [imagePreview, setImagePreview] = useState(null);
+const [showSaveDialog, setShowSaveDialog] = useState(false);
+const [showCancelDialog, setShowCancelDialog] = useState(false);
 
 // State untuk data profile DMA (Dosen, Manager, Admin)
 const [profileData, setProfileData] = useState({
@@ -232,6 +237,11 @@ const handleSubmit = async (e) => {
         return;
     }
 
+    setShowSaveDialog(true);
+};
+
+const confirmSave = async () => {
+    setShowSaveDialog(false);
     setIsLoading(true);
 
     setErrors(prev => ({ ...prev, submit: null, submitpassword: null }));
@@ -311,9 +321,12 @@ const handleDeleteProfileImage = async () => {
 };
 
 const handleCancel = () => {
-    if (window.confirm('Apakah Anda yakin ingin membatalkan perubahan?')) {
-        router.back();
-    }
+    setShowCancelDialog(true);
+};
+
+const confirmCancel = () => {
+    setShowCancelDialog(false);
+    router.back();
 };
 
 const handleBack = () => {
@@ -324,7 +337,7 @@ useEffect(() => {
     if (!successSubmit) return;
     const timer = setTimeout(() => {
         setSuccessSubmit(null);
-    }, 10000);
+    }, 5000);
     return () => clearTimeout(timer);
 }, [successSubmit]);
 
@@ -332,7 +345,7 @@ useEffect(() => {
     if (!successPassword) return;
     const timer = setTimeout(() => {
         setSuccessPassword(null);
-    }, 10000);
+    }, 5000);
     return () => clearTimeout(timer);
 }, [successPassword]);
 
@@ -340,7 +353,7 @@ useEffect(() => {
     if (!successDeleteImage) return;
     const timer = setTimeout(() => {
         setSuccessDeleteImage(null);
-    }, 10000);
+    }, 5000);
     return () => clearTimeout(timer);
 }, [successDeleteImage]);
 
@@ -911,6 +924,36 @@ return (
             </PrimaryButton>
         </div>
     </form>
+
+    {/* Save Confirmation Dialog */}
+    <AlertConfirmationDialog 
+        open={showSaveDialog}
+        onOpenChange={setShowSaveDialog}
+        title="Konfirmasi Simpan"
+        description="Apakah Anda yakin ingin menyimpan perubahan data profil?"
+        confirmText="Ya, Simpan"
+        cancelText="Batal"
+        onConfirm={confirmSave}
+    />
+
+    {/* Cancel Confirmation Dialog */}
+    <AlertConfirmationDialog 
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        title="Konfirmasi Pembatalan"
+        description={
+          <>
+            Apakah Anda yakin ingin membatalkan perubahan?
+            <br />
+            <span style={{ color: '#BE0414', fontWeight: '600', marginTop: '8px', display: 'block' }}>
+              Data yang diisi akan hilang.
+            </span>
+          </>
+        }
+        confirmText="Ya, Batalkan"
+        cancelText="Lanjutkan Mengisi"
+        onConfirm={confirmCancel}
+    />
     </div>
 </div>
 );

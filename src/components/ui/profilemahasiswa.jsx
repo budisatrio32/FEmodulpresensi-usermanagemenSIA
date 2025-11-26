@@ -11,6 +11,9 @@ import LoadingEffect from './loading-effect';
 import { buildImageUrl } from '@/lib/utils';
 import { ErrorMessageBox, SuccessMessageBox, ErrorMessageBoxWithButton } from './message-box';
 import { useAuth } from '@/lib/auth-context';
+import {
+  AlertConfirmationDialog,
+} from '@/components/ui/alert-dialog';
 
 export default function ProfileMahasiswa() {
 const router = useRouter();
@@ -24,6 +27,8 @@ const [showOldPassword, setShowOldPassword] = useState(false);
 const [showPassword, setShowPassword] = useState(false);
 const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 const [imagePreview, setImagePreview] = useState(null);
+const [showSaveDialog, setShowSaveDialog] = useState(false);
+const [showCancelDialog, setShowCancelDialog] = useState(false);
 
 // State untuk data profile mahasiswa
 const [profileData, setProfileData] = useState({
@@ -484,9 +489,6 @@ const getStudentStudentFamilyAndEducationSubmissionBecauseApiWantOnlyUpdatedData
 };
 
 const handleSubmit = async (e) => {
-if (!window.confirm('Apakah Anda yakin ingin menyimpan perubahan? Beberapa data tidak dapat diubah kembali setelah disimpan.')) {
-    return;
-}
 e.preventDefault();
 
 if (!validateForm()) {
@@ -497,6 +499,11 @@ if (!validateForm()) {
     return;
 }
 
+setShowSaveDialog(true);
+};
+
+const confirmSave = async () => {
+setShowSaveDialog(false);
 setIsLoading(true);
 setErrors(prev => ({
     ...prev,
@@ -632,9 +639,12 @@ const handleDeleteProfileImage = async () => {
 };
 
 const handleCancel = () => {
-    if (window.confirm('Apakah Anda yakin ingin membatalkan perubahan?')) {
-        router.back();
-    }
+    setShowCancelDialog(true);
+};
+
+const confirmCancel = () => {
+    setShowCancelDialog(false);
+    router.back();
 };
 const handleBack = () => {
     router.back();
@@ -971,7 +981,7 @@ return (
             Jenis Kelamin <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            Pilih jenis kelamin <span className="text-red-500">{!editableData.gender ? '(tidak dapat diubah)' : ''}</span>
+            Pilih jenis kelamin <span className="text-red-500">{!editableData.gender ? '(tidak dapat diubah)' : '(tidak dapat diubah setelah disimpan)'}</span>
             </FieldDescription>
             <FieldContent>
             <select
@@ -1048,7 +1058,7 @@ return (
             Tempat Lahir <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            Kota/Kabupaten tempat lahir <span className="text-red-500">{!editableData.tempat_lahir ? '(tidak dapat diubah)' : ''}</span>
+            Kota/Kabupaten tempat lahir <span className="text-red-500">{!editableData.tempat_lahir ? '(tidak dapat diubah)' : '(tidak dapat diubah setelah disimpan)'}</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -1079,7 +1089,7 @@ return (
             Tanggal Lahir <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            Format: DD/MM/YYYY <span className="text-red-500">{!editableData.tanggal_lahir ? '(tidak dapat diubah)' : ''}</span>
+            Format: DD/MM/YYYY <span className="text-red-500">{!editableData.tanggal_lahir ? '(tidak dapat diubah)' : '(tidak dapat diubah setelah disimpan)'}</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -1110,7 +1120,7 @@ return (
             NIK (Nomor Induk Kependudukan) <span className="text-red-500">*</span>
             </FieldLabel>
             <FieldDescription>
-            16 digit NIK sesuai KTP <span className="text-red-500">{!editableData.nik ? '(tidak dapat diubah)' : ''}</span>
+            16 digit NIK sesuai KTP <span className="text-red-500">{!editableData.nik ? '(tidak dapat diubah)' : '(tidak dapat diubah setelah disimpan)'}</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -1142,7 +1152,7 @@ return (
             Nomor Kartu Keluarga
             </FieldLabel>
             <FieldDescription>
-            16 digit nomor KK <span className="text-red-500">{!editableData.nomor_kartu_keluarga ? '(tidak dapat diubah)' : ''}</span>
+            16 digit nomor KK <span className="text-red-500">{!editableData.nomor_kartu_keluarga ? '(tidak dapat diubah)' : '(tidak dapat diubah setelah disimpan)'}</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -1496,7 +1506,7 @@ return (
             Anak Ke-
             </FieldLabel>
             <FieldDescription>
-            Urutan kelahiran dalam keluarga (1, 2, 3, dst.) <span className="text-red-500">{!editableData.birth_order ? '(tidak dapat diubah)' : ''}</span>
+            Urutan kelahiran dalam keluarga (1, 2, 3, dst.) <span className="text-red-500">{!editableData.birth_order ? '(tidak dapat diubah)' : '(tidak dapat diubah setelah disimpan)'}</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -1559,7 +1569,7 @@ return (
             Ijazah Terakhir
             </FieldLabel>
             <FieldDescription>
-            SMA, SMK, MA, Paket C, Lainnya <span className="text-red-500">{!editableData.ijazah_terakhir ? '(tidak dapat diubah)' : ''}</span>
+            SMA, SMK, MA, Paket C, Lainnya <span className="text-red-500">{!editableData.ijazah_terakhir ? '(tidak dapat diubah)' : '(tidak dapat diubah setelah disimpan)'}</span>
             </FieldDescription>
             <FieldContent>
             <select
@@ -1598,7 +1608,7 @@ return (
             Sekolah Asal
             </FieldLabel>
             <FieldDescription>
-            Nama sekolah menengah atas terakhir <span className="text-red-500">{!editableData.sekolah_asal ? '(tidak dapat diubah)' : ''}</span>
+            Nama sekolah menengah atas terakhir <span className="text-red-500">{!editableData.sekolah_asal ? '(tidak dapat diubah)' : '(tidak dapat diubah setelah disimpan)'}</span>
             </FieldDescription>
             <FieldContent>
             <input
@@ -1836,6 +1846,44 @@ return (
         </PrimaryButton>
         </div>
     </form>
+
+    {/* Save Confirmation Dialog */}
+    <AlertConfirmationDialog 
+        open={showSaveDialog}
+        onOpenChange={setShowSaveDialog}
+        title="Konfirmasi Simpan"
+        description={
+          <>
+            Apakah Anda yakin ingin menyimpan perubahan?
+            <br />
+            <span style={{ color: '#DABC4E', fontWeight: '600', marginTop: '8px', display: 'block' }}>
+              Beberapa data tidak dapat diubah kembali setelah disimpan.
+            </span>
+          </>
+        }
+        confirmText="Ya, Simpan"
+        cancelText="Batal"
+        onConfirm={confirmSave}
+    />
+
+    {/* Cancel Confirmation Dialog */}
+    <AlertConfirmationDialog 
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        title="Konfirmasi Pembatalan"
+        description={
+          <>
+            Apakah Anda yakin ingin membatalkan perubahan?
+            <br />
+            <span style={{ color: '#BE0414', fontWeight: '600', marginTop: '8px', display: 'block' }}>
+              Data yang diisi akan hilang.
+            </span>
+          </>
+        }
+        confirmText="Ya, Batalkan"
+        cancelText="Lanjutkan Mengisi"
+        onConfirm={confirmCancel}
+    />
     </div>
 </div>
 );

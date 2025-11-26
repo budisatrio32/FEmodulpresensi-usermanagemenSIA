@@ -35,6 +35,7 @@ export default function PeriodeAkademikDashboard() {
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
   const [showAllClassDialog, setShowAllClassDialog] = useState(false);
+  const [countdown, setCountdown] = useState(5);
 
   // Fetch periods from API
   const indexPeriods = async () => {
@@ -148,6 +149,7 @@ export default function PeriodeAkademikDashboard() {
         // Update local state
         setPeriods(prevPeriods => prevPeriods.filter((_, i) => i !== selectedIndex));
         setSuccessDelete('Periode akademik ' + selectedPeriod.name + ' berhasil dihapus.');
+        setCountdown(5);
         setShowSuccessDialog(true);
       } else {
         setErrorDelete('Gagal menghapus periode akademik: ' + response.message);
@@ -162,18 +164,20 @@ export default function PeriodeAkademikDashboard() {
     }
   };
 
-  // show activate dialog hilang setelah 2 detik tambahkan juga menghilangkan success message
   useEffect(() => {
     let timer;
     if (showSuccessDialog) {
-      timer = setTimeout(() => {
+      if (countdown > 0) {
+        timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+      } else {
         setShowSuccessDialog(false);
         setSuccessActivate(null);
         setSuccessDelete(null);
-      }, 3000);
+        setCountdown(5);
+      }
     }
     return () => clearTimeout(timer);
-  }, [showSuccessDialog]);
+  }, [showSuccessDialog, countdown]);
 
   
   const handleToSetAreTheUserNeedToActivateAllClassesWhenActivatingPeriod = () => {
@@ -211,6 +215,7 @@ export default function PeriodeAkademikDashboard() {
         // Karena mengaktifkan satu periode menonaktifkan periode lain, lebih aman re-fetch
         await indexPeriods();
         setSuccessActivate('Status periode akademik berhasil diubah menjadi ' + (response.data.is_active ? 'Aktif' : 'Non-Aktif'));
+        setCountdown(5);
         setShowSuccessDialog(true);
       } else {
         setErrorActivate('Gagal mengubah status periode akademik: ' + (response.message || 'Terjadi kesalahan'));
@@ -389,7 +394,16 @@ export default function PeriodeAkademikDashboard() {
       <AlertSuccessDialog 
         open={showSuccessDialog}
         onOpenChange={setShowSuccessDialog}
-        description={successActivate || successDelete}
+        description={
+          <>
+            {successActivate || successDelete}
+            <br />
+            <span className="text-xs mt-2 block">
+              Pesan akan ditutup dalam {countdown} detik
+            </span>
+          </>
+        }
+        closeText={'Tutup' + (countdown > 0 ? ` (${countdown})` : '')}
       />
     </div>
   );
