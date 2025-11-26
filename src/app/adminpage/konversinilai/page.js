@@ -25,6 +25,7 @@ export default function KonversiNilaiPage() {
   const [deleteError, setDeleteError] = useState(null);
   const [showDeleteSuccessDialog, setShowDeleteSuccessDialog] = useState(false);
   const [showDeleteErrorDialog, setShowDeleteErrorDialog] = useState(false);
+  const [countdown, setCountdown] = useState(5);
 
   // Fetch periods from API
   const indexGradeConversions = async () => {
@@ -49,6 +50,20 @@ export default function KonversiNilaiPage() {
     indexGradeConversions();
   }, []);
 
+  useEffect(() => {
+    let timer;
+    if (showDeleteSuccessDialog) {
+      if (countdown > 0) {
+        timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+      } else {
+        setShowDeleteSuccessDialog(false);
+        setDeleteSuccess(null);
+        setCountdown(5);
+      }
+    }
+    return () => clearTimeout(timer);
+  }, [showDeleteSuccessDialog, countdown]);
+
   const handleEdit = (rule) => {
     router.push(`/adminpage/konversinilai/editform?id=${rule.id_grades}`);
   };
@@ -63,8 +78,9 @@ export default function KonversiNilaiPage() {
     try {
       const response = await deleteGradeConversion(selectedRule.id_grades);
       if (response.status === 'success') {
-        setDeleteSuccess('Periode akademik ' + selectedRule.letter + ' berhasil dihapus.');
+        setDeleteSuccess('Konversi nilai ' + selectedRule.letter + ' berhasil dihapus.');
         setGradeRules(prev => prev.filter(r => r.id_grades !== selectedRule.id_grades));
+        setCountdown(5);
         setShowDeleteSuccessDialog(true);
       } else {
         setDeleteError('Gagal menghapus konversi nilai: ' + response.message);
@@ -238,7 +254,16 @@ export default function KonversiNilaiPage() {
       <AlertSuccessDialog 
         open={showDeleteSuccessDialog}
         onOpenChange={setShowDeleteSuccessDialog}
-        description={deleteSuccess}
+        description={
+          <>
+            {deleteSuccess}
+            <br />
+            <span className="text-xs mt-2 block">
+              Pesan akan ditutup dalam {countdown} detik
+            </span>
+          </>
+        }
+        closeText={'Tutup' + (countdown > 0 ? ` (${countdown})` : '')}
       />
 
       <AlertErrorDialog 
