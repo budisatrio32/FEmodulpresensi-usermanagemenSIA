@@ -2,28 +2,79 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Navbar from '@/components/ui/navigation-menu';
-import DataTable from '@/components/ui/table';
 import { ArrowLeft, CalendarDays, QrCode, UserCheck, ClipboardCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { getClassSchedules } from '@/lib/attendanceApi';
+import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
+import Navbar from '@/components/ui/navigation-menu';
+import DataTable from '@/components/ui/table';
+import Footer from '@/components/ui/footer';
 
 export default function DetailKehadiranPage({ params }) {
 const router = useRouter();
 const searchParams = useSearchParams();
 const { kode } = params;
+const id_class = searchParams.get('id_class') || '';
 const nama = searchParams.get('nama') || '';
 const kelas = searchParams.get('kelas') || '';
 const sks = searchParams.get('sks') || '';
 const dosen = searchParams.get('dosen') || '';
 
-// Role detection
+// State management
 const [role, setRole] = useState('mahasiswa');
+const [classInfo, setClassInfo] = useState(null);
+const [schedules, setSchedules] = useState([]);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState(null);
 
+// Fetch data on mount
 useEffect(() => {
-// Get role from localStorage (or cookies in production)
-const userRole = localStorage.getItem('userRole') || 'mahasiswa';
-setRole(userRole);
-}, []);
+	const userRole = localStorage.getItem('userRole') || 'mahasiswa';
+	setRole(userRole);
+	
+	if (id_class && userRole === 'dosen') {
+		fetchClassSchedules();
+	} else {
+		setLoading(false);
+	}
+}, [id_class]);
+
+// Fetch class schedules from API
+const fetchClassSchedules = async () => {
+	setLoading(true);
+	try {
+		setError(null);
+		console.log('Fetching class schedules for id_class:', id_class);
+
+		const data = await getClassSchedules(id_class);
+		console.log('API Response:', data);
+
+		if (data.status === 'success') {
+			setClassInfo(data.data.class_info);
+			setSchedules(data.data.schedules);
+			console.log('Schedules loaded:', data.data.schedules.length, 'items');
+		} else {
+			const errorMsg = data.message || 'Gagal mengambil data pertemuan';
+			console.error('API Error:', errorMsg);
+			setError(errorMsg);
+		}
+	} catch (err) {
+		console.error('Error fetching schedules:', err);
+		
+		let errorMessage = 'Terjadi kesalahan saat mengambil data';
+		if (err.response) {
+			errorMessage = `Server Error (${err.response.status}): ${err.response.data?.message || err.response.statusText}`;
+		} else if (err.request) {
+			errorMessage = 'Tidak dapat terhubung ke server. Pastikan backend Laravel berjalan.';
+		} else {
+			errorMessage = err.message;
+		}
+		
+		setError(errorMessage);
+	} finally {
+		setLoading(false);
+	}
+};
 
 // Toggle role function (for development only)
 const toggleRole = () => {
@@ -32,57 +83,9 @@ setRole(newRole);
 localStorage.setItem('userRole', newRole);
 };
 
-// Dummy data pertemuan
-const pertemuanData = [
-{
-    pertemuan: 1,
-    tanggal: new Date('2024-09-02'),
-    jamMulai: '08:00',
-    jamSelesai: '10:30',
-    kelas: kelas,
-    status: 'Scan QR',
-    jamPresensi: '08:05',
-},
-{
-    pertemuan: 2,
-    tanggal: new Date('2024-09-09'),
-    jamMulai: '08:00',
-    jamSelesai: '10:30',
-    kelas: kelas,
-    status: 'Ditambahkan Dosen',
-    jamPresensi: '-',
-},
-{
-    pertemuan: 3,
-    tanggal: new Date('2024-09-16'),
-    jamMulai: '08:00',
-    jamSelesai: '10:30',
-    kelas: kelas,
-    status: 'Scan QR',
-    jamPresensi: '07:58',
-},
-{
-    pertemuan: 4,
-    tanggal: new Date('2024-09-23'),
-    jamMulai: '08:00',
-    jamSelesai: '10:30',
-    kelas: kelas,
-    status: null,
-    jamPresensi: null,
-},
-{
-    pertemuan: 5,
-    tanggal: new Date('2024-09-30'),
-    jamMulai: '08:00',
-    jamSelesai: '10:30',
-    kelas: kelas,
-    status: 'Scan QR',
-    jamPresensi: '08:10',
-},
-];
-
 // Format tanggal
-const formatTanggal = (date) => {
+const formatTanggal = (dateString) => {
+const date = new Date(dateString);
 const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -141,14 +144,22 @@ jam_presensi: (value, item) => {
 },
 };
 
+// Format jam (HH:mm dari HH:mm:ss)
+const formatJam = (time) => {
+    if (!time) return '-';
+    // Jika format HH:mm:ss, ambil HH:mm saja
+    return time.substring(0, 5);
+};
+
 // Custom render untuk dosen
 const customRenderDosen = {
 tanggal: (value, item) => formatTanggal(item.tanggal),
-jam: (value, item) => `${item.jamMulai} - ${item.jamSelesai}`,
+jam: (value, item) => `${formatJam(item.jam_mulai)} - ${formatJam(item.jam_selesai)}`,
+kelas: (value, item) => item.code_class,
 aksi: (value, item) => (
     <div className="flex items-center justify-center">
     <button
-        onClick={() => router.push(`/kehadiran/${kode}/pertemuan/${item.pertemuan}?nama=${encodeURIComponent(nama)}&kelas=${encodeURIComponent(kelas)}&tanggal=${item.tanggal.toISOString()}`)}
+        onClick={() => router.push(`/kehadiran/${kode}/pertemuan/${item.pertemuan}?id_schedule=${item.id_schedule}&id_class=${id_class}&nama=${encodeURIComponent(nama)}&kelas=${encodeURIComponent(item.code_class)}&tanggal=${item.tanggal}`)}
         className="flex items-center gap-2 text-white px-4 py-2 transition shadow-sm hover:opacity-90 font-semibold"
         style={{ backgroundColor: '#015023', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
     >
@@ -157,10 +168,16 @@ aksi: (value, item) => (
     </button>
     </div>
 ),
-};    return (
-<div className="min-h-screen bg-brand-light-sage">
-    <Navbar />
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+};
+
+// Display data dan class info
+const displayData = schedules;
+const displayClassInfo = classInfo || { code_class: kelas, sks, dosen };
+
+return (
+<div className="min-h-screen bg-brand-light-sage flex flex-col">
+    <Navbar/>
+    <div className="container mx-auto px-4 py-8 max-w-7xl flex-grow">
     
     {/* Dev Toggle Role Button */}
     <div className="mb-4 flex justify-end">
@@ -188,6 +205,20 @@ aksi: (value, item) => (
         Kembali ke Daftar Mata Kuliah
     </button>
 
+    {/* Error Message */}
+    {error && role === 'dosen' && (
+        <ErrorMessageBoxWithButton message={error} action={fetchClassSchedules} />
+    )}
+
+    {/* Loading State */}
+    {loading && role === 'dosen' && (
+        <div className="bg-white rounded-2xl shadow-lg p-8 text-center mb-6">
+            <p className="text-lg" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>Memuat data...</p>
+        </div>
+    )}
+
+    {/* Card Info Mata Kuliah */}
+    {!loading && (
     <div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ borderRadius: '16px' }}>
         <div className="flex items-start gap-4">
         <div className="p-4 rounded-xl" style={{ backgroundColor: '#015023' }}>
@@ -195,7 +226,7 @@ aksi: (value, item) => (
         </div>
         <div className="flex-1">
             <h1 className="text-3xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-            Detail Presensi - {kode}
+            Detail Presensi - {classInfo?.code_subject || kode}
             </h1>
             <p className="mt-1 text-lg" style={{ color: '#015023', opacity: 0.75, fontFamily: 'Urbanist, sans-serif' }}>
             {nama}
@@ -216,52 +247,36 @@ aksi: (value, item) => (
         </div>
         </div>
 
-        {/* Summary Stats - Hidden for Dosen */}
-        {role === 'mahasiswa' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-200">
-        <div>
-            <p className="text-sm font-medium" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
-            Total Pertemuan
-            </p>
-            <p className="text-2xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-            {pertemuanData.length}
-            </p>
-        </div>
-        <div>
-            <p className="text-sm font-medium" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
-            Sudah Presensi
-            </p>
-            <p className="text-2xl font-bold" style={{ color: '#16874B', fontFamily: 'Urbanist, sans-serif' }}>
-            {pertemuanData.filter(p => p.status).length}
-            </p>
-        </div>
-        <div>
-            <p className="text-sm font-medium" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
-            Persentase Kehadiran
-            </p>
-            <p className="text-2xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-            {Math.round((pertemuanData.filter(p => p.status).length / pertemuanData.length) * 100)}%
-            </p>
-        </div>
-        </div>
-        )}
     </div>
+    )}
 
     {/* Tabel Pertemuan */}
+    {!loading && role === 'dosen' && displayData.length > 0 && (
     <div className="bg-white rounded-2xl shadow-lg p-6" style={{ borderRadius: '16px' }}>
         <h2 className="text-xl font-bold mb-4" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-        {role === 'dosen' ? 'Daftar Pertemuan & Input Presensi' : 'Riwayat Presensi'}
+        Daftar Pertemuan & Input Presensi
         </h2>
         
         <DataTable
-        columns={role === 'dosen' ? columnsDosen : columnsMahasiswa}
-        data={pertemuanData}
+        columns={columnsDosen}
+        data={displayData}
         actions={[]}
         pagination={false}
-        customRender={role === 'dosen' ? customRenderDosen : customRenderMahasiswa}
+        customRender={customRenderDosen}
         />
     </div>
+    )}
+
+    {/* Empty State */}
+    {!loading && role === 'dosen' && displayData.length === 0 && (
+        <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+            <p className="text-lg" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
+                Belum ada jadwal pertemuan untuk kelas ini.
+            </p>
+        </div>
+    )}
     </div>
+    <Footer/>
 </div>
 );
 }
