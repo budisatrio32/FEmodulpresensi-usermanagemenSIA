@@ -5,6 +5,8 @@ import api from './axios';
  * Handles all attendance-related API calls
  */
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+
 // ========================================
 // LECTURER ATTENDANCE APIS
 // ========================================
@@ -13,10 +15,14 @@ import api from './axios';
  * Get all classes for authenticated lecturer
  * @returns {Promise} - Classes data
  */
-export const getLecturerClasses = async () => {
-    const response = await api.get('/lecturer/classes');
+export async function getLecturerClasses(academicPeriodId = '') {
+    const url = academicPeriodId 
+        ? `/lecturer/classes/attendance-list?id_academic_period=${academicPeriodId}`
+        : `/lecturer/classes/attendance-list`;
+    
+    const response = await api.get(url);
     return response.data;
-};
+}
 
 /**
  * Get class detail with students and schedules

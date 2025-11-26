@@ -17,61 +17,45 @@ export default function KehadiranPage() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 
-	// Fetch academic periods and classes data
+	// Fetch academic periods only on mount
 	useEffect(() => {
 		fetchAcademicPeriods();
-		fetchClasses();
 	}, []);
+
+	// Fetch classes when semester changes
+	useEffect(() => {
+		if (selectedSemester !== '') {
+			fetchClasses();
+		}
+	}, [selectedSemester]);
 
 	const fetchClasses = async () => {
 		setLoading(true);
 		try {
 			setError(null);
-			console.log('Fetching lecturer classes...');
-			const response = await getLecturerClasses();
-			console.log('API Response:', response);
-			console.log('Response type:', typeof response);
-			console.log('Response keys:', Object.keys(response));
-			console.log('Response.status:', response.status);
-			console.log('Response.data:', response.data);
+			console.log('Fetching lecturer classes with filter:', selectedSemester);
 
-			if (response.status === 'success') {
-				// Transform API data to match table format
-				const formattedClasses = response.data.map(cls => ({
-					id_class: cls.id_class,
-					kode_matkul: cls.subject?.code_subject || '-',
-					nama_matkul: cls.subject?.name_subject || '-',
-					sks: cls.subject?.sks || 0,
-					kelas: cls.code_class,
-					dosen: cls.lecturers?.map(l => l.name).join(', ') || '-',
-					jumlah_pertemuan: cls.schedules?.length || 0,
-				}));
-				setClasses(formattedClasses);
-				console.log('Formatted classes:', formattedClasses);
+			const data = await getLecturerClasses(selectedSemester);
+			console.log('API Response:', data);
+
+			if (data.status === 'success') {
+				setClasses(data.data);
+				console.log('Classes loaded:', data.data.length, 'items');
 			} else {
-				const errorMsg = `API returned status: ${response.status}`;
-				console.error('API Error:', errorMsg, response);
+				const errorMsg = data.message || 'Gagal mengambil data kelas';
+				console.error('API Error:', errorMsg);
 				setError(errorMsg);
 			}
+
 		} catch (err) {
 			console.error('Error fetching classes:', err);
-			console.error('Error details:', {
-				message: err.message,
-				response: err.response?.data,
-				status: err.response?.status,
-				statusText: err.response?.statusText
-			});
-
-			// More detailed error message
+			
 			let errorMessage = 'Terjadi kesalahan saat mengambil data';
 			if (err.response) {
-				// Server responded with error
 				errorMessage = `Server Error (${err.response.status}): ${err.response.data?.message || err.response.statusText}`;
 			} else if (err.request) {
-				// Request made but no response
 				errorMessage = 'Tidak dapat terhubung ke server. Pastikan backend Laravel berjalan.';
 			} else {
-				// Something else happened
 				errorMessage = err.message;
 			}
 
@@ -83,11 +67,11 @@ export default function KehadiranPage() {
 
 	const fetchAcademicPeriods = async () => {
 		try {
-			const response = await getAcademicPeriods();
+			const data = await getAcademicPeriods();
 
-			if (response.status === 'success') {
+			if (data.status === 'success') {
 				// Transform to dropdown options
-				const options = response.data.map(period => ({
+				const options = data.data.map(period => ({
 					value: period.id_academic_period.toString(),
 					label: period.name,
 					is_active: period.is_active
@@ -102,7 +86,6 @@ export default function KehadiranPage() {
 			}
 		} catch (err) {
 			console.error('Error fetching academic periods:', err);
-			// Fallback to default if API fails
 			setSemesterOptions([{ value: '', label: 'Semua Periode' }]);
 		}
 	};
@@ -139,7 +122,7 @@ export default function KehadiranPage() {
 
 	return (
 		<div className="min-h-screen bg-brand-light-sage flex flex-col">
-			<Navbar />
+			<Navbar/>
 			<div className="container mx-auto px-4 py-8 max-w-7xl flex-grow">
 
 				{/* Semester Selector */}
@@ -207,7 +190,7 @@ export default function KehadiranPage() {
 					/>
 				)}
 			</div>
-			<Footer />
+			<Footer/>
 		</div>
 	);
 }

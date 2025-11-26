@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Navbar from '@/components/ui/navigation-menu';
-import DataTable from '@/components/ui/table';
 import { ArrowLeft, CalendarDays, QrCode, UserCheck, ClipboardCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Navbar from '@/components/ui/navigation-menu';
+import DataTable from '@/components/ui/table';
+import Footer from '@/components/ui/footer';
 
 export default function DetailKehadiranPage({ params }) {
 const router = useRouter();
@@ -158,9 +159,9 @@ aksi: (value, item) => (
     </div>
 ),
 };    return (
-<div className="min-h-screen bg-brand-light-sage">
-    <Navbar />
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+<div className="min-h-screen bg-brand-light-sage flex flex-col">
+    <Navbar/>
+    <div className="container mx-auto px-4 py-8 max-w-7xl flex-grow">
     
     {/* Dev Toggle Role Button */}
     <div className="mb-4 flex justify-end">
@@ -262,6 +263,7 @@ aksi: (value, item) => (
         />
     </div>
     </div>
+    <Footer/>
 </div>
 );
 }
