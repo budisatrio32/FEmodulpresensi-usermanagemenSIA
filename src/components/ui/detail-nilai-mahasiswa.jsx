@@ -6,75 +6,137 @@ import { ArrowLeft, FileText, Download } from 'lucide-react';
 import DataTable from '@/components/ui/table';
 import { PrimaryButton, OutlineButton } from '@/components/ui/button';
 import Navbar from '@/components/ui/navigation-menu';
+import LoadingEffect from '@/components/ui/loading-effect';
+import { getAcademicPeriods, getStudentGrades, downloadTranscriptPDF } from '@/lib/gradingApi';
+import { getStudentProfile } from '@/lib/profileApi';
 
 export default function DetailNilaiMahasiswa() {
 const router = useRouter();
 
-// State untuk semester selector
-const [selectedSemester, setSelectedSemester] = useState('2024-ganjil');
+// State Management
+const [isLoading, setIsLoading] = useState(true);
+const [isDownloading, setIsDownloading] = useState(false);
+const [selectedSemester, setSelectedSemester] = useState('');
+const [semesterOptions, setSemesterOptions] = useState([]);
+const [nilaiData, setNilaiData] = useState([]);
+const [studentInfo, setStudentInfo] = useState({
+    nim: '-',
+    name: '-',
+    program: '-'
+});
+const [summary, setSummary] = useState({
+    totalSKS: 0,
+    totalNilaiSKS: 0,
+    ipk: 0
+});
 
-// Data semester options
-const semesterOptions = [
-{ value: '2024-ganjil', label: 'Semester Ganjil 2024/2025' },
-{ value: '2023-genap', label: 'Semester Genap 2023/2024' },
-{ value: '2023-ganjil', label: 'Semester Ganjil 2023/2024' },
-{ value: '2022-genap', label: 'Semester Genap 2022/2023' },
-{ value: '2022-ganjil', label: 'Semester Ganjil 2022/2023' },
-];
+// Fetch Academic Periods saat component mount
+useEffect(() => {
+    fetchAcademicPeriods();
+    fetchStudentInfo();
+}, []);
 
-// Data dummy nilai mahasiswa
-const [nilaiData] = useState([
-{
-    id: 1,
-    kode_matkul: 'IF101',
-    nama_matkul: 'Pemrograman Dasar',
-    sks: 3,
-    bobot: 'A',
-    nilai: 4.00,
-    nilai_sks: 12.00
-},
-{
-    id: 2,
-    kode_matkul: 'IF102',
-    nama_matkul: 'Matematika Diskrit',
-    sks: 3,
-    bobot: 'A-',
-    nilai: 3.75,
-    nilai_sks: 11.25
-},
-{
-    id: 3,
-    kode_matkul: 'IF103',
-    nama_matkul: 'Algoritma dan Struktur Data',
-    sks: 4,
-    bobot: 'B+',
-    nilai: 3.50,
-    nilai_sks: 14.00
-},
-{
-    id: 4,
-    kode_matkul: 'IF104',
-    nama_matkul: 'Basis Data',
-    sks: 3,
-    bobot: 'B',
-    nilai: 3.00,
-    nilai_sks: 9.00
-},
-{
-    id: 5,
-    kode_matkul: 'IF105',
-    nama_matkul: 'Jaringan Komputer',
-    sks: 3,
-    bobot: 'A',
-    nilai: 4.00,
-    nilai_sks: 12.00
-},
-]);
+    const fetchAcademicPeriods = async () => {
+        try {
+            const data = await getAcademicPeriods();
 
-// Hitung total SKS dan IPK
-const totalSKS = nilaiData.reduce((sum, item) => sum + item.sks, 0);
-const totalNilaiSKS = nilaiData.reduce((sum, item) => sum + item.nilai_sks, 0);
-const ipk = (totalNilaiSKS / totalSKS).toFixed(2);
+            if (data.status === 'success') {
+                // Transform to dropdown options
+                const options = data.data.map(period => ({
+                    value: period.id_academic_period.toString(),
+                    label: period.name,
+                    is_active: period.is_active
+                }));
+                setSemesterOptions(options);
+
+                // Auto-select active period
+                const activePeriod = options.find(opt => opt.is_active);
+                if (activePeriod) {
+                    setSelectedSemester(activePeriod.value);
+                }
+            }
+        } catch (err) {
+            console.error('Error fetching academic periods:', err);
+            setSemesterOptions([{ value: '', label: 'Semua Periode' }]);
+        }
+    };
+
+// Fetch Student Info
+const fetchStudentInfo = async () => {
+    try {
+        const response = await getStudentProfile();
+        
+        if (response.status === 'success' && response.data) {
+            setStudentInfo({
+                nim: response.data.registration_number || '-',
+                name: response.data.full_name || '-',
+                program: response.data.program_name || '-'
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching student profile:', error);
+        // Keep default values
+    }
+};
+
+// Fetch Student Grades ketika semester berubah
+useEffect(() => {
+    if (selectedSemester) {
+        fetchStudentGrades();
+    }
+}, [selectedSemester]);
+
+// Fetch Student Grades
+const fetchStudentGrades = async () => {
+    setIsLoading(true);
+    try {
+        const response = await getStudentGrades(selectedSemester);
+        
+        if (response.status === 'success' && response.data) {
+            // Flatten data dari semua periode menjadi satu array
+            let allGrades = [];
+            response.data.forEach(period => {
+                if (period.data && Array.isArray(period.data)) {
+                    period.data.forEach(item => {
+                        if (item.grade_details) {
+                            allGrades.push({
+                                id: item.id_class,
+                                kode_matkul: item.code_subject,
+                                nama_matkul: item.subject_name,
+                                sks: item.sks,
+                                bobot: item.grade_details.letter,
+                                nilai: item.grade_details.ip,
+                                nilai_sks: item.sks * item.grade_details.ip
+                            });
+                        }
+                    });
+                }
+            });
+            
+            setNilaiData(allGrades);
+            
+            // Calculate summary
+            const totalSKS = allGrades.reduce((sum, item) => sum + item.sks, 0);
+            const totalNilaiSKS = allGrades.reduce((sum, item) => sum + item.nilai_sks, 0);
+            const ipk = totalSKS > 0 ? (totalNilaiSKS / totalSKS) : 0;
+            
+            setSummary({
+                totalSKS,
+                totalNilaiSKS,
+                ipk
+            });
+        } else {
+            setNilaiData([]);
+            setSummary({ totalSKS: 0, totalNilaiSKS: 0, ipk: 0 });
+        }
+    } catch (error) {
+        console.error('Error fetching student grades:', error);
+        setNilaiData([]);
+        setSummary({ totalSKS: 0, totalNilaiSKS: 0, ipk: 0 });
+    } finally {
+        setIsLoading(false);
+    }
+};
 
 // Define table columns
 const columns = [
@@ -103,27 +165,64 @@ const columns = [
 { 
     key: 'nilai', 
     label: 'Nilai', 
-    width: '100px' 
+    width: '100px',
+    render: (value) => value ? value.toFixed(2) : '-'
 },
 { 
     key: 'nilai_sks', 
     label: 'Nilai x SKS', 
     width: '120px',
-    cellClassName: 'font-medium'
+    cellClassName: 'font-medium',
+    render: (value) => value ? value.toFixed(2) : '-'
 },
 ];
 
-// Handle semester change
-useEffect(() => {
-// Simulasi fetch data berdasarkan semester
-console.log('Fetching data for semester:', selectedSemester);
-// TODO: Replace dengan API call
-// fetchNilaiData(selectedSemester);
-}, [selectedSemester]);
+const handleExport = async () => {
+    if (!selectedSemester) {
+        alert('Silakan tunggu data periode dimuat');
+        return;
+    }
 
-const handleExport = () => {
-alert('Fitur export akan segera tersedia');
+    setIsDownloading(true);
+    try {
+        // Call API to get PDF blob
+        const response = await downloadTranscriptPDF(selectedSemester);
+        
+        // Create blob URL
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        
+        // Create temporary link and trigger download
+        const link = document.createElement('a');
+        link.href = url;
+        
+        // Generate filename
+        const periodName = semesterOptions.find(s => s.value === selectedSemester)?.label || 'Transkrip';
+        const safePeriodName = periodName.replace(/[^A-Za-z0-9\-]/g, '_');
+        const nim = studentInfo.nim !== '-' ? studentInfo.nim : 'Mahasiswa';
+        link.download = `KHS_${nim}_${safePeriodName}.pdf`;
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        
+        // Cleanup
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+    } catch (error) {
+        console.error('Error downloading PDF:', error);
+        alert('Gagal mengunduh PDF. Silakan coba lagi.');
+    } finally {
+        setIsDownloading(false);
+    }
 };
+
+// Show loading
+// Show loading
+if (isLoading) {
+    return <LoadingEffect message="Memuat data nilai..." />;
+}
 
 return (
 
@@ -208,13 +307,14 @@ return (
         </div>
 
         {/* Info Mahasiswa */}
+        {/* Info Mahasiswa */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-200">
         <div>
             <p className="text-sm font-medium" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
             NIM
             </p>
             <p className="text-lg font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-            2021110001
+            {studentInfo.nim}
             </p>
         </div>
         <div>
@@ -222,7 +322,7 @@ return (
             Nama Mahasiswa
             </p>
             <p className="text-lg font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-            John Doe
+            {studentInfo.name}
             </p>
         </div>
         <div>
@@ -230,12 +330,11 @@ return (
             Program Studi
             </p>
             <p className="text-lg font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-            Teknik Informatika
+            {studentInfo.program}
             </p>
         </div>
         </div>
     </div>
-
     {/* Table Nilai */}
     <div className="mb-6">
         <DataTable
@@ -261,7 +360,7 @@ return (
             Total SKS
             </p>
             <p className="text-3xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-            {totalSKS}
+            {summary.totalSKS}
             </p>
         </div>
         
@@ -270,7 +369,7 @@ return (
             Total Nilai x SKS
             </p>
             <p className="text-3xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-            {totalNilaiSKS.toFixed(2)}
+            {summary.totalNilaiSKS.toFixed(2)}
             </p>
         </div>
         
@@ -282,7 +381,7 @@ return (
             IPK Semester
             </p>
             <p className="text-3xl font-bold" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-            {ipk}
+            {summary.ipk.toFixed(2)}
             </p>
         </div>
         </div>

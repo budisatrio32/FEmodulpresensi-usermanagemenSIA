@@ -134,11 +134,28 @@ export default function DetailNilaiDosen() {
 
     // Handle semester change
     useEffect(() => {
-    // Simulasi fetch data berdasarkan semester
-    console.log('Fetching data for semester:', selectedSemester);
-    // TODO: Replace dengan API call
-    // fetchMatkulData(selectedSemester);
+    fetchClassData(selectedSemester);
     }, [selectedSemester]);
+
+    const fetchClassData = async (semester) => {
+    setIsLoading(true);
+    try {
+    const response = await getClassForGradingByDosen(semester);
+    if (response.status === 'success') {
+        setMatkulData(response.data);
+
+    }
+    else {
+        console.error('Failed to fetch class data:', response.message);
+    }
+
+
+    } catch (error) {
+    console.error('Error fetching class data:', error);
+    } finally {
+    setIsLoading(false);
+    }
+    };
 
     return (
     <div className="min-h-screen bg-brand-light-sage">
