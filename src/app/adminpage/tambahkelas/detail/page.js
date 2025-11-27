@@ -1080,7 +1080,7 @@ export default function DetailKelas() {
         </div>
 
         {/* Jadwal Kelas Section - Full Width */}
-        <div className="bg-white border-2 p-6 shadow-lg" style={{ borderColor: '#015023', borderRadius: '12px', cursor: 'default' }}>
+        <div className="bg-white border-2 p-6 shadow-lg mt-5" style={{ borderColor: '#015023', borderRadius: '12px', cursor: 'default' }}>
             <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                 Daftar Jadwal Kelas
