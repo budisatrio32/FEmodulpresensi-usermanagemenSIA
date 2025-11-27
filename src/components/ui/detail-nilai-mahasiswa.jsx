@@ -103,35 +103,21 @@ const fetchStudentGrades = async () => {
     setIsLoading(true);
     try {
         const response = await getStudentGrades(selectedSemester);
-        
         if (response.status === 'success') {
-            // Flatten data dari semua periode menjadi satu array
-            let allGrades = [];
-            response.data.forEach(period => {
-                if (period.data && Array.isArray(period.data)) {
-                    period.data.forEach(item => {
-                        if (item.grade_details) {
-                            allGrades.push({
-                                id: item.id_class,
-                                kode_matkul: item.code_subject,
-                                nama_matkul: item.subject_name,
-                                sks: item.sks,
-                                bobot: item.grade_details.letter,
-                                nilai: item.grade_details.ip,
-                                nilai_sks: item.sks * item.grade_details.ip
-                            });
-                        }
-                    });
-                }
-            });
-            
+            const allGrades = (response.data?.grade || []).map(item => ({
+                id: item.id_class,
+                kode_matkul: item.code_subject,
+                nama_matkul: item.subject_name,
+                sks: item.sks,
+                nilai: item.grade_details?.letter || null,
+                bobot: item.grade_details?.ip ?? null,
+                nilai_sks: item.grade_details ? (item.sks || 0) * (item.grade_details?.ip ?? 0) : null
+            }));
             setNilaiData(allGrades);
-            
             // Calculate summary
             const totalSKS = allGrades.reduce((sum, item) => sum + item.sks, 0);
             const totalNilaiSKS = allGrades.reduce((sum, item) => sum + item.nilai_sks, 0);
             const ipk = totalSKS > 0 ? (totalNilaiSKS / totalSKS) : 0;
-            
             setSummary({
                 totalSKS,
                 totalNilaiSKS,
@@ -169,20 +155,20 @@ const columns = [
     width: '80px' 
 },
 { 
-    key: 'bobot', 
-    label: 'Bobot', 
-    width: '80px',
-    cellClassName: 'font-semibold'
-},
-{ 
     key: 'nilai', 
     label: 'Nilai', 
     width: '100px',
     render: (value) => value ? value.toFixed(2) : '-'
 },
 { 
+    key: 'bobot', 
+    label: 'Bobot', 
+    width: '80px',
+    cellClassName: 'font-semibold'
+},
+{ 
     key: 'nilai_sks', 
-    label: 'Nilai x SKS', 
+    label: 'Nilai SKS', 
     width: '120px',
     cellClassName: 'font-medium',
     render: (value) => value ? value.toFixed(2) : '-'
