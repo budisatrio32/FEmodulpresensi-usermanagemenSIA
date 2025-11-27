@@ -24,6 +24,7 @@ const [studentInfo, setStudentInfo] = useState({
     name: '-',
     program: '-'
 });
+const [errors, setErrors] = useState({});
 const [summary, setSummary] = useState({
     totalSKS: 0,
     totalNilaiSKS: 0,
@@ -32,17 +33,26 @@ const [summary, setSummary] = useState({
 
 // Fetch Academic Periods saat component mount
 useEffect(() => {
-    fetchAcademicPeriods();
-    fetchStudentInfo();
+    fecthAllData();
 }, []);
+
+    // Fetch All 
+    const fecthAllData = async () => {
+        setIsLoading(true);
+        await Promise.all([
+            fetchAcademicPeriods(), 
+            fetchStudentInfo()
+        ]);
+        setIsLoading(false);
+    }
 
     const fetchAcademicPeriods = async () => {
         try {
-            const data = await getAcademicPeriods();
+            const response = await getAcademicPeriods();
 
-            if (data.status === 'success') {
+            if (response.status === 'success') {
                 // Transform to dropdown options
-                const options = data.data.map(period => ({
+                const options = response.data.map(period => ({
                     value: period.id_academic_period.toString(),
                     label: period.name,
                     is_active: period.is_active
@@ -54,10 +64,11 @@ useEffect(() => {
                 if (activePeriod) {
                     setSelectedSemester(activePeriod.value);
                 }
+            } else {
+                setErrors(prev => ({...prev, fetch: 'Gagal memuat periode akademik: ' + response.message }));
             }
         } catch (err) {
-            console.error('Error fetching academic periods:', err);
-            setSemesterOptions([{ value: '', label: 'Semua Periode' }]);
+            setErrors(prev => ({...prev, fetch: 'Terjadi kesalahan saat memuat periode akademik: ' + err.message }));
         }
     };
 
@@ -72,10 +83,11 @@ const fetchStudentInfo = async () => {
                 name: response.data.full_name || '-',
                 program: response.data.program_name || '-'
             });
+        } else {
+            setErrors('Gagal memuat profil mahasiswa: ' + response.message);
         }
     } catch (error) {
-        console.error('Error fetching student profile:', error);
-        // Keep default values
+        setErrors('Terjadi kesalahan saat memuat profil mahasiswa: ' + error.message);
     }
 };
 
@@ -92,7 +104,7 @@ const fetchStudentGrades = async () => {
     try {
         const response = await getStudentGrades(selectedSemester);
         
-        if (response.status === 'success' && response.data) {
+        if (response.status === 'success') {
             // Flatten data dari semua periode menjadi satu array
             let allGrades = [];
             response.data.forEach(period => {

@@ -1,6 +1,8 @@
 ﻿'use client';
 
+
 import Navbar from '@/components/ui/navigation-menu';
+import AdminNavbar from '@/components/ui/admin-navbar';
 import ProfileMahasiswa from '@/components/ui/profilemahasiswa';
 import ProfileDMA from '@/components/ui/profileDMA';
 import Cookies from 'js-cookie';
@@ -23,7 +25,8 @@ export default function ProfilePage() {
 
   return (
     <>
-      <Navbar />
+      {(userRole === 'mahasiswa' || userRole === 'dosen') && <Navbar />}
+      {(userRole === 'admin' || userRole === 'manager') && <AdminNavbar title="Dashboard Admin - Profil" />}
       {renderProfileComponent()}
     </>
   );
