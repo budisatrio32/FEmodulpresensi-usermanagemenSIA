@@ -28,8 +28,11 @@ const [studentInfo, setStudentInfo] = useState({
 });
 const [errors, setErrors] = useState({});
 const [summary, setSummary] = useState({
-    totalSKS: 0,
+    totalSKSSems: 0,
+    totalSkS: 0,
+    totalNilaiSKSsems: 0,
     totalNilaiSKS: 0,
+    ips: 0,
     ipk: 0
 });
 
@@ -117,14 +120,13 @@ const fetchStudentGrades = async () => {
                 nilai_sks: item.grade_details ? (item.sks || 0) * (item.grade_details?.ip ?? 0) : null
             }));
             setNilaiData(allGrades);
-            // Calculate summary
-            const totalSKS = allGrades.reduce((sum, item) => sum + item.sks, 0);
-            const totalNilaiSKS = allGrades.reduce((sum, item) => sum + item.nilai_sks, 0);
-            const ipk = totalSKS > 0 ? (totalNilaiSKS / totalSKS) : 0;
             setSummary({
-                totalSKS,
-                totalNilaiSKS,
-                ipk
+                totalSKSSems: response.data.summary.total_sks_sems,
+                totalSkS: response.data.summary.total_sks_all,
+                totalNilaiSKSsems: response.data.summary.total_nilai_x_sks_sems,
+                totalNilaiSKS: response.data.summary.total_nilai_x_sks_all,
+                ips: response.data.summary.ips,
+                ipk: response.data.summary.ipk
             });
         } else {
             setNilaiData([]);
@@ -326,7 +328,6 @@ return (
         </div>
 
         {/* Info Mahasiswa */}
-        {/* Info Mahasiswa */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-200">
         <div>
             <p className="text-sm font-medium" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
@@ -389,28 +390,37 @@ return (
         Ringkasan
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-6">
             <div className="bg-gray-50 rounded-xl p-4">
                 <p className="text-sm font-medium mb-1" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
-                Total SKS Semester
+                SKS Semester
                 </p>
                 <p className="text-3xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                {summary.totalSKS}
+                {summary.totalSKSSems}
                 </p>
             </div>
 
             <div className="bg-gray-50 rounded-xl p-4">
                 <p className="text-sm font-medium mb-1" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
-                Total SKS
+                SKS
                 </p>
                 <p className="text-3xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                {summary.totalSKS}
+                {summary.totalSkS}
                 </p>
             </div>
             
             <div className="bg-gray-50 rounded-xl p-4">
                 <p className="text-sm font-medium mb-1" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
-                Total Nilai SKS
+                Nilai SKS Semester
+                </p>
+                <p className="text-3xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                {summary.totalNilaiSKSsems.toFixed(2)}
+                </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-sm font-medium mb-1" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
+                Nilai SKS
                 </p>
                 <p className="text-3xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                 {summary.totalNilaiSKS.toFixed(2)}
@@ -425,7 +435,7 @@ return (
                 IP Semester
                 </p>
                 <p className="text-3xl font-bold" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                {summary.ipk.toFixed(2)}
+                {summary.ips.toFixed(2)}
                 </p>
             </div>
             <div 
