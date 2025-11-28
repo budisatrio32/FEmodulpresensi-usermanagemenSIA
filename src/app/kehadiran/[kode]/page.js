@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, CalendarDays, QrCode, UserCheck, ClipboardCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -9,11 +9,12 @@ import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 import Navbar from '@/components/ui/navigation-menu';
 import DataTable from '@/components/ui/table';
 import Footer from '@/components/ui/footer';
+import LoadingEffect from '@/components/ui/loading-effect';
 
 export default function DetailKehadiranPage({ params }) {
 const router = useRouter();
 const searchParams = useSearchParams();
-const { kode } = params;
+const { kode } = React.use(params);
 const id_class = searchParams.get('id_class') || '';
 const nama = searchParams.get('nama') || '';
 const kelas = searchParams.get('kelas') || '';
@@ -174,8 +175,12 @@ aksi: (value, item) => (
 const displayData = schedules;
 const displayClassInfo = classInfo || { code_class: kelas, sks, dosen };
 
+if (loading && role === 'dosen') {
+    return <LoadingEffect message="Memuat data mahasiswa..." />;
+}
+
 return (
-<div className="min-h-screen bg-brand-light-sage flex flex-col">
+    <div className="min-h-screen bg-brand-light-sage flex flex-col">
     <Navbar/>
     <div className="container mx-auto px-4 py-8 max-w-7xl flex-grow">
     
@@ -210,15 +215,8 @@ return (
         <ErrorMessageBoxWithButton message={error} action={fetchClassSchedules} />
     )}
 
-    {/* Loading State */}
-    {loading && role === 'dosen' && (
-        <div className="bg-white rounded-2xl shadow-lg p-8 text-center mb-6">
-            <p className="text-lg" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>Memuat data...</p>
-        </div>
-    )}
-
     {/* Card Info Mata Kuliah */}
-    {!loading && (
+    {(
     <div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ borderRadius: '16px' }}>
         <div className="flex items-start gap-4">
         <div className="p-4 rounded-xl" style={{ backgroundColor: '#015023' }}>

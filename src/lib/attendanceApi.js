@@ -40,9 +40,9 @@ export const getClassSchedules = async (classId) => {
 };
 
 /**
- * Get class detail with students and schedules
+ * Get class detail with students and schedules for manual attendance input
  * @param {number} classId - The class ID
- * @returns {Promise} - Class detail data
+ * @returns {Promise} - Class detail data with students list
  */
 export const getClassDetail = async (classId) => {
     try {
@@ -82,6 +82,20 @@ export const getActiveQR = async (scheduleId) => {
 };
 
 /**
+ * Get attendance records for a schedule
+ * @param {number} scheduleId - The schedule ID
+ * @returns {Promise} - Attendance records data
+ */
+export const getPresencesBySchedule = async (scheduleId) => {
+    try {
+        const response = await api.get(`/lecturer/schedules/${scheduleId}/presences`);
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
+};
+
+/**
  * Send manual attendance (lecturer marks students)
  * @param {number} scheduleId - The schedule ID
  * @param {Array} studentIds - Array of student IDs
@@ -92,6 +106,21 @@ export const sendManualAttendance = async (scheduleId, studentIds) => {
         const response = await api.post(`/lecturer/schedules/${scheduleId}/presences`, {
             student_ids: studentIds
         });
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
+};
+
+/**
+ * Delete attendance for a student
+ * @param {number} scheduleId - The schedule ID
+ * @param {number} studentId - The student ID
+ * @returns {Promise} - Success response
+ */
+export const deletePresence = async (scheduleId, studentId) => {
+    try {
+        const response = await api.delete(`/lecturer/schedules/${scheduleId}/presences/${studentId}`);
         return response.data;
     } catch (error) {
         throw (error.response?.data ?? error);

@@ -8,6 +8,7 @@ import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 import Navbar from '@/components/ui/navigation-menu';
 import DataTable from '@/components/ui/table';
 import Footer from '@/components/ui/footer';
+import LoadingEffect from '@/components/ui/loading-effect';
 
 export default function KehadiranPage() {
 	const router = useRouter();
@@ -119,6 +120,10 @@ export default function KehadiranPage() {
 			</span>
 		),
 	};
+
+	if (loading) {
+		return <LoadingEffect message="Memuat data kelas..." />;
+	}
 
 	return (
 		<div className="min-h-screen bg-brand-light-sage flex flex-col">
