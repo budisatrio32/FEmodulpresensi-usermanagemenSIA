@@ -31,6 +31,25 @@ export const toggleClassStatus = async (classId) => {
     }
 };
 
+/**
+ * Get teaching classes for lecturer
+ * @param {string} academicPeriodId - Optional academic period filter
+ * @returns {Promise} Response dengan data kelas yang diajar
+ */
+export const getTeachingClasses = async (academicPeriodId = null) => {
+    try {
+        const params = {};
+        if (academicPeriodId) {
+            params.academic_period_id = academicPeriodId;
+        }
+        const response = await api.get('lecturer/classes', { params });
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
+};
+
 export default {
     getAllClasses,
+    getTeachingClasses,
 };
