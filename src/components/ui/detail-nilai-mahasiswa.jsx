@@ -9,6 +9,7 @@ import Navbar from '@/components/ui/navigation-menu';
 import LoadingEffect from '@/components/ui/loading-effect';
 import { getAcademicPeriods, getStudentGrades, downloadTranscriptPDF } from '@/lib/gradingApi';
 import { getStudentProfile } from '@/lib/profileApi';
+import { getGradeConversions } from '@/lib/gradeConv';
 import { ErrorMessageBoxWithButton } from './message-box';
 
 export default function DetailNilaiMahasiswa() {
@@ -27,6 +28,7 @@ const [studentInfo, setStudentInfo] = useState({
     program: '-'
 });
 const [errors, setErrors] = useState({});
+const [gradeConversions, setGradeConversions] = useState([]);
 const [summary, setSummary] = useState({
     totalSKSSems: 0,
     totalSkS: 0,
@@ -47,7 +49,8 @@ useEffect(() => {
         setIsLoading(true);
         await Promise.all([
             fetchAcademicPeriods(), 
-            fetchStudentInfo()
+            fetchStudentInfo(),
+            fetchGradeConversions()
         ]);
         setIsLoading(false);
     }
@@ -94,6 +97,22 @@ const fetchStudentInfo = async () => {
         }
     } catch (error) {
         setErrors(prev => ({...prev, fetch: 'Terjadi kesalahan saat memuat data: ' + error.message }));
+    }
+};
+
+// Fetch Grade Conversions
+const fetchGradeConversions = async () => {
+    try {
+        const response = await getGradeConversions();
+        if (response.status === 'success') {
+            // Sort by ip_skor descending
+            const sorted = response.data.sort((a, b) => b.ip_skor - a.ip_skor);
+            setGradeConversions(sorted);
+        } else {
+            setErrors(prev => ({...prev, fetch: 'Gagal memuat data: ' + response.message }));
+        }
+    } catch (error) {
+        setErrors(prev => ({...prev, fetch: 'Terjadi kesalahan saat memuat data: ' + error.message }) );
     }
 };
 
@@ -182,6 +201,7 @@ const columns = [
 ];
 
 const handleExport = async () => {
+    setErrors(prev => ({...prev, export: null}));
     if (!selectedSemester) {
         alert('Silakan tunggu data periode dimuat');
         return;
@@ -215,8 +235,7 @@ const handleExport = async () => {
         window.URL.revokeObjectURL(url);
         
     } catch (error) {
-        console.error('Error downloading PDF:', error);
-        alert('Gagal mengunduh PDF. Silakan coba lagi.');
+        setErrors(prev => ({...prev, export: 'Gagal mengunduh PDF. Silakan coba lagi.'}));
     } finally {
         setIsDownloading(false);
     }
@@ -356,10 +375,10 @@ return (
         </div>
     </div>
     {/* error */}
-    {errors.grades && (
+    {errors.grades || errors.export && (
         <ErrorMessageBoxWithButton 
-            message={errors.grades} 
-            action={fetchStudentGrades} 
+            message={errors.grades || errors.export} 
+            action={errors.grades ? fetchStudentGrades : handleExport} 
         />
     )}
 
@@ -456,39 +475,19 @@ return (
         <h4 className="text-sm font-semibold mb-3" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
             Keterangan Bobot Nilai:
         </h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-            <div className="flex justify-between">
-            <span className="font-medium">A:</span>
-            <span className="text-gray-600">4.00</span>
-            </div>
-            <div className="flex justify-between">
-            <span className="font-medium">A-:</span>
-            <span className="text-gray-600">3.75</span>
-            </div>
-            <div className="flex justify-between">
-            <span className="font-medium">B+:</span>
-            <span className="text-gray-600">3.50</span>
-            </div>
-            <div className="flex justify-between">
-            <span className="font-medium">B:</span>
-            <span className="text-gray-600">3.00</span>
-            </div>
-            <div className="flex justify-between">
-            <span className="font-medium">B-:</span>
-            <span className="text-gray-600">2.75</span>
-            </div>
-            <div className="flex justify-between">
-            <span className="font-medium">C+:</span>
-            <span className="text-gray-600">2.50</span>
-            </div>
-            <div className="flex justify-between">
-            <span className="font-medium">C:</span>
-            <span className="text-gray-600">2.00</span>
-            </div>
-            <div className="flex justify-between">
-            <span className="font-medium">D:</span>
-            <span className="text-gray-600">1.00</span>
-            </div>
+        <div className="grid grid-cols-4 md:grid-cols-8 xl:grid-cols-12 gap-3 text-sm" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+            {gradeConversions.length > 0 ? (
+                gradeConversions.map((grade) => (
+                    <div key={grade.id_grades} className="flex justify-between">
+                        <span className="font-medium">{grade.letter}:</span>
+                        <span className="text-gray-600">{typeof grade.ip_skor === 'number' ? grade.ip_skor.toFixed(2) : grade.ip_skor}</span>
+                    </div>
+                ))
+            ) : (
+                <div className="col-span-full text-center text-gray-500">
+                    Memuat keterangan bobot nilai...
+                </div>
+            )}
         </div>
         </div>
     </div>
