@@ -9,6 +9,7 @@ import Navbar from '@/components/ui/navigation-menu';
 import LoadingEffect from '@/components/ui/loading-effect';
 import { getAcademicPeriods, getStudentGrades, downloadTranscriptPDF } from '@/lib/gradingApi';
 import { getStudentProfile } from '@/lib/profileApi';
+import { ErrorMessageBoxWithButton } from './message-box';
 
 export default function DetailNilaiMahasiswa() {
 const router = useRouter();
@@ -34,11 +35,12 @@ const [summary, setSummary] = useState({
 
 // Fetch Academic Periods saat component mount
 useEffect(() => {
-    fecthAllData();
+    fetchAll();
 }, []);
 
     // Fetch All 
-    const fecthAllData = async () => {
+    const fetchAll = async () => {
+        setErrors(prev => ({...prev, fetch: null}));
         setIsLoading(true);
         await Promise.all([
             fetchAcademicPeriods(), 
@@ -66,10 +68,10 @@ useEffect(() => {
                     setSelectedSemester(activePeriod.value);
                 }
             } else {
-                setErrors(prev => ({...prev, fetch: 'Gagal memuat periode akademik: ' + response.message }));
+                setErrors(prev => ({...prev, fetch: 'Gagal memuat data: ' + response.message }));
             }
         } catch (err) {
-            setErrors(prev => ({...prev, fetch: 'Terjadi kesalahan saat memuat periode akademik: ' + err.message }));
+            setErrors(prev => ({...prev, fetch: 'Terjadi kesalahan saat memuat data: ' + err.message }));
         }
     };
 
@@ -85,10 +87,10 @@ const fetchStudentInfo = async () => {
                 program: response.data.program_name || '-'
             });
         } else {
-            setErrors('Gagal memuat profil mahasiswa: ' + response.message);
+            setErrors(prev => ({...prev, fetch: 'Gagal memuat data: ' + response.message }));
         }
     } catch (error) {
-        setErrors('Terjadi kesalahan saat memuat profil mahasiswa: ' + error.message);
+        setErrors(prev => ({...prev, fetch: 'Terjadi kesalahan saat memuat data: ' + error.message }));
     }
 };
 
@@ -218,10 +220,27 @@ const handleExport = async () => {
     }
 };
 
-// Show loading
+const handleBack = () => {
+    router.back();
+}
+
 // Show loading
 if (isLoading) {
-    return <LoadingEffect message="Memuat data nilai..." />;
+    return <LoadingEffect message="Memuat data nilai..." />
+} else if (errors.fetch) {
+    return (
+    <div className="min-h-screen bg-brand-light-sage">
+        <Navbar/>
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <ErrorMessageBoxWithButton
+            message={errors.fetch}
+            action={fetchAll}
+            back={true}
+            actionback={handleBack}
+        />
+        </div>
+    </div>
+    );
 }
 
 return (
@@ -335,6 +354,14 @@ return (
         </div>
         </div>
     </div>
+    {/* error */}
+    {errors.grades && (
+        <ErrorMessageBoxWithButton 
+            message={errors.grades} 
+            action={fetchStudentGrades} 
+        />
+    )}
+
     {/* Loading State nilai */}
     {loadingGrade && (
         <div className="bg-white rounded-2xl shadow-lg p-8 text-center mb-5">
@@ -359,39 +386,59 @@ return (
         className="text-xl font-bold mb-4"
         style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}
         >
-        Ringkasan Nilai
+        Ringkasan
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gray-50 rounded-xl p-4">
-            <p className="text-sm font-medium mb-1" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
-            Total SKS
-            </p>
-            <p className="text-3xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-            {summary.totalSKS}
-            </p>
-        </div>
-        
-        <div className="bg-gray-50 rounded-xl p-4">
-            <p className="text-sm font-medium mb-1" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
-            Total Nilai x SKS
-            </p>
-            <p className="text-3xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-            {summary.totalNilaiSKS.toFixed(2)}
-            </p>
-        </div>
-        
-        <div 
-            className="rounded-xl p-4 text-white"
-            style={{ backgroundColor: '#015023' }}
-        >
-            <p className="text-sm font-medium mb-1" style={{ opacity: 0.8, fontFamily: 'Urbanist, sans-serif' }}>
-            IPK Semester
-            </p>
-            <p className="text-3xl font-bold" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-            {summary.ipk.toFixed(2)}
-            </p>
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-6">
+            <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-sm font-medium mb-1" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
+                Total SKS Semester
+                </p>
+                <p className="text-3xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                {summary.totalSKS}
+                </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-sm font-medium mb-1" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
+                Total SKS
+                </p>
+                <p className="text-3xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                {summary.totalSKS}
+                </p>
+            </div>
+            
+            <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-sm font-medium mb-1" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
+                Total Nilai SKS
+                </p>
+                <p className="text-3xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                {summary.totalNilaiSKS.toFixed(2)}
+                </p>
+            </div>
+            
+            <div 
+                className="rounded-xl p-4 text-white"
+                style={{ backgroundColor: '#015023' }}
+            >
+                <p className="text-sm font-medium mb-1" style={{ opacity: 0.8, fontFamily: 'Urbanist, sans-serif' }}>
+                IP Semester
+                </p>
+                <p className="text-3xl font-bold" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                {summary.ipk.toFixed(2)}
+                </p>
+            </div>
+            <div 
+                className="rounded-xl p-4 text-white"
+                style={{ backgroundColor: '#015023' }}
+            >
+                <p className="text-sm font-medium mb-1" style={{ opacity: 0.8, fontFamily: 'Urbanist, sans-serif' }}>
+                IP Kumulatif
+                </p>
+                <p className="text-3xl font-bold" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                {summary.ipk.toFixed(2)}
+                </p>
+            </div>
         </div>
 
         {/* Keterangan Bobot */}
