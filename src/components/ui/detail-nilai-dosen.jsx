@@ -10,10 +10,12 @@ import Navbar from '@/components/ui/navigation-menu';
 import LoadingEffect from '@/components/ui/loading-effect';
 import { getAcademicPeriods, getLecturerClassesForGrading } from '@/lib/gradingApi';
 import { getProfile } from '@/lib/profileApi';
+import { ErrorMessageBoxWithButton } from './message-box';
 
 export default function DetailNilaiDosen() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(true);
+    const [loadingClass, setLoadingClass] = useState(false);
     const [selectedSemester, setSelectedSemester] = useState('');
     const [semesterOptions, setSemesterOptions] = useState([]);
     const [matkulData, setMatkulData] = useState([]);
@@ -21,6 +23,7 @@ export default function DetailNilaiDosen() {
         name: '-',
         totalClasses: 0
     });
+    const [errors, setErrors] = useState({});
 
 // Fetch Academic Periods saat component mount
 useEffect(() => {
@@ -29,6 +32,7 @@ useEffect(() => {
 
 // Fetch All 
 const fetchAllData = async () => {
+    setErrors(prev => ({...prev, fetch: null}));
     setIsLoading(true);
     await Promise.all([
         fetchAcademicPeriods(), 
@@ -57,9 +61,11 @@ const fetchAcademicPeriods = async () => {
             } else if (options.length > 0) {
                 setSelectedSemester(options[0].value);
             }
+        } else {
+            setErrors(prev => ({...prev, fetch: 'Gagal memuat data: ' + response.message }));
         }
     } catch (err) {
-        console.error('Error fetching academic periods:', err);
+        setErrors(prev => ({...prev, fetch: 'Terjadi kesalahan saat memuat data: ' + err.message }));
     }
 };
 
@@ -72,9 +78,11 @@ const fetchLecturerInfo = async () => {
                 name: response.data.name || '-',
                 totalClasses: 0 // Will be updated when fetching classes
             });
+        } else {
+            setErrors(prev => ({...prev, fetch: 'Gagal memuat data: ' + response.message }));
         }
     } catch (error) {
-        console.error('Error fetching lecturer profile:', error);
+        setErrors(prev => ({...prev, fetch: 'Terjadi kesalahan saat memuat data: ' + error.message }));
     }
 };
 
@@ -86,7 +94,8 @@ useEffect(() => {
 }, [selectedSemester]);
 
 const fetchClassData = async (academicPeriodId) => {
-    setIsLoading(true);
+    setLoadingClass(true);
+    setErrors(prev => ({...prev, classes: null}));
     try {
         const response = await getLecturerClassesForGrading(academicPeriodId);
         
@@ -106,18 +115,25 @@ const fetchClassData = async (academicPeriodId) => {
                 ...prev,
                 totalClasses: formattedData.length
             }));
+        } else {
+            setMatkulData([]);
+            setErrors(prev => ({...prev, classes: 'Gagal memuat data kelas: ' + response.message }));
         }
     } catch (error) {
-        console.error('Error fetching class data:', error);
         setMatkulData([]);
+        setErrors(prev => ({...prev, classes: 'Terjadi kesalahan saat memuat data kelas: ' + error.message }));
     } finally {
-        setIsLoading(false);
+        setLoadingClass(false);
     }
 };
 
     // Handle detail nilai click
     const handleDetailNilai = (item) => {
         router.push(`/hasil-studi/input-nilai-mahasiswa/${item.id_class}`);
+    };
+
+    const handleBack = () => {
+        router.back();
     };
 
     // Custom render for detail nilai column
@@ -183,6 +199,20 @@ const fetchClassData = async (academicPeriodId) => {
     // Show loading
     if (isLoading) {
         return <LoadingEffect message="Memuat data kelas..." />;
+    } else if (errors.fetch) {
+        return (
+            <div className="min-h-screen bg-brand-light-sage">
+                <Navbar />
+                <div className="container mx-auto px-4 py-8 max-w-7xl">
+                    <ErrorMessageBoxWithButton
+                        message={errors.fetch}
+                        action={fetchAllData}
+                        back={true}
+                        actionback={handleBack}
+                    />
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -279,16 +309,33 @@ const fetchClassData = async (academicPeriodId) => {
             </div>
         </div>
 
-        {/* Table Nilai */}
-        <div>
-            <DataTable
-            columns={columns}
-            data={matkulData}
-            actions={[]}
-            pagination={false}
-            customRender={customRender}
+        {/* error */}
+        {errors.classes && (
+            <ErrorMessageBoxWithButton 
+                message={errors.classes} 
+                action={fetchClassData} 
             />
-        </div>
+        )}
+
+        {/* Loading State kelas */}
+        {loadingClass && (
+            <div className="bg-white rounded-2xl shadow-lg p-8 text-center mb-5">
+                <p className="text-lg" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>Memuat data kelas...</p>
+            </div>
+        )}
+
+        {/* Table Nilai */}
+        {!loadingClass && !errors.classes && (
+            <div>
+                <DataTable
+                columns={columns}
+                data={matkulData}
+                actions={[]}
+                pagination={false}
+                customRender={customRender}
+                />
+            </div>
+        )}
         </div>
         </div>
     );
