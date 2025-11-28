@@ -4,68 +4,83 @@ import { useRouter } from 'next/navigation';
 import Navbar from '@/components/ui/navigation-menu';
 import DataTable from '@/components/ui/table';
 import Footer from '@/components/ui/footer';
+import LoadingEffect from '@/components/ui/loading-effect';
 import { Eye, GraduationCap, Users } from 'lucide-react';
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { getTeachingClasses } from '@/lib/ClassApi';
+import { getAcademicPeriods } from '@/lib/gradingApi';
 
 export default function AkademikPage() {
 	const router = useRouter();
-	const [selectedSemester, setSelectedSemester] = useState('2024-ganjil');
+	const [isLoading, setIsLoading] = useState(true);
+	const [selectedSemester, setSelectedSemester] = useState('');
+	const [semesterOptions, setSemesterOptions] = useState([]);
+	const [data, setData] = useState([]);
 
-	// Data semester options
-	const semesterOptions = [
-		{ value: '2024-ganjil', label: 'Semester Ganjil 2024/2025' },
-		{ value: '2023-genap', label: 'Semester Genap 2023/2024' },
-		{ value: '2023-ganjil', label: 'Semester Ganjil 2023/2024' },
-		{ value: '2022-genap', label: 'Semester Genap 2022/2023' },
-		{ value: '2022-ganjil', label: 'Semester Ganjil 2022/2023' },
-	];
-
-	// Handle semester change
+	// Fetch initial data saat component mount
 	useEffect(() => {
-		console.log('Fetching data for semester:', selectedSemester);
-		// TODO: Replace dengan API call
-		// fetchKelasData(selectedSemester);
+		fetchAllData();
+	}, []);
+
+	// Fetch classes ketika semester berubah
+	useEffect(() => {
+		if (selectedSemester) {
+			fetchClassesData(selectedSemester);
+		}
 	}, [selectedSemester]);
 
-	// Dummy data daftar kelas
-	const data = useMemo(() => [
-		{
-			kode_kelas: 'IF3AA',
-			nama_kelas: 'Informatika 3AA',
-			mata_kuliah: 'Metode dan Model Pengembangan Perangkat Lunak',
-			kode_matkul: 'IF301',
-		},
-		{
-			kode_kelas: 'IF2AB',
-			nama_kelas: 'Informatika 2AB',
-			mata_kuliah: 'Basis Data',
-			kode_matkul: 'IF210',
-		},
-		{
-			kode_kelas: 'IF2AA',
-			nama_kelas: 'Informatika 2AA',
-			mata_kuliah: 'Jaringan Komputer',
-			kode_matkul: 'IF220',
-		},
-		{
-			kode_kelas: 'IF2AC',
-			nama_kelas: 'Informatika 2AC',
-			mata_kuliah: 'Matematika Diskrit',
-			kode_matkul: 'IF205',
-		},
-		{
-			kode_kelas: 'IF3AB',
-			nama_kelas: 'Informatika 3AB',
-			mata_kuliah: 'Pemrograman Web Lanjut',
-			kode_matkul: 'IF230',
-		},
-		{
-			kode_kelas: 'IF1AA',
-			nama_kelas: 'Informatika 1AA',
-			mata_kuliah: 'Algoritma dan Pemrograman',
-			kode_matkul: 'IF101',
-		},
-	], []);
+	const fetchAllData = async () => {
+		setIsLoading(true);
+		try {
+			const response = await getAcademicPeriods();
+			
+			if (response.status === 'success') {
+				// Transform to dropdown options
+				const options = response.data.map(period => ({
+					value: period.id_academic_period.toString(),
+					label: period.name,
+					is_active: period.is_active
+				}));
+				setSemesterOptions(options);
+
+				// Auto-select active period
+				const activePeriod = options.find(opt => opt.is_active);
+				if (activePeriod) {
+					setSelectedSemester(activePeriod.value);
+				} else if (options.length > 0) {
+					setSelectedSemester(options[0].value);
+				}
+			}
+		} catch (error) {
+			console.error('Error fetching academic periods:', error);
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	const fetchClassesData = async (academicPeriodId) => {
+		setIsLoading(true);
+		try {
+			const response = await getTeachingClasses(academicPeriodId);
+			
+			if (response.status === 'success' && response.data) {
+				// Transform data ke format yang sesuai dengan table
+				const formattedData = response.data.map(item => ({
+					id_class: item.id_class,
+					kode_kelas: item.code_class,
+					nama_kelas: item.code_class, // Backend tidak mengirim nama kelas terpisah
+					mata_kuliah: item.subject?.name_subject || '-',
+					kode_matkul: item.subject?.code_subject || '-',
+				}));
+				setData(formattedData);
+			}
+		} catch (error) {
+			console.error('Error fetching classes:', error);
+			setData([]);
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
 	const columns = [
 		{ key: 'kode_kelas', label: 'Kode Kelas', width: '130px', cellClassName: 'font-bold' },
@@ -78,7 +93,7 @@ export default function AkademikPage() {
 		detail: (_value, item) => (
 			<div className="flex items-center justify-center">
 				<button
-					onClick={() => router.push(`/akademik/detailkelas/${item.kode_kelas}?nama=${encodeURIComponent(item.nama_kelas)}&matkul=${encodeURIComponent(item.mata_kuliah)}`)}
+					onClick={() => router.push(`/akademik/detailkelas/${item.id_class}`)}
 					className="flex items-center gap-2 text-white px-4 py-2 transition shadow-sm hover:opacity-90 font-semibold"
 					style={{ backgroundColor: '#015023', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
 				>
@@ -88,6 +103,11 @@ export default function AkademikPage() {
 			</div>
 		),
 	};
+
+	// Show loading
+	if (isLoading) {
+		return <LoadingEffect message="Memuat data kelas..." />;
+	}
 
 	return (
 		<div className="min-h-screen bg-brand-light-sage">

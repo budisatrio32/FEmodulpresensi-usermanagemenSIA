@@ -68,3 +68,54 @@ export const downloadTranscriptPDF = async (academicPeriodId) => {
         throw (error.response?.data ?? error);
     }
 };
+
+/**
+ * Get lecturer classes for grading (Dosen)
+ * @param {string} academicPeriodId - ID periode akademik (optional)
+ * @returns {Promise} Response dengan data kelas yang diajar
+ */
+export const getLecturerClassesForGrading = async (academicPeriodId = null) => {
+    try {
+        const params = {};
+        if (academicPeriodId) {
+            params.academic_period_id = academicPeriodId;
+        }
+        
+        const response = await api.get('/lecturer/classes/grading', { params });
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
+};
+
+/**
+ * Get class students with grades (Dosen)
+ * @param {string} classId - ID kelas
+ * @returns {Promise} Response dengan data mahasiswa dan nilai
+ */
+export const getClassStudentsWithGrades = async (classId) => {
+    try {
+        const response = await api.get(`/lecturer/classes/${classId}/students`);
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
+};
+
+/**
+ * Save grades in bulk (Dosen)
+ * @param {string} classId - ID kelas
+ * @param {Array} grades - Array of {id_user_si, grade}
+ * @returns {Promise} Response dengan hasil penyimpanan
+ */
+export const saveGradesBulk = async (classId, grades) => {
+    try {
+        const response = await api.post('/lecturer/grades/bulk', {
+            id_class: classId,
+            grades: grades
+        });
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
+};

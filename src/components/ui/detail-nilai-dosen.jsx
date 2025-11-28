@@ -6,70 +6,118 @@ import { ArrowLeft, FileText, Eye } from 'lucide-react';
 import DataTable from '@/components/ui/table';
 import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import { Field, FieldLabel, FieldContent } from '@/components/ui/field';
-import Navbar from '@/components/ui/navigation-menu';    
+import Navbar from '@/components/ui/navigation-menu';
+import LoadingEffect from '@/components/ui/loading-effect';
+import { getAcademicPeriods, getLecturerClassesForGrading } from '@/lib/gradingApi';
+import { getProfile } from '@/lib/profileApi';
+
 export default function DetailNilaiDosen() {
     const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [selectedSemester, setSelectedSemester] = useState('');
+    const [semesterOptions, setSemesterOptions] = useState([]);
+    const [matkulData, setMatkulData] = useState([]);
+    const [lecturerInfo, setLecturerInfo] = useState({
+        name: '-',
+        totalClasses: 0
+    });
 
-    // State untuk semester selector
-    const [selectedSemester, setSelectedSemester] = useState('2024-ganjil');
+// Fetch Academic Periods saat component mount
+useEffect(() => {
+    fetchAllData();
+}, []);
 
-    // Data semester options
-    const semesterOptions = [
-    { value: '2024-ganjil', label: 'Semester Ganjil 2024/2025' },
-    { value: '2023-genap', label: 'Semester Genap 2023/2024' },
-    { value: '2023-ganjil', label: 'Semester Ganjil 2023/2024' },
-    { value: '2022-genap', label: 'Semester Genap 2022/2023' },
-    { value: '2022-ganjil', label: 'Semester Ganjil 2022/2023' },
-    ];
-
-    // Data dummy mata kuliah untuk input nilai
-    const [matkulData, setMatkulData] = useState([
-    {
-        id: 1,
-        kode_matkul: 'IF101',
-        nama_matkul: 'Pemrograman Dasar',
-        kelas: 'PL1AA',
-        sks: 3,
-    },
-    {
-        id: 2,
-        kode_matkul: 'IF102',
-        nama_matkul: 'Matematika Diskrit',
-        kelas: 'PL1AB',
-        sks: 3,
-    },
-    {
-        id: 3,
-        kode_matkul: 'IF103',
-        nama_matkul: 'Algoritma dan Struktur Data',
-        kelas: 'PL2AA',
-        sks: 4,
-    },
-    {
-        id: 4,
-        kode_matkul: 'IF104',
-        nama_matkul: 'Basis Data',
-        kelas: 'PL2AB',
-        sks: 3,
-    },
-    {
-        id: 5,
-        kode_matkul: 'IF105',
-        nama_matkul: 'Jaringan Komputer',
-        kelas: 'PL3AA',
-        sks: 3,
-    },
+// Fetch All 
+const fetchAllData = async () => {
+    setIsLoading(true);
+    await Promise.all([
+        fetchAcademicPeriods(), 
+        fetchLecturerInfo()
     ]);
+    setIsLoading(false);
+}
+
+const fetchAcademicPeriods = async () => {
+    try {
+        const response = await getAcademicPeriods();
+
+        if (response.status === 'success') {
+            // Transform to dropdown options
+            const options = response.data.map(period => ({
+                value: period.id_academic_period.toString(),
+                label: period.name,
+                is_active: period.is_active
+            }));
+            setSemesterOptions(options);
+
+            // Auto-select active period
+            const activePeriod = options.find(opt => opt.is_active);
+            if (activePeriod) {
+                setSelectedSemester(activePeriod.value);
+            } else if (options.length > 0) {
+                setSelectedSemester(options[0].value);
+            }
+        }
+    } catch (err) {
+        console.error('Error fetching academic periods:', err);
+    }
+};
+
+const fetchLecturerInfo = async () => {
+    try {
+        const response = await getProfile();
+        
+        if (response.status === 'success' && response.data) {
+            setLecturerInfo({
+                name: response.data.name || '-',
+                totalClasses: 0 // Will be updated when fetching classes
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching lecturer profile:', error);
+    }
+};
+
+// Fetch classes ketika semester berubah
+useEffect(() => {
+    if (selectedSemester) {
+        fetchClassData(selectedSemester);
+    }
+}, [selectedSemester]);
+
+const fetchClassData = async (academicPeriodId) => {
+    setIsLoading(true);
+    try {
+        const response = await getLecturerClassesForGrading(academicPeriodId);
+        
+        if (response.status === 'success' && response.data) {
+            // Transform data ke format yang sesuai dengan table
+            const formattedData = response.data.map(item => ({
+                id: item.id_class,
+                kode_matkul: item.subject?.code || '-',
+                nama_matkul: item.subject?.name || '-',
+                kelas: item.code_class,
+                sks: item.subject?.sks || 0,
+                id_class: item.id_class
+            }));
+            
+            setMatkulData(formattedData);
+            setLecturerInfo(prev => ({
+                ...prev,
+                totalClasses: formattedData.length
+            }));
+        }
+    } catch (error) {
+        console.error('Error fetching class data:', error);
+        setMatkulData([]);
+    } finally {
+        setIsLoading(false);
+    }
+};
 
     // Handle detail nilai click
     const handleDetailNilai = (item) => {
-        const params = new URLSearchParams({
-            kode: item.kode_matkul,
-            nama: item.nama_matkul,
-            sks: item.sks.toString()
-        });
-        router.push(`/hasil-studi/input-nilai-mahasiswa?${params.toString()}`);
+        router.push(`/hasil-studi/input-nilai-mahasiswa/${item.id_class}`);
     };
 
     // Custom render for detail nilai column
@@ -132,30 +180,10 @@ export default function DetailNilaiDosen() {
     },
     ];
 
-    // Handle semester change
-    useEffect(() => {
-    fetchClassData(selectedSemester);
-    }, [selectedSemester]);
-
-    const fetchClassData = async (semester) => {
-    setIsLoading(true);
-    try {
-    const response = await getClassForGradingByDosen(semester);
-    if (response.status === 'success') {
-        setMatkulData(response.data);
-
+    // Show loading
+    if (isLoading) {
+        return <LoadingEffect message="Memuat data kelas..." />;
     }
-    else {
-        console.error('Failed to fetch class data:', response.message);
-    }
-
-
-    } catch (error) {
-    console.error('Error fetching class data:', error);
-    } finally {
-    setIsLoading(false);
-    }
-    };
 
     return (
     <div className="min-h-screen bg-brand-light-sage">
@@ -237,7 +265,7 @@ export default function DetailNilaiDosen() {
                 Dosen Pengampu
                 </p>
                 <p className="text-lg font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                Dr. Ahmad Wijaya
+                {lecturerInfo.name}
                 </p>
             </div>
             <div>
@@ -245,7 +273,7 @@ export default function DetailNilaiDosen() {
                 Jumlah Mata Kuliah
                 </p>
                 <p className="text-lg font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                {matkulData.length} Mata Kuliah
+                {lecturerInfo.totalClasses} Mata Kuliah
                 </p>
             </div>
             </div>
