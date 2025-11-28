@@ -15,6 +15,7 @@ const router = useRouter();
 
 // State Management
 const [isLoading, setIsLoading] = useState(true);
+const [loadingGrade, setLoadingGrade] = useState(false);
 const [isDownloading, setIsDownloading] = useState(false);
 const [selectedSemester, setSelectedSemester] = useState('');
 const [semesterOptions, setSemesterOptions] = useState([]);
@@ -100,7 +101,7 @@ useEffect(() => {
 
 // Fetch Student Grades
 const fetchStudentGrades = async () => {
-    setIsLoading(true);
+    setLoadingGrade(true);
     try {
         const response = await getStudentGrades(selectedSemester);
         if (response.status === 'success') {
@@ -126,13 +127,14 @@ const fetchStudentGrades = async () => {
         } else {
             setNilaiData([]);
             setSummary({ totalSKS: 0, totalNilaiSKS: 0, ipk: 0 });
+            setErrors(prev => ({...prev, grades: 'Gagal memuat data nilai: ' + response.message }) );
         }
     } catch (error) {
-        console.error('Error fetching student grades:', error);
         setNilaiData([]);
         setSummary({ totalSKS: 0, totalNilaiSKS: 0, ipk: 0 });
+        setErrors(prev => ({...prev, grades: 'Terjadi kesalahan saat memuat data nilai: ' + error.message }) );
     } finally {
-        setIsLoading(false);
+        setLoadingGrade(false);
     }
 };
 
@@ -333,15 +335,23 @@ return (
         </div>
         </div>
     </div>
+    {/* Loading State nilai */}
+    {loadingGrade && (
+        <div className="bg-white rounded-2xl shadow-lg p-8 text-center mb-5">
+            <p className="text-lg" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>Memuat data Nilai...</p>
+        </div>
+    )}
     {/* Table Nilai */}
-    <div className="mb-6">
-        <DataTable
-        columns={columns}
-        data={nilaiData}
-        actions={[]}
-        pagination={false}
-        />
-    </div>
+    {!loadingGrade && !errors.grades && (
+        <div className="mb-6">
+            <DataTable
+            columns={columns}
+            data={nilaiData}
+            actions={[]}
+            pagination={false}
+            />
+        </div>
+    )}
 
     {/* Summary IPK */}
     <div className="bg-white rounded-2xl shadow-lg p-6" style={{ borderRadius: '16px' }}>
