@@ -15,12 +15,13 @@ export default function KehadiranPage() {
 	const [selectedSemester, setSelectedSemester] = useState('');
 	const [semesterOptions, setSemesterOptions] = useState([]);
 	const [classes, setClasses] = useState([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState(null);
+	const [isLoading, setIsLoading] = useState(true);
+	const [loadingClass, setLoadingClass] = useState(false);
+	const [errors, setErrors] = useState({});
 
-	// Fetch academic periods only on mount
+	// Fetch all data on mount
 	useEffect(() => {
-		fetchAcademicPeriods();
+		fetchAll();
 	}, []);
 
 	// Fetch classes when semester changes
@@ -30,39 +31,31 @@ export default function KehadiranPage() {
 		}
 	}, [selectedSemester]);
 
-	const fetchClasses = async () => {
-		setLoading(true);
-		try {
-			setError(null);
-			console.log('Fetching lecturer classes with filter:', selectedSemester);
+	// Fetch All
+	const fetchAll = async () => {
+		setErrors(prev => ({...prev, fetch: null}));
+		setIsLoading(true);
+		await fetchAcademicPeriods();
+		setIsLoading(false);
+	};
 
+	const fetchClasses = async () => {
+		setLoadingClass(true);
+		setErrors(prev => ({...prev, classes: null}));
+		try {
 			const data = await getLecturerClasses(selectedSemester);
-			console.log('API Response:', data);
 
 			if (data.status === 'success') {
 				setClasses(data.data);
-				console.log('Classes loaded:', data.data.length, 'items');
 			} else {
-				const errorMsg = data.message || 'Gagal mengambil data kelas';
-				console.error('API Error:', errorMsg);
-				setError(errorMsg);
+				setClasses([]);
+				setErrors(prev => ({...prev, classes: 'Gagal memuat data kelas: ' + data.message}));
 			}
-
 		} catch (err) {
-			console.error('Error fetching classes:', err);
-			
-			let errorMessage = 'Terjadi kesalahan saat mengambil data';
-			if (err.response) {
-				errorMessage = `Server Error (${err.response.status}): ${err.response.data?.message || err.response.statusText}`;
-			} else if (err.request) {
-				errorMessage = 'Tidak dapat terhubung ke server. Pastikan backend Laravel berjalan.';
-			} else {
-				errorMessage = err.message;
-			}
-
-			setError(errorMessage);
+			setClasses([]);
+			setErrors(prev => ({...prev, classes: 'Terjadi kesalahan saat memuat data kelas: ' + err.message}));
 		} finally {
-			setLoading(false);
+			setLoadingClass(false);
 		}
 	};
 
@@ -84,11 +77,16 @@ export default function KehadiranPage() {
 				if (activePeriod) {
 					setSelectedSemester(activePeriod.value);
 				}
+			} else {
+				setErrors(prev => ({...prev, fetch: 'Gagal memuat data: ' + data.message}));
 			}
 		} catch (err) {
-			console.error('Error fetching academic periods:', err);
-			setSemesterOptions([{ value: '', label: 'Semua Periode' }]);
+			setErrors(prev => ({...prev, fetch: 'Terjadi kesalahan saat memuat data: ' + err.message}));
 		}
+	};
+
+	const handleBack = () => {
+		router.back();
 	};
 
 	const columns = [
@@ -121,8 +119,23 @@ export default function KehadiranPage() {
 		),
 	};
 
-	if (loading) {
-		return <LoadingEffect message="Memuat data kelas..." />;
+	// Show loading
+	if (isLoading) {
+		return <LoadingEffect message="Memuat data periode akademik..." />;
+	} else if (errors.fetch) {
+		return (
+			<div className="min-h-screen bg-brand-light-sage">
+				<Navbar />
+				<div className="container mx-auto px-4 py-8 max-w-7xl">
+					<ErrorMessageBoxWithButton
+						message={errors.fetch}
+						action={fetchAll}
+						back={true}
+						actionback={handleBack}
+					/>
+				</div>
+			</div>
+		);
 	}
 
 	return (
@@ -173,19 +186,19 @@ export default function KehadiranPage() {
 				</div>
 
 				{ /* Error Message */}
-				{error && (
-					<ErrorMessageBoxWithButton message={error} action={fetchClasses} />
+				{errors.classes && (
+					<ErrorMessageBoxWithButton message={errors.classes} action={fetchClasses} />
 				)}
 
 				{/* Loading State */}
-				{loading && (
+				{loadingClass && (
 					<div className="bg-white rounded-2xl shadow-lg p-8 text-center">
 						<p className="text-lg" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>Memuat data...</p>
 					</div>
 				)}
 
 				{/* Tabel Daftar Matkul */}
-				{!loading && !error && (
+				{!loadingClass && !errors.classes && (
 					<DataTable
 						columns={columns}
 						data={classes}
