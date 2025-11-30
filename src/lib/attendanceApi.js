@@ -60,9 +60,16 @@ export const getClassDetail = async (classId) => {
  */
 export const openQRSession = async (scheduleId) => {
     try {
+        console.log('[openQRSession] Making POST request to:', `/lecturer/schedules/${scheduleId}/open-qr`);
         const response = await api.post(`/lecturer/schedules/${scheduleId}/open-qr`);
+        console.log('[openQRSession] Response received:', response);
+        console.log('[openQRSession] Response data:', response.data);
+        console.log('[openQRSession] Response status:', response.status);
         return response.data;
     } catch (error) {
+        console.error('[openQRSession] Error occurred:', error);
+        console.error('[openQRSession] Error response:', error.response);
+        console.error('[openQRSession] Error message:', error.message);
         throw (error.response?.data ?? error);
     }
 };
