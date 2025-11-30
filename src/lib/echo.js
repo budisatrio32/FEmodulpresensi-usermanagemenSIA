@@ -25,16 +25,25 @@ export const getEcho = () => {
   }
 
   if (!echoInstance) {
-    echoInstance = new Echo({
+    const config = {
       broadcaster: 'reverb',
       key: process.env.NEXT_PUBLIC_REVERB_APP_KEY || 'rfmp9pmudhfkb6dvdybr',
       wsHost: process.env.NEXT_PUBLIC_REVERB_HOST || 'localhost',
-      wsPort: process.env.NEXT_PUBLIC_REVERB_PORT || 8080,
-      wssPort: process.env.NEXT_PUBLIC_REVERB_PORT || 8080,
-      forceTLS: (process.env.NEXT_PUBLIC_REVERB_SCHEME || 'http') === 'https',
+      wsPort: process.env.NEXT_PUBLIC_REVERB_PORT || 9090, // Changed to 9090 to match Reverb
+      wssPort: process.env.NEXT_PUBLIC_REVERB_PORT || 9090,
+      forceTLS: false, // Explicitly disable TLS for local development
       enabledTransports: ['ws', 'wss'],
       disableStats: true,
+    };
+
+    console.log('[Echo] Initializing with config:', {
+      wsHost: config.wsHost,
+      wsPort: config.wsPort,
+      forceTLS: config.forceTLS,
+      key: config.key.substring(0, 8) + '...',
     });
+
+    echoInstance = new Echo(config);
   }
 
   return echoInstance;
