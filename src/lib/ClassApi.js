@@ -49,7 +49,22 @@ export const getTeachingClasses = async (academicPeriodId = null) => {
     }
 };
 
+/**
+ * Get class detail with students and lecturers
+ * @param {number} classId - The class ID
+ * @returns {Promise} Response dengan detail kelas, mahasiswa, dan dosen
+ */
+export const getClassDetail = async (classId) => {
+    try {
+        const response = await api.get(`lecturer/classes/${classId}`);
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
+};
+
 export default {
     getAllClasses,
     getTeachingClasses,
+    getClassDetail,
 };
