@@ -4,7 +4,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/ui/navigation-menu';
 import Footer from '@/components/ui/footer';
 import DataTable from '@/components/ui/table';
-import RoleSwitcher from '@/components/ui/role-switcher';
 import { ArrowLeft, GraduationCap, Users, Mail, Phone, MessageCircle, Megaphone } from 'lucide-react';
 import { use, useMemo, useState, useEffect } from 'react';
 import { getClassDetail } from '@/lib/ClassApi';
@@ -24,23 +23,30 @@ export default function DetailKelasPage({ params }) {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 
-	// Get user role from localStorage
-	const [userRole, setUserRole] = useState('mahasiswa');
+	// Get user role
+	const [userRole, setUserRole] = useState(null);
 	const [currentUserId, setCurrentUserId] = useState(null);
 
 	useEffect(() => {
-		const role = localStorage.getItem('userRole') || 'mahasiswa';
-		setUserRole(role);
-		
-		// Fetch current user profile to get user ID
+		// Fetch current user profile to get user ID and role
 		const fetchUserProfile = async () => {
 			try {
 				const profileResponse = await getProfile();
 				if (profileResponse.status === 'success') {
 					setCurrentUserId(profileResponse.data.id_user_si);
+					setUserRole(profileResponse.data.role);
+					// Simpan ke localStorage untuk fallback (kalau diperlukan di halaman lain)
+					localStorage.setItem('userRole', profileResponse.data.role);
 				}
 			} catch (err) {
 				console.error('Error fetching user profile:', err);
+				// Fallback ke localStorage jika API gagal
+				const cachedRole = localStorage.getItem('userRole');
+				if (cachedRole) {
+					setUserRole(cachedRole);
+				} else {
+					setError('Gagal memuat profil pengguna');
+				}
 			}
 		};
 		
@@ -56,9 +62,15 @@ export default function DetailKelasPage({ params }) {
 				return;
 			}
 
+			if (!userRole) {
+				// Wait for userRole to be set
+				return;
+			}
+
 			try {
 				setLoading(true);
-				const response = await getClassDetail(classId);
+				// Pass userRole to API untuk hit endpoint yang sesuai
+				const response = await getClassDetail(classId, userRole);
 				
 				if (response.status === 'success') {
 					setClassData(response.data);
@@ -74,7 +86,7 @@ export default function DetailKelasPage({ params }) {
 		};
 
 		fetchClassData();
-	}, [classId]);
+	}, [classId, userRole]);
 
 	// Chat modal state
 	const [isChatOpen, setIsChatOpen] = useState(false);
@@ -82,7 +94,16 @@ export default function DetailKelasPage({ params }) {
 
 	// Extract class info and students/lecturers from API response
 	const classInfo = classData?.class_info || {};
-	const mahasiswaData = classData?.students || [];
+	
+	// Get mahasiswa data - Add flag to identify current user
+	const mahasiswaData = useMemo(() => {
+		if (!classData?.students) return [];
+		
+		return classData.students.map(student => ({
+			...student,
+			isCurrentUser: student.id_user_si === currentUserId, // Flag for hiding chat button
+		}));
+	}, [classData, currentUserId]);
 	
 	// Get dosen data - SHOW ALL lecturers, but mark which one is current user
 	const dosenData = useMemo(() => {
@@ -108,26 +129,39 @@ export default function DetailKelasPage({ params }) {
 	];
 
 	const customRender = {
-		chat: (_value, item) => (
-			<div className="flex items-center justify-center">
-				<button
-					onClick={() => {
-						// Use id_user_si from API response
-						setChatUser({ 
-							id: item.id_user_si, 
-							name: item.name, 
-							nim: item.nim 
-						});
-						setIsChatOpen(true);
-					}}
-					className="flex items-center gap-2 text-white px-3 py-2 transition shadow-sm hover:opacity-90 font-semibold"
-					style={{ backgroundColor: '#16874B', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
-				>
-					<MessageCircle className="w-4 h-4" />
-					Chat
-				</button>
-			</div>
-		),
+		chat: (_value, item) => {
+			// Don't show chat button for current user (mahasiswa can't chat themselves)
+			if (item.isCurrentUser) {
+				return (
+					<div className="flex items-center justify-center">
+						<span className="text-sm font-medium" style={{ color: '#015023', opacity: 0.5 }}>
+							(Anda)
+						</span>
+					</div>
+				);
+			}
+
+			return (
+				<div className="flex items-center justify-center">
+					<button
+						onClick={() => {
+							// Use id_user_si from API response
+							setChatUser({ 
+								id: item.id_user_si, 
+								name: item.name, 
+								nim: item.nim 
+							});
+							setIsChatOpen(true);
+						}}
+						className="flex items-center gap-2 text-white px-3 py-2 transition shadow-sm hover:opacity-90 font-semibold"
+						style={{ backgroundColor: '#16874B', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
+					>
+						<MessageCircle className="w-4 h-4" />
+						Chat
+					</button>
+				</div>
+			);
+		},
 	};
 
 	const dosenCustomRender = {
@@ -277,8 +311,6 @@ export default function DetailKelasPage({ params }) {
 				userNim={chatUser.nim}
 			/>
 
-			{/* Role Switcher for Development/Testing */}
-			<RoleSwitcher />
 			<Footer/>
 		</div>
 	);

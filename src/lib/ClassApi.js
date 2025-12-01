@@ -70,11 +70,17 @@ export const getStudentClasses = async (academicPeriodId = null) => {
 /**
  * Get class detail with students and lecturers
  * @param {number} classId - The class ID
+ * @param {string} role - User role ('dosen' or 'mahasiswa')
  * @returns {Promise} Response dengan detail kelas, mahasiswa, dan dosen
  */
-export const getClassDetail = async (classId) => {
+export const getClassDetail = async (classId, role = 'dosen') => {
     try {
-        const response = await api.get(`lecturer/classes/${classId}`);
+        // Hit different endpoint based on role
+        const endpoint = role === 'mahasiswa' 
+            ? `student/classes/${classId}`
+            : `lecturer/classes/${classId}`;
+        
+        const response = await api.get(endpoint);
         return response.data;
     } catch (error) {
         throw (error.response?.data ?? error);
