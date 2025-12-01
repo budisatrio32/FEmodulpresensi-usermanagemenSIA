@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/ui/navigation-menu';
 import Footer from '@/components/ui/footer';
 import { ArrowLeft, Send, Megaphone } from 'lucide-react';
@@ -12,6 +12,7 @@ import LoadingEffect from '@/components/ui/loading-effect';
 export default function BuatPengumumanPage() {
 	const router = useRouter();
 	const params = useParams();
+	const searchParams = useSearchParams();
 	const { kode } = params;
 
 	const [formData, setFormData] = useState({
@@ -24,33 +25,39 @@ export default function BuatPengumumanPage() {
 	const [classId, setClassId] = useState(null);
 	const [isLoading, setIsLoading] = useState(true);
 
-	// Get class ID from code
+	// Get class ID from URL params
 	useEffect(() => {
-		const fetchClassId = async () => {
-			try {
-				// Assuming kode is in format like "SI001-A"
-				// You may need to adjust based on your API
-				// For now, we'll use kode as identifier
-				const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/lecturer/classes`, {
-					credentials: 'include'
-				});
-				const data = await response.json();
-				
-				if (data.status === 'success') {
-					const targetClass = data.data.find(c => c.code_class === kode);
-					if (targetClass) {
-						setClassId(targetClass.id_class);
-					}
-				}
-			} catch (error) {
-				console.error('Error fetching class ID:', error);
-			} finally {
-				setIsLoading(false);
-			}
-		};
+		// Try to get id from URL params first
+		const idFromUrl = searchParams.get('id');
 		
-		fetchClassId();
-	}, [kode]);
+		if (idFromUrl) {
+			setClassId(parseInt(idFromUrl));
+			setIsLoading(false);
+		} else {
+			// Fallback: fetch from API if id not in URL
+			const fetchClassId = async () => {
+				try {
+					const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/lecturer/classes`, {
+						credentials: 'include'
+					});
+					const data = await response.json();
+					
+					if (data.status === 'success') {
+						const targetClass = data.data.find(c => c.code_class === kode);
+						if (targetClass) {
+							setClassId(targetClass.id_class);
+						}
+					}
+				} catch (error) {
+					console.error('Error fetching class ID:', error);
+				} finally {
+					setIsLoading(false);
+				}
+			};
+			
+			fetchClassId();
+		}
+	}, [kode, searchParams]);
 
 	const handleChange = (e) => {
 		const { name, value } = e.target;

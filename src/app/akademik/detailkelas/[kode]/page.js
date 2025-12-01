@@ -14,6 +14,7 @@ export default function DetailKelasPage({ params }) {
 	const searchParams = useSearchParams();
 	const { kode } = params;
 	
+	const classId = searchParams.get('id') || '';
 	const namaKelas = searchParams.get('nama') || '';
 	const mataKuliah = searchParams.get('matkul') || '';
 	const dosen = searchParams.get('dosen') || '';
@@ -214,7 +215,7 @@ export default function DetailKelasPage({ params }) {
 					</h2>
 					{userRole === 'dosen' && (
 						<button
-							onClick={() => router.push(`/akademik/detailkelas/${kode}/pengumuman`)}
+							onClick={() => router.push(`/akademik/detailkelas/${kode}/pengumuman?id=${classId}`)}
 							className="flex items-center gap-2 text-white px-4 py-2 transition shadow-sm hover:opacity-90 font-semibold"
 							style={{ backgroundColor: '#015023', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
 						>

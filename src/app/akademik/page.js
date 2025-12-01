@@ -61,14 +61,13 @@ export default function AkademikPage() {
 	const fetchClassesData = async (academicPeriodId) => {
 		setIsLoading(true);
 		try {
-			const response = await getTeachingClasses(academicPeriodId);
+			const response = await getTeachingClasses({ academic_period_id: academicPeriodId });
 			
 			if (response.status === 'success' && response.data) {
 				// Transform data ke format yang sesuai dengan table
 				const formattedData = response.data.map(item => ({
 					id_class: item.id_class,
 					kode_kelas: item.code_class,
-					nama_kelas: item.code_class, // Backend tidak mengirim nama kelas terpisah
 					mata_kuliah: item.subject?.name_subject || '-',
 					kode_matkul: item.subject?.code_subject || '-',
 				}));
@@ -83,9 +82,9 @@ export default function AkademikPage() {
 	};
 
 	const columns = [
-		{ key: 'kode_kelas', label: 'Kode Kelas', width: '130px', cellClassName: 'font-bold' },
-		{ key: 'nama_kelas', label: 'Nama Kelas', width: '180px', cellClassName: 'font-medium' },
+		{ key: 'kode_kelas', label: 'Kode Kelas', width: '150px', cellClassName: 'font-bold' },
 		{ key: 'mata_kuliah', label: 'Mata Kuliah', className: 'text-left', cellClassName: 'text-left' },
+		{ key: 'kode_matkul', label: 'Kode Matkul', width: '130px', cellClassName: 'font-medium' },
 		{ key: 'detail', label: 'Detail Kelas', width: '140px' },
 	];
 
@@ -93,7 +92,7 @@ export default function AkademikPage() {
 		detail: (_value, item) => (
 			<div className="flex items-center justify-center">
 				<button
-					onClick={() => router.push(`/akademik/detailkelas/${item.id_class}`)}
+					onClick={() => router.push(`/akademik/detailkelas/${item.kode_kelas}?id=${item.id_class}`)}
 					className="flex items-center gap-2 text-white px-4 py-2 transition shadow-sm hover:opacity-90 font-semibold"
 					style={{ backgroundColor: '#015023', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
 				>

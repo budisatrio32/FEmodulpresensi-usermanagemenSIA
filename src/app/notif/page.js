@@ -387,6 +387,20 @@ export default function NotifikasiPage() {
                         {notif.judul}
                       </h3>
 
+                      {/* Date and sender info */}
+                      <div style={{
+                        display: 'flex',
+                        gap: '12px',
+                        marginBottom: '12px',
+                        fontSize: '14px',
+                        color: '#015023',
+                        opacity: 0.7
+                      }}>
+                        <span>{notif.pengumum}</span>
+                        <span>•</span>
+                        <span>{formatDate(notif.tanggal)}</span>
+                      </div>
+
                       {/* Rich template untuk class announcement */}
                       {notif.type === 'announcement' && notif.metadata?.subject_name && (
                         <div style={{
@@ -431,26 +445,6 @@ export default function NotifikasiPage() {
                           )}
                         </div>
                       )}
-
-                      <div style={{
-                        display: 'flex',
-                        gap: '16px',
-                        marginBottom: '12px',
-                        fontSize: '14px',
-                        color: '#015023',
-                        opacity: 0.7,
-                        flexWrap: 'wrap'
-                      }}>
-                        {notif.kelas && !notif.metadata?.subject_name && (
-                          <>
-                            <span>{notif.kelas}</span>
-                            <span>•</span>
-                          </>
-                        )}
-                        <span>{notif.pengumum}</span>
-                        <span>•</span>
-                        <span>{formatDate(notif.tanggal)}</span>
-                      </div>
 
                       <p style={{
                         fontSize: '16px',
