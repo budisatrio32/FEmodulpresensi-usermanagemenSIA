@@ -1,88 +1,88 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/ui/navigation-menu'
 import Footer from '@/components/ui/footer'
+import LoadingEffect from '@/components/ui/loading-effect'
 import { ArrowLeft, Bell, MessageCircle } from 'lucide-react'
+import { getNotifications, markAsRead, markAllAsRead } from '@/lib/notificationApi'
 
 export default function NotifikasiPage() {
   const router = useRouter()
   const [filter, setFilter] = useState('all') // all, announcement, chat
+  const [allNotifications, setAllNotifications] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  // Dummy notification data - replace with API call
-  const allNotifications = [
-    {
-      id: 1,
-      type: 'announcement',
-      judul: 'Ujian Tengah Semester',
-      isi: 'Ujian Tengah Semester akan dilaksanakan minggu depan. Harap mempersiapkan diri dengan baik.',
-      tanggal: '2025-11-15',
-      kelas: 'Pemrograman Web',
-      pengumum: 'Dr. Ahmad Budiman',
-      isRead: false
-    },
-    {
-      id: 2,
-      type: 'chat',
-      judul: 'Pesan dari Dr. Ahmad Budiman',
-      isi: 'Tugas yang dikumpulkan sudah saya terima, terima kasih. Silakan cek nilai di portal.',
-      tanggal: '2025-11-15',
-      pengumum: 'Dr. Ahmad Budiman',
-      isRead: false
-    },
-    {
-      id: 3,
-      type: 'announcement',
-      judul: 'Pengumpulan Tugas Akhir',
-      isi: 'Batas pengumpulan tugas akhir adalah hari Jumat, 20 November 2025 pukul 23:59.',
-      tanggal: '2025-11-14',
-      kelas: 'Basis Data',
-      pengumum: 'Prof. Siti Rahayu',
-      isRead: false
-    },
-    {
-      id: 4,
-      type: 'chat',
-      judul: 'Pesan dari Budi Santoso',
-      isi: 'Halo, apakah sudah selesai mengerjakan tugas kelompok? Kalau sudah bisa kita kumpulkan hari ini.',
-      tanggal: '2025-11-14',
-      pengumum: 'Budi Santoso',
-      isRead: true
-    },
-    {
-      id: 5,
-      type: 'announcement',
-      judul: 'Perubahan Jadwal Kuliah',
-      isi: 'Kuliah hari Kamis dipindahkan ke hari Jumat pada minggu ini.',
-      tanggal: '2025-11-13',
-      kelas: 'Algoritma & Struktur Data',
-      pengumum: 'Dr. Budi Santoso',
-      isRead: true
-    },
-    {
-      id: 6,
-      type: 'chat',
-      judul: 'Pesan dari Siti Rahma',
-      isi: 'Terima kasih atas bantuan nya dalam tugas kelompok kemarin!',
-      tanggal: '2025-11-12',
-      pengumum: 'Siti Rahma',
-      isRead: true
-    },
-    {
-      id: 7,
-      type: 'announcement',
-      judul: 'Seminar Teknologi Terkini',
-      isi: 'Akan diadakan seminar dengan tema "AI dan Machine Learning" pada tanggal 25 November 2025.',
-      tanggal: '2025-11-12',
-      kelas: 'Umum',
-      pengumum: 'Himpunan Mahasiswa',
-      isRead: true
+  // Fetch notifications on mount
+  useEffect(() => {
+    fetchNotifications()
+  }, [])
+
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await getNotifications()
+
+      if (response.status === 'success') {
+        // Transform API data to match component format
+        const transformedNotifications = response.data.notifications.map(notif => ({
+          id: notif.id_notification,
+          type: notif.type,
+          judul: notif.title,
+          isi: notif.message,
+          tanggal: notif.send_at,
+          kelas: notif.metadata?.class_code || null,
+          pengumum: notif.sender || 'System',
+          isRead: notif.is_read,
+          metadata: notif.metadata
+        }))
+
+        setAllNotifications(transformedNotifications)
+      }
+    } catch (err) {
+      console.error('Error fetching notifications:', err)
+      setError(err.message || 'Gagal mengambil notifikasi')
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
 
-  const filteredNotifications = filter === 'all' 
-    ? allNotifications 
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      await markAsRead(notificationId)
+
+      // Update local state
+      setAllNotifications(prev =>
+        prev.map(notif =>
+          notif.id === notificationId
+            ? { ...notif, isRead: true }
+            : notif
+        )
+      )
+    } catch (err) {
+      console.error('Error marking as read:', err)
+    }
+  }
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead()
+
+      // Update local state
+      setAllNotifications(prev =>
+        prev.map(notif => ({ ...notif, isRead: true }))
+      )
+    } catch (err) {
+      console.error('Error marking all as read:', err)
+    }
+  }
+
+  const filteredNotifications = filter === 'all'
+    ? allNotifications
     : allNotifications.filter(notif => notif.type === filter)
 
   const formatDate = (dateString) => {
@@ -93,10 +93,14 @@ export default function NotifikasiPage() {
 
   const unreadCount = allNotifications.filter(n => !n.isRead).length
 
+  if (loading) {
+    return <LoadingEffect message="Memuat notifikasi..." />
+  }
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: 'Urbanist, sans-serif' }}>
       <Navbar />
-      
+
       <main style={{ flex: 1, backgroundColor: '#f8f9fa', padding: '32px 0' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
           {/* Header */}
@@ -120,7 +124,7 @@ export default function NotifikasiPage() {
               <ArrowLeft size={20} />
               Kembali
             </button>
-            
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: '#015023', margin: 0 }}>
@@ -130,13 +134,36 @@ export default function NotifikasiPage() {
                   {unreadCount > 0 ? `${unreadCount} notifikasi belum dibaca` : 'Semua notifikasi sudah dibaca'}
                 </p>
               </div>
+
+              {/* Mark All as Read Button */}
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllAsRead}
+                  style={{
+                    padding: '12px 24px',
+                    backgroundColor: '#015023',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    fontFamily: 'Urbanist, sans-serif',
+                    transition: 'opacity 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.target.style.opacity = '0.9'}
+                  onMouseLeave={(e) => e.target.style.opacity = '1'}
+                >
+                  Tandai Semua Dibaca
+                </button>
+              )}
             </div>
           </div>
 
           {/* Filter Tabs */}
-          <div style={{ 
-            display: 'flex', 
-            gap: '8px', 
+          <div style={{
+            display: 'flex',
+            gap: '8px',
             marginBottom: '24px',
             borderBottom: '2px solid rgba(1, 80, 35, 0.1)',
             paddingBottom: '0',
@@ -144,7 +171,7 @@ export default function NotifikasiPage() {
             scrollbarWidth: 'none',
             msOverflowStyle: 'none'
           }}
-          className="hide-scrollbar"
+            className="hide-scrollbar"
           >
             {[
               { value: 'all', label: 'Semua', icon: Bell },
@@ -177,8 +204,8 @@ export default function NotifikasiPage() {
                   <Icon size={16} />
                   <span style={{ fontSize: '14px' }}>{tab.label}</span>
                   {tab.value === 'all' && allNotifications.length > 0 && (
-                    <span style={{ 
-                      marginLeft: '2px', 
+                    <span style={{
+                      marginLeft: '2px',
                       fontSize: '12px',
                       opacity: 0.7
                     }}>
@@ -190,7 +217,7 @@ export default function NotifikasiPage() {
             })}
           </div>
 
-          {/* Notifications List */}
+          {/* Notifications List - FIX STARTS HERE */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {filteredNotifications.length === 0 ? (
               <div style={{
@@ -207,65 +234,72 @@ export default function NotifikasiPage() {
               </div>
             ) : (
               filteredNotifications.map((notif) => {
-                const Icon = notif.type === 'chat' ? MessageCircle : Bell
+                const Icon = notif.type === 'chat' ? MessageCircle : Bell;
+                
                 return (
-                  <div
+                  <div 
                     key={notif.id}
+                    onClick={() => !notif.isRead && handleMarkAsRead(notif.id)}
                     style={{
-                      backgroundColor: 'white',
+                      backgroundColor: notif.isRead ? 'white' : '#F0FDF4', // Highlight if unread
                       borderRadius: '16px',
                       padding: '24px',
-                      border: '2px solid rgba(1, 80, 35, 0.2)',
-                      position: 'relative'
+                      border: '1px solid rgba(1, 80, 35, 0.1)',
+                      cursor: !notif.isRead ? 'pointer' : 'default',
+                      position: 'relative',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
+                      transition: 'background-color 0.2s'
                     }}
                   >
-                    {/* Type Badge & Unread Indicator */}
+                    {/* Header Badge & Unread Dot */}
                     <div style={{
-                      position: 'absolute',
-                      top: '24px',
-                      right: '24px',
                       display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
                     }}>
-                      {!notif.isRead && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {!notif.isRead && (
+                          <span style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            backgroundColor: '#015023'
+                          }} />
+                        )}
                         <span style={{
-                          width: '8px',
-                          height: '8px',
-                          borderRadius: '50%',
-                          backgroundColor: '#015023'
-                        }} />
-                      )}
-                      <span style={{
-                        padding: '6px 12px',
-                        borderRadius: '12px',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        backgroundColor: notif.type === 'chat' ? '#DABC4E' : '#015023',
-                        color: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}>
-                        <Icon size={14} />
-                        {notif.type === 'chat' ? 'Chat' : 'Pengumuman'}
-                      </span>
+                          padding: '6px 12px',
+                          borderRadius: '12px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          backgroundColor: notif.type === 'chat' ? '#DABC4E' : '#015023',
+                          color: 'white',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}>
+                          <Icon size={14} />
+                          {notif.type === 'chat' ? 'Chat' : 'Pengumuman'}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Content */}
-                    <div style={{ paddingRight: '140px' }}>
+                    <div>
                       <h3 style={{
                         fontSize: '20px',
                         fontWeight: 'bold',
                         color: '#015023',
-                        marginBottom: '8px'
+                        marginBottom: '8px',
+                        marginTop: 0
                       }}>
                         {notif.judul}
                       </h3>
-                      
-                      <div style={{ 
-                        display: 'flex', 
-                        gap: '16px', 
+
+                      <div style={{
+                        display: 'flex',
+                        gap: '16px',
                         marginBottom: '12px',
                         fontSize: '14px',
                         color: '#015023',

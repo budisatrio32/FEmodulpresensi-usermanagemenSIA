@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Navbar from '@/components/ui/navigation-menu';
+import Footer from '@/components/ui/footer';
 import { ArrowLeft, Send, Megaphone } from 'lucide-react';
 import { PrimaryButton, SecondaryButton } from '@/components/ui/button';
 
@@ -71,9 +72,9 @@ export default function BuatPengumumanPage() {
 	};
 
 	return (
-		<div className="min-h-screen bg-brand-light-sage">
-			<Navbar />
-			<div className="container mx-auto px-4 py-8 max-w-4xl">
+		<div className="min-h-screen bg-brand-light-sage flex flex-col">
+			<Navbar/>
+			<div className="container mx-auto px-4 py-8 max-w-7xl flex-grow">
 				
 				{/* Back Button */}
 				<button
@@ -203,6 +204,7 @@ export default function BuatPengumumanPage() {
 					</form>
 				</div>
 			</div>
+			<Footer/>
 		</div>
 	);
 }

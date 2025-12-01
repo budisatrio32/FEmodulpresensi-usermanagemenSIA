@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/ui/navigation-menu';
+import Footer from '@/components/ui/footer';
 import DataTable from '@/components/ui/table';
 import ChatModal from '@/components/ui/chatmodal';
 import RoleSwitcher from '@/components/ui/role-switcher';
@@ -163,9 +164,9 @@ export default function DetailKelasPage({ params }) {
 	};
 
 	return (
-		<div className="min-h-screen bg-brand-light-sage">
-			<Navbar />
-			<div className="container mx-auto px-4 py-8 max-w-7xl">
+		<div className="min-h-screen bg-brand-light-sage flex flex-col">
+			<Navbar/>
+			<div className="container mx-auto px-4 py-8 max-w-7xl flex-grow">
 				
 				{/* Back Button */}
 				<button
@@ -257,6 +258,7 @@ export default function DetailKelasPage({ params }) {
 
 			{/* Role Switcher for Development/Testing */}
 			<RoleSwitcher />
+			<Footer/>
 		</div>
 	);
 }

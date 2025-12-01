@@ -29,16 +29,17 @@ import {
 } from '@/components/ui/alert-dialog'
 import { PrimaryButton, OutlineButton } from '@/components/ui/button'
 import { logout } from '@/lib/sessionApi'
+import { getNotifications, markAsRead } from '@/lib/notificationApi'
 
 const NavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
-  <Link 
-    href="/landingpage" 
+  <Link
+    href="/landingpage"
     ref={ref}
     className={cn("flex items-center gap-2 sm:gap-3", className)}
     {...props}
   >
     <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center p-1 flex-shrink-0">
-      <Image 
+      <Image
         src="/Logo.png"
         alt="UGN Logo"
         width={100}
@@ -46,14 +47,14 @@ const NavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
         className="rounded-full"
       />
     </div>
-    <span className="text-brand-yellow font-semibold text-sm sm:text-base md:text-lg tracking-wide hidden sm:inline" style={{color: '#DABC4E'}}>
+    <span className="text-brand-yellow font-semibold text-sm sm:text-base md:text-lg tracking-wide hidden sm:inline" style={{ color: '#DABC4E' }}>
       Universitas Global Nusantara
     </span>
   </Link>
 ))
 
 const NavbarMenu = React.forwardRef(({ className, ...props }, ref) => (
-  <div 
+  <div
     ref={ref}
     className={cn("hidden md:flex items-center gap-4 lg:gap-6", className)}
     {...props}
@@ -65,14 +66,14 @@ const NavbarMenu = React.forwardRef(({ className, ...props }, ref) => (
 ))
 
 const NavbarMenuItem = React.forwardRef(({ className, href, children, ...props }, ref) => (
-  <Link 
+  <Link
     href={href}
     ref={ref}
     className={cn(
       "text-white hover:text-brand-yellow transition-colors duration-200 font-medium text-sm lg:text-base",
       className
     )}
-    style={{'--hover-color': '#DABC4E'}}
+    style={{ '--hover-color': '#DABC4E' }}
     {...props}
   >
     {children}
@@ -80,7 +81,7 @@ const NavbarMenuItem = React.forwardRef(({ className, href, children, ...props }
 ))
 
 const NavbarActions = React.forwardRef(({ className, ...props }, ref) => (
-  <div 
+  <div
     ref={ref}
     className={cn("flex items-center gap-4 sm:gap-6 lg:gap-10", className)}
     {...props}
@@ -91,49 +92,59 @@ const NavbarActions = React.forwardRef(({ className, ...props }, ref) => (
 ))
 
 const NavbarNotification = React.forwardRef(({ className, ...props }, ref) => {
-  // Dummy data notifikasi (pengumuman dan chat)
-  const [notifications] = React.useState([
-    {
-      id: 1,
-      type: 'announcement',
-      title: 'Pengumuman Ujian Tengah Semester',
-      message: 'UTS akan dilaksanakan pada tanggal 20-25 November 2025',
-      date: '2025-11-15',
-      isRead: false
-    },
-    {
-      id: 2,
-      type: 'chat',
-      title: 'Pesan dari Dr. Ahmad Budiman',
-      message: 'Tugas yang dikumpulkan sudah saya terima, terima kasih',
-      date: '2025-11-15',
-      isRead: false
-    },
-    {
-      id: 3,
-      type: 'announcement',
-      title: 'Perubahan Jadwal Kuliah',
-      message: 'Mata kuliah Pemrograman Web dipindah ke hari Rabu',
-      date: '2025-11-14',
-      isRead: false
-    },
-    {
-      id: 4,
-      type: 'chat',
-      title: 'Pesan dari Budi Santoso',
-      message: 'Halo, apakah sudah selesai mengerjakan tugas kelompok?',
-      date: '2025-11-14',
-      isRead: true
-    },
-    {
-      id: 5,
-      type: 'announcement',
-      title: 'Pengumpulan Tugas Akhir',
-      message: 'Batas akhir pengumpulan tugas proyek adalah 30 November 2025',
-      date: '2025-11-13',
-      isRead: true
-    },
-  ]);
+  const [notifications, setNotifications] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+
+  // Fetch notifications
+  const fetchNotifications = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await getNotifications();
+
+      if (response.status === 'success') {
+        // Transform and take only first 5 for dropdown
+        const transformed = response.data.notifications.slice(0, 5).map(notif => ({
+          id: notif.id_notification,
+          type: notif.type,
+          title: notif.title,
+          message: notif.message,
+          date: notif.send_at,
+          isRead: notif.is_read
+        }));
+
+        setNotifications(transformed);
+      }
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch on mount and every 30 seconds
+  React.useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000); // 30 seconds
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  // Handle mark as read
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      await markAsRead(notificationId);
+
+      // Update local state
+      setNotifications(prev =>
+        prev.map(notif =>
+          notif.id === notificationId
+            ? { ...notif, isRead: true }
+            : notif
+        )
+      );
+    } catch (err) {
+      console.error('Error marking as read:', err);
+    }
+  };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -155,13 +166,13 @@ const NavbarNotification = React.forwardRef(({ className, ...props }, ref) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button 
+        <button
           ref={ref}
           className={cn(
             "relative text-brand-yellow hover:opacity-80 transition-colors duration-200 focus:outline-none",
             className
           )}
-          style={{color: '#DABC4E'}}
+          style={{ color: '#DABC4E' }}
           {...props}
         >
           <Bell className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" />
@@ -172,8 +183,8 @@ const NavbarNotification = React.forwardRef(({ className, ...props }, ref) => {
           )}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent 
-        align="end" 
+      <DropdownMenuContent
+        align="end"
         className="w-80 max-h-96 overflow-y-auto hide-scrollbar"
       >
         <DropdownMenuLabel>
@@ -189,21 +200,28 @@ const NavbarNotification = React.forwardRef(({ className, ...props }, ref) => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        
-        {notifications.length === 0 ? (
+
+        {loading ? (
+          <div className="p-4 text-center text-sm" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
+            Memuat...
+          </div>
+        ) : notifications.length === 0 ? (
           <div className="p-4 text-center text-sm" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
             Tidak ada notifikasi
           </div>
         ) : (
           notifications.map((notification, index) => (
             <React.Fragment key={notification.id}>
-              <DropdownMenuItem className="flex-col items-start p-3 cursor-default" asChild>
+              <DropdownMenuItem
+                className="flex-col items-start p-3 cursor-pointer"
+                onClick={() => !notification.isRead && handleMarkAsRead(notification.id)}
+              >
                 <div>
                   <div className="flex items-start justify-between w-full mb-1">
                     <div className="flex items-center gap-2 flex-1">
-                      <div 
+                      <div
                         className="px-2 py-0.5 rounded text-xs font-semibold flex-shrink-0"
-                        style={{ 
+                        style={{
                           backgroundColor: notification.type === 'chat' ? '#DABC4E' : '#015023',
                           color: 'white'
                         }}
@@ -230,7 +248,7 @@ const NavbarNotification = React.forwardRef(({ className, ...props }, ref) => {
             </React.Fragment>
           ))
         )}
-        
+
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/notif" className="text-center w-full cursor-pointer font-semibold text-sm py-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
@@ -270,72 +288,72 @@ const NavbarProfile = React.forwardRef(({ className, userName, userImage, Name, 
 
   return (
     <>
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button 
-          ref={ref}
-          className={cn(
-            "transition-all duration-200 hover:scale-105 hover:opacity-90 cursor-pointer focus:outline-none",
-            className
-          )}
-          {...props}
-        >
-          <Avatar className="size-9 sm:size-10">
-            <AvatarImage src={displayImage} alt={displayuserName} />
-            <AvatarFallback>
-              {displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-            </AvatarFallback>
-          </Avatar>
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-              {displayName}
-            </p>
-            <p className="text-xs" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
-              {displayuserName}
-            </p>
-          </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/profilepage" className="flex items-center cursor-pointer">
-            <UserCog className="mr-2 h-4 w-4" />
-            <span>Profile Management</span>
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem 
-          variant="destructive" 
-          onClick={() => setShowLogoutDialog(true)}
-          className="cursor-pointer"
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Logout</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            ref={ref}
+            className={cn(
+              "transition-all duration-200 hover:scale-105 hover:opacity-90 cursor-pointer focus:outline-none",
+              className
+            )}
+            {...props}
+          >
+            <Avatar className="size-9 sm:size-10">
+              <AvatarImage src={displayImage} alt={displayuserName} />
+              <AvatarFallback>
+                {displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+              </AvatarFallback>
+            </Avatar>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel>
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                {displayName}
+              </p>
+              <p className="text-xs" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
+                {displayuserName}
+              </p>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href="/profilepage" className="flex items-center cursor-pointer">
+              <UserCog className="mr-2 h-4 w-4" />
+              <span>Profile Management</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => setShowLogoutDialog(true)}
+            className="cursor-pointer"
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Logout</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-    {/* Konfirmasi dialog */}
-    <AlertConfirmationDialog 
-      open={showLogoutDialog}
-      onOpenChange={setShowLogoutDialog}
-      title='Konfirmasi Logout'
-      description='Apakah Anda yakin ingin keluar dari sistem?'
-      confirmText='Logout'
-      onConfirm={confirmLogout}
-    />
+      {/* Konfirmasi dialog */}
+      <AlertConfirmationDialog
+        open={showLogoutDialog}
+        onOpenChange={setShowLogoutDialog}
+        title='Konfirmasi Logout'
+        description='Apakah Anda yakin ingin keluar dari sistem?'
+        confirmText='Logout'
+        onConfirm={confirmLogout}
+      />
     </>
   )
 })
 
 const Navbar = React.forwardRef(({ className, ...props }, ref) => (
-  <nav 
+  <nav
     ref={ref}
-    className={cn("bg-brand-green shadow-md rounded-b-[12px] sm:rounded-b-[18px]", className)} 
-    style={{backgroundColor: '#015023'}}
+    className={cn("bg-brand-green shadow-md rounded-b-[12px] sm:rounded-b-[18px]", className)}
+    style={{ backgroundColor: '#015023' }}
     {...props}
   >
     <div className="container mx-auto px-4 sm:px-6">
