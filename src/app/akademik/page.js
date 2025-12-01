@@ -7,8 +7,9 @@ import DataTable from '@/components/ui/table';
 import LoadingEffect from '@/components/ui/loading-effect';
 import { Eye, GraduationCap, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { getTeachingClasses } from '@/lib/ClassApi';
+import { getTeachingClasses, getStudentClasses } from '@/lib/ClassApi';
 import { getAcademicPeriods } from '@/lib/gradingApi';
+import { getProfile } from '@/lib/profileApi';
 
 export default function AkademikPage() {
 	const router = useRouter();
@@ -16,22 +17,29 @@ export default function AkademikPage() {
 	const [selectedSemester, setSelectedSemester] = useState('');
 	const [semesterOptions, setSemesterOptions] = useState([]);
 	const [data, setData] = useState([]);
+	const [userRole, setUserRole] = useState(null);
 
 	// Fetch initial data saat component mount
 	useEffect(() => {
 		fetchAllData();
 	}, []);
 
-	// Fetch classes ketika semester berubah
+	// Fetch classes ketika semester berubah dan userRole sudah tersedia
 	useEffect(() => {
-		if (selectedSemester) {
+		if (selectedSemester && userRole) {
 			fetchClassesData(selectedSemester);
 		}
-	}, [selectedSemester]);
+	}, [selectedSemester, userRole]);
 
 	const fetchAllData = async () => {
 		setIsLoading(true);
 		try {
+			// Fetch user profile to detect role
+			const profileResponse = await getProfile();
+			if (profileResponse.status === 'success') {
+				setUserRole(profileResponse.data.role);
+			}
+
 			const response = await getAcademicPeriods();
 			
 			if (response.status === 'success') {
@@ -61,15 +69,18 @@ export default function AkademikPage() {
 	const fetchClassesData = async (academicPeriodId) => {
 		setIsLoading(true);
 		try {
-			const response = await getTeachingClasses({ academic_period_id: academicPeriodId });
+			// Hit different endpoint based on user role
+			const response = userRole === 'mahasiswa' 
+				? await getStudentClasses(academicPeriodId)
+				: await getTeachingClasses(academicPeriodId);
 			
 			if (response.status === 'success' && response.data) {
-				// Transform data ke format yang sesuai dengan table
+				// Backend udah return formatted data, tinggal map ke table format
 				const formattedData = response.data.map(item => ({
 					id_class: item.id_class,
 					kode_kelas: item.code_class,
-					mata_kuliah: item.subject?.name_subject || '-',
-					kode_matkul: item.subject?.code_subject || '-',
+					mata_kuliah: item.name_subject,
+					kode_matkul: item.code_subject,
 				}));
 				setData(formattedData);
 			}

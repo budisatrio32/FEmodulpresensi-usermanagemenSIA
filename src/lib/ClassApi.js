@@ -50,6 +50,24 @@ export const getTeachingClasses = async (academicPeriodId = null) => {
 };
 
 /**
+ * Get student classes (for mahasiswa role)
+ * @param {string} academicPeriodId - Optional academic period filter
+ * @returns {Promise} Response dengan data kelas mahasiswa
+ */
+export const getStudentClasses = async (academicPeriodId = null) => {
+    try {
+        const params = {};
+        if (academicPeriodId) {
+            params.academic_period_id = academicPeriodId;
+        }
+        const response = await api.get('student/classes', { params });
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
+};
+
+/**
  * Get class detail with students and lecturers
  * @param {number} classId - The class ID
  * @returns {Promise} Response dengan detail kelas, mahasiswa, dan dosen
@@ -66,5 +84,6 @@ export const getClassDetail = async (classId) => {
 export default {
     getAllClasses,
     getTeachingClasses,
+    getStudentClasses,
     getClassDetail,
 };
