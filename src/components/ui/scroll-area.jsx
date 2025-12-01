@@ -46,11 +46,7 @@ function ScrollBar({
       {...props}>
       <ScrollAreaPrimitive.Thumb
         data-slot="scroll-area-thumb"
-        className="relative flex-1 rounded-full transition-colors"
-        style={{
-          backgroundColor: '#015023',
-          opacity: 0.3
-        }}
+        className="relative flex-1 rounded-full transition-colors bg-[#015023]/30 hover:bg-[#015023]/50 dark:bg-white/20 dark:hover:bg-white/40"
         onMouseEnter={(e) => {
           e.currentTarget.style.opacity = '0.5'
         }}
