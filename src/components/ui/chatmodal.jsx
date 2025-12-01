@@ -1,303 +1,332 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { X, Send, User } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Send, MessageCircle } from 'lucide-react';
+import { findOrCreatePrivateConversation, getMessages, sendMessage } from '@/lib/chatApi';
+import Echo from 'laravel-echo';
+import Pusher from 'pusher-js';
 
 export default function ChatModal({ isOpen, onClose, userName, userNim = '', userId = '' }) {
-	const [message, setMessage] = useState('');
-	const messagesEndRef = useRef(null);
-	const [messages, setMessages] = useState([]);
-	
-	// Dummy data chat per user (nanti diganti dengan API call)
-	const dummyChats = {
-		'2021110001': [
-			{
-				id: 1,
-				sender: 'Andi Pratama',
-				text: 'Pak, mau tanya tentang tugas minggu ini',
-				timestamp: new Date('2025-11-13T10:30:00'),
-				isMe: false,
-			},
-			{
-				id: 2,
-				sender: 'You',
-				text: 'Silakan, ada yang bisa saya bantu?',
-				timestamp: new Date('2025-11-13T10:32:00'),
-				isMe: true,
-			},
-		],
-		'2021110002': [
-			{
-				id: 1,
-				sender: 'Budi Santoso',
-				text: 'Selamat pagi pak',
-				timestamp: new Date('2025-11-14T08:15:00'),
-				isMe: false,
-			},
-		],
-		'2021110003': [
-			{
-				id: 1,
-				sender: 'Citra Dewi',
-				text: 'Pak, saya izin tidak bisa hadir hari ini',
-				timestamp: new Date('2025-11-14T07:00:00'),
-				isMe: false,
-			},
-			{
-				id: 2,
-				sender: 'You',
-				text: 'Baik, silakan kirim surat keterangan ya',
-				timestamp: new Date('2025-11-14T07:05:00'),
-				isMe: true,
-			},
-			{
-				id: 3,
-				sender: 'Citra Dewi',
-				text: 'Siap pak, terima kasih',
-				timestamp: new Date('2025-11-14T07:10:00'),
-				isMe: false,
-			},
-		],
-		// Default chat untuk user yang belum pernah chat
-		'default': []
-	};
+    // State
+    const [message, setMessage] = useState('');
+    const [messages, setMessages] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [conversationId, setConversationId] = useState(null);
+    const [currentUserId, setCurrentUserId] = useState(null);
+    
+    // Refs
+    const messagesEndRef = useRef(null);
+    const echoRef = useRef(null);
 
-	// Load messages ketika modal dibuka atau userId berubah
-	useEffect(() => {
-		if (isOpen && userId) {
-			// TODO: Nanti ganti dengan API call
-			// const fetchMessages = async () => {
-			//   const response = await fetch(`/api/chat/users/${userId}/messages`);
-			//   const data = await response.json();
-			//   setMessages(data.messages);
-			// };
-			// fetchMessages();
-			
-			// Sementara pakai dummy data
-			const userMessages = dummyChats[userId] || dummyChats['default'];
-			setMessages(userMessages);
-		}
-	}, [isOpen, userId]);
+    // 1. Initialize Echo for WebSocket (Reverb/Pusher)
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            window.Pusher = Pusher;
 
-	// Scroll to bottom when messages change
-	useEffect(() => {
-		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-	}, [messages]);
+            echoRef.current = new Echo({
+                broadcaster: 'reverb',
+                key: process.env.NEXT_PUBLIC_REVERB_APP_KEY || 'local-app-key',
+                wsHost: process.env.NEXT_PUBLIC_REVERB_HOST || 'localhost',
+                wsPort: process.env.NEXT_PUBLIC_REVERB_PORT || 9090,
+                wssPort: process.env.NEXT_PUBLIC_REVERB_PORT || 9090,
+                forceTLS: (process.env.NEXT_PUBLIC_REVERB_SCHEME || 'http') === 'https',
+                enabledTransports: ['ws', 'wss'],
+                authEndpoint: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/broadcasting/auth`,
+                auth: {
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                },
+            });
 
-	// Prevent body scroll when modal is open
-	useEffect(() => {
-		if (isOpen) {
-			document.body.style.overflow = 'hidden';
-		} else {
-			document.body.style.overflow = 'unset';
-		}
-		return () => {
-			document.body.style.overflow = 'unset';
-		};
-	}, [isOpen]);
+            console.log('Echo initialized');
+        }
 
-	const handleSendMessage = (e) => {
-		e.preventDefault();
-		if (!message.trim()) return;
+        return () => {
+            if (echoRef.current) {
+                echoRef.current.disconnect();
+            }
+        };
+    }, []);
 
-		const newMessage = {
-			id: messages.length + 1,
-			sender: 'You',
-			text: message,
-			timestamp: new Date(),
-			isMe: true,
-		};
+    // 2. Get current user ID from profile API
+    useEffect(() => {
+        const fetchCurrentUser = async () => {
+            try {
+                // Dynamic import to avoid circular dependencies if any
+                const { getProfile } = await import('@/lib/profileApi');
+                const profileResponse = await getProfile();
+                
+                if (profileResponse.status === 'success' && profileResponse.data.id_user_si) {
+                    setCurrentUserId(profileResponse.data.id_user_si);
+                }
+            } catch (error) {
+                console.error('Error getting current user:', error);
+            }
+        };
 
-		// Update local state
-		setMessages([...messages, newMessage]);
-		setMessage('');
+        fetchCurrentUser();
+    }, []);
 
-		// TODO: Nanti kirim ke backend
-		// const sendToBackend = async () => {
-		//   await fetch(`/api/chat/users/${userId}/messages`, {
-		//     method: 'POST',
-		//     headers: { 'Content-Type': 'application/json' },
-		//     body: JSON.stringify({
-		//       text: message,
-		//       receiverId: userId
-		//     })
-		//   });
-		// };
-		// sendToBackend();
-	};
+    // 3. Find or create conversation and load messages
+    useEffect(() => {
+        if (!isOpen || !userId) return;
 
-	const formatTime = (date) => {
-		return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-	};
+        const initializeChat = async () => {
+            try {
+                setLoading(true);
+                
+                // Find or create private conversation
+                const conversationResponse = await findOrCreatePrivateConversation(userId);
 
-	const formatDate = (date) => {
-		const today = new Date();
-		const messageDate = new Date(date);
-		
-		if (messageDate.toDateString() === today.toDateString()) {
-			return 'Hari Ini';
-		}
-		
-		const yesterday = new Date(today);
-		yesterday.setDate(yesterday.getDate() - 1);
-		if (messageDate.toDateString() === yesterday.toDateString()) {
-			return 'Kemarin';
-		}
-		
-		return messageDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-	};
+                if (conversationResponse.data) {
+                    const convId = conversationResponse.data.id_conversation;
+                    setConversationId(convId);
 
-	// Group messages by date
-	const groupedMessages = messages.reduce((groups, message) => {
-		const dateKey = message.timestamp.toDateString();
-		if (!groups[dateKey]) {
-			groups[dateKey] = [];
-		}
-		groups[dateKey].push(message);
-		return groups;
-	}, {});
+                    // Load existing messages
+                    const messagesResponse = await getMessages(convId);
 
-	if (!isOpen) return null;
+                    if (messagesResponse.data) {
+                        setMessages(messagesResponse.data);
+                    }
 
-	return (
-		<>
-			{/* Backdrop */}
-			<div 
-				className="fixed inset-0 z-40 transition-opacity flex items-center justify-center"
-				style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }}
-				onClick={onClose}
-			>
-				{/* Chat Modal */}
-				<div 
-					className="bg-white shadow-2xl flex flex-col rounded-lg overflow-hidden"
-					style={{
-						width: '600px',
-						height: '700px',
-						borderRadius: '16px',
-						maxHeight: '90vh',
-						maxWidth: '90vw',
-					}}
-					onClick={(e) => e.stopPropagation()}
-				>
-					{/* Chat Header */}
-					<div 
-						className="p-5 border-b border-gray-200 flex items-center justify-between"
-						style={{ backgroundColor: '#015023' }}
-					>
-						<div className="flex items-center gap-3">
-							<div className="w-12 h-12 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
-								<User className="w-6 h-6 text-white" />
-							</div>
-							<div>
-								<h3 className="font-bold text-white text-lg" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-									{userName}
-								</h3>
-								{userNim && (
-									<p className="text-sm text-white opacity-80" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-										NIM: {userNim}
-									</p>
-								)}
-							</div>
-						</div>
-						<button
-							onClick={onClose}
-							className="text-white hover:bg-brand-yellow hover:bg-opacity-10 p-2 rounded-lg transition"
-						>
-							<X className="w-6 h-6" />
-						</button>
-					</div>
+                    // Subscribe to new messages via WebSocket
+                    if (echoRef.current) {
+                        echoRef.current.private(`chat.${convId}`)
+                            .listen('NewChatMessage', (e) => {
+                                // Only add if it's not from current user (to avoid duplicates)
+                                if (e.message.id_user_si !== currentUserId) {
+                                    setMessages(prev => [...prev, e.message]);
+                                }
+                            });
+                    }
+                }
+            } catch (error) {
+                console.error('Error initializing chat:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-					{/* Messages Area */}
-					<div className="flex-1 overflow-y-auto p-5 space-y-4" style={{ backgroundColor: '#f9fafb' }}>
-							{Object.entries(groupedMessages).map(([dateKey, dateMessages]) => (
-								<div key={dateKey}>
-									{/* Date Separator */}
-									<div className="flex items-center gap-3 my-4">
-										<div className="flex-1 h-px" style={{ backgroundColor: '#015023', opacity: 0.2 }}></div>
-										<span className="text-xs font-medium px-2 py-1 rounded-lg" style={{ 
-											backgroundColor: '#f3f4f6', 
-											color: '#015023',
-											fontFamily: 'Urbanist, sans-serif'
-										}}>
-											{formatDate(new Date(dateKey))}
-										</span>
-										<div className="flex-1 h-px" style={{ backgroundColor: '#015023', opacity: 0.2 }}></div>
-									</div>
+        initializeChat();
 
-									{/* Messages for this date */}
-									{dateMessages.map((msg) => (
-										<div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'} mb-3`}>
-											<div className={`max-w-[75%] ${msg.isMe ? 'items-end' : 'items-start'} flex flex-col`}>
-												{!msg.isMe && (
-													<span className="text-xs font-semibold mb-1 px-1" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-														{msg.sender}
-													</span>
-												)}
-												<div className="flex items-end gap-2">
-													{msg.isMe && (
-														<span className="text-xs" style={{ color: '#015023', opacity: 0.5, fontFamily: 'Urbanist, sans-serif' }}>
-															{formatTime(msg.timestamp)}
-														</span>
-													)}
-													<div 
-														className="px-3 py-2 rounded-2xl shadow-sm text-sm"
-														style={{
-															backgroundColor: msg.isMe ? '#015023' : '#f3f4f6',
-															color: msg.isMe ? 'white' : '#015023',
-															fontFamily: 'Urbanist, sans-serif',
-															borderRadius: msg.isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px'
-														}}
-													>
-														{msg.text}
-													</div>
-													{!msg.isMe && (
-														<span className="text-xs" style={{ color: '#015023', opacity: 0.5, fontFamily: 'Urbanist, sans-serif' }}>
-															{formatTime(msg.timestamp)}
-														</span>
-													)}
-												</div>
-											</div>
-										</div>
-									))}
-								</div>
-							))}
-							<div ref={messagesEndRef} />
-					</div>
+        // Cleanup: leave channel when modal closes
+        return () => {
+            if (echoRef.current && conversationId) {
+                echoRef.current.leave(`private-chat.${conversationId}`);
+            }
+        };
+    }, [isOpen, userId, currentUserId]);
 
-					{/* Message Input */}
-					<div className="p-4 border-t border-gray-200 bg-white">
-							<form onSubmit={handleSendMessage} className="flex gap-2">
-								<input
-									type="text"
-									value={message}
-									onChange={(e) => setMessage(e.target.value)}
-									placeholder="Ketik pesan..."
-									className="flex-1 px-3 py-2 border-2 rounded-xl text-sm focus:outline-none focus:border-opacity-100"
-									style={{
-										fontFamily: 'Urbanist, sans-serif',
-										borderColor: '#015023',
-										borderRadius: '12px',
-										opacity: 0.7
-									}}
-								/>
-								<button
-									type="submit"
-									disabled={!message.trim()}
-									className="px-4 py-2 rounded-xl font-semibold flex items-center gap-2 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
-									style={{
-										backgroundColor: '#015023',
-										color: 'white',
-										fontFamily: 'Urbanist, sans-serif',
-										borderRadius: '12px'
-									}}
-								>
-									<Send className="w-4 h-4" />
-							</button>
-						</form>
-					</div>
-				</div>
-			</div>
-		</>
-	);
+    // 4. Scroll to bottom when messages change
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    // 5. Prevent body scroll when modal is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
+    // Handlers
+    const handleSendMessage = async (e) => {
+        e.preventDefault();
+
+        if (!message.trim() || !conversationId) return;
+
+        const messageToSend = message.trim();
+        setMessage(''); // Clear input immediately
+
+        try {
+            // Send message via API
+            const response = await sendMessage(conversationId, messageToSend);
+            
+            if (response.data) {
+                // Add message to local state immediately for smooth UX
+                setMessages(prev => [...prev, response.data]);
+            }
+        } catch (error) {
+            console.error('Error sending message:', error);
+            setMessage(messageToSend); // Restore message if failed
+            alert('Gagal mengirim pesan. Silakan coba lagi.');
+        }
+    };
+
+    const formatTime = (date) => {
+        return new Date(date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const formatDate = (date) => {
+        const messageDate = new Date(date);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        if (messageDate.toDateString() === today.toDateString()) {
+            return 'Hari Ini';
+        } else if (messageDate.toDateString() === yesterday.toDateString()) {
+            return 'Kemarin';
+        } else {
+            return messageDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+    };
+
+    // Group messages by date
+    const groupedMessages = messages.reduce((groups, message) => {
+        const date = formatDate(message.created_at);
+        if (!groups[date]) {
+            groups[date] = [];
+        }
+        groups[date].push(message);
+        return groups;
+    }, {});
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center font-urbanist">
+            {/* Backdrop: Hitam transparan (bg-black/70) */}
+            <div
+                className="absolute inset-0 bg-black/70 transition-opacity backdrop-blur-sm"
+                onClick={onClose}
+            />
+
+            {/* Modal Window: Rounded & Shadow */}
+            <div
+                className="relative bg-white w-full max-w-2xl h-[650px] flex flex-col shadow-2xl overflow-hidden rounded-2xl mx-4"
+                style={{ fontFamily: 'Urbanist, sans-serif' }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div
+                    className="flex items-center justify-between p-4 border-b"
+                    style={{ backgroundColor: '#015023' }}
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
+                            <MessageCircle className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-white leading-tight">
+                                {userName}
+                            </h3>
+                            {userNim && (
+                                <p className="text-xs text-white/80">{userNim}</p>
+                            )}
+                        </div>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="text-white hover:bg-white/10 p-2 rounded-full transition"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+
+                {/* Messages Area */}
+                <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                    {loading ? (
+                        <div className="flex items-center justify-center h-full">
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="w-6 h-6 border-2 border-[#015023] border-t-transparent rounded-full animate-spin"></div>
+                                <p className="text-sm text-[#015023]">Memuat percakapan...</p>
+                            </div>
+                        </div>
+                    ) : messages.length === 0 ? (
+                        <div className="flex items-center justify-center h-full">
+                            <div className="text-center p-6 bg-white rounded-xl shadow-sm border border-gray-100">
+                                <MessageCircle className="w-12 h-12 text-[#015023] opacity-30 mx-auto mb-2" />
+                                <p style={{ color: '#015023', opacity: 0.6 }}>
+                                    Belum ada pesan. Mulai percakapan!
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
+                        Object.entries(groupedMessages).map(([date, msgs]) => (
+                            <div key={date} className="mb-6">
+                                {/* Date Separator */}
+                                <div className="flex items-center justify-center mb-4">
+                                    <span
+                                        className="px-3 py-1 text-xs font-medium rounded-full bg-gray-200 text-gray-600 shadow-sm"
+                                    >
+                                        {date}
+                                    </span>
+                                </div>
+
+                                {/* Messages List */}
+                                {msgs.map((msg) => {
+                                    const isMe = msg.id_user_si === currentUserId;
+                                    return (
+                                        <div
+                                            key={msg.id_message}
+                                            className={`flex mb-2 ${isMe ? 'justify-end' : 'justify-start'}`}
+                                        >
+                                            <div
+                                                className={`max-w-[75%] rounded-2xl px-4 py-2 shadow-sm ${
+                                                    isMe
+                                                        ? 'bg-[#015023] text-white rounded-tr-sm'
+                                                        : 'bg-white text-gray-800 border border-gray-100 rounded-tl-sm'
+                                                }`}
+                                            >
+                                                {!isMe && (
+                                                    <p className="text-[10px] font-bold mb-1 text-[#015023] opacity-80 uppercase tracking-wide">
+                                                        {msg.sender?.name || userName}
+                                                    </p>
+                                                )}
+                                                <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                                                <p
+                                                    className={`text-[10px] mt-1 text-right ${
+                                                        isMe ? 'text-white/70' : 'text-gray-400'
+                                                    }`}
+                                                >
+                                                    {formatTime(msg.created_at)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ))
+                    )}
+                    <div ref={messagesEndRef} />
+                </div>
+
+                {/* Input Area */}
+                <form onSubmit={handleSendMessage} className="p-4 border-t bg-white">
+                    <div className="flex items-center gap-3">
+                        <input
+                            type="text"
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            placeholder="Ketik pesan..."
+                            className="flex-1 px-5 py-3 rounded-full border border-gray-300 focus:outline-none focus:border-[#015023] focus:ring-1 focus:ring-[#015023] transition"
+                            style={{
+                                color: '#015023',
+                                fontFamily: 'Urbanist, sans-serif',
+                            }}
+                            disabled={!conversationId || loading}
+                        />
+                        <button
+                            type="submit"
+                            disabled={!message.trim() || !conversationId}
+                            className="p-3 rounded-full transition shadow-md disabled:opacity-50 disabled:shadow-none hover:scale-105 active:scale-95"
+                            style={{
+                                backgroundColor: '#015023',
+                                color: 'white',
+                            }}
+                        >
+                            <Send className="w-5 h-5" />
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
 }

@@ -4,16 +4,18 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/ui/navigation-menu';
 import Footer from '@/components/ui/footer';
 import DataTable from '@/components/ui/table';
-import ChatModal from '@/components/ui/chatmodal';
 import RoleSwitcher from '@/components/ui/role-switcher';
 import { ArrowLeft, GraduationCap, Users, Mail, Phone, MessageCircle, Megaphone } from 'lucide-react';
-import { useMemo, useState, useEffect } from 'react';
+import { use, useMemo, useState, useEffect } from 'react';
 import { getClassDetail } from '@/lib/ClassApi';
+import { getProfile } from '@/lib/profileApi';
+import ChatModal from '@/components/ui/chatmodal';
 
 export default function DetailKelasPage({ params }) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const { kode } = params;
+	const unwrappedParams = use(params);
+	const { kode } = unwrappedParams;
 	
 	const classId = searchParams.get('id') || '';
 
@@ -24,10 +26,25 @@ export default function DetailKelasPage({ params }) {
 
 	// Get user role from localStorage
 	const [userRole, setUserRole] = useState('mahasiswa');
+	const [currentUserId, setCurrentUserId] = useState(null);
 
 	useEffect(() => {
 		const role = localStorage.getItem('userRole') || 'mahasiswa';
 		setUserRole(role);
+		
+		// Fetch current user profile to get user ID
+		const fetchUserProfile = async () => {
+			try {
+				const profileResponse = await getProfile();
+				if (profileResponse.status === 'success') {
+					setCurrentUserId(profileResponse.data.id_user_si);
+				}
+			} catch (err) {
+				console.error('Error fetching user profile:', err);
+			}
+		};
+		
+		fetchUserProfile();
 	}, []);
 
 	// Fetch class detail data
@@ -66,15 +83,18 @@ export default function DetailKelasPage({ params }) {
 	// Extract class info and students/lecturers from API response
 	const classInfo = classData?.class_info || {};
 	const mahasiswaData = classData?.students || [];
+	
+	// Get dosen data - SHOW ALL lecturers, but mark which one is current user
 	const dosenData = useMemo(() => {
-		if (!classInfo.dosen) return [];
-		// Split dosen names by comma and create array
-		const dosenNames = classInfo.dosen.split(', ');
-		return dosenNames.map((nama, index) => ({
-			id: index,
-			nama: nama.trim(),
+		if (!classData?.lecturers) return [];
+		
+		// Show ALL lecturers, add flag to identify current user
+		return classData.lecturers.map(lecturer => ({
+			id_user_si: lecturer.id_user_si,
+			nama: lecturer.name,
+			isCurrentUser: lecturer.id_user_si === currentUserId, // Flag for hiding chat button
 		}));
-	}, [classInfo.dosen]);
+	}, [classData, currentUserId]);
 
 	const columns = [
 		{ key: 'nim', label: 'NIM', width: '140px', cellClassName: 'font-bold' },
@@ -92,7 +112,12 @@ export default function DetailKelasPage({ params }) {
 			<div className="flex items-center justify-center">
 				<button
 					onClick={() => {
-						setChatUser({ id: item.nim, name: item.name, nim: item.nim });
+						// Use id_user_si from API response
+						setChatUser({ 
+							id: item.id_user_si, 
+							name: item.name, 
+							nim: item.nim 
+						});
 						setIsChatOpen(true);
 					}}
 					className="flex items-center gap-2 text-white px-3 py-2 transition shadow-sm hover:opacity-90 font-semibold"
@@ -106,21 +131,39 @@ export default function DetailKelasPage({ params }) {
 	};
 
 	const dosenCustomRender = {
-		chat: (_value, item) => (
-			<div className="flex items-center justify-center">
-				<button
-					onClick={() => {
-						setChatUser({ id: item.nama, name: item.nama, nim: '' });
-						setIsChatOpen(true);
-					}}
-					className="flex items-center gap-2 text-white px-3 py-2 transition shadow-sm hover:opacity-90 font-semibold"
-					style={{ backgroundColor: '#16874B', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
-				>
-					<MessageCircle className="w-4 h-4" />
-					Chat
-				</button>
-			</div>
-		),
+		chat: (_value, item) => {
+			// Don't show chat button for current user (dosen can't chat themselves)
+			if (item.isCurrentUser) {
+				return (
+					<div className="flex items-center justify-center">
+						<span className="text-sm font-medium" style={{ color: '#015023', opacity: 0.5 }}>
+							(Anda)
+						</span>
+					</div>
+				);
+			}
+
+			return (
+				<div className="flex items-center justify-center">
+					<button
+						onClick={() => {
+							// Use id_user_si from API response
+							setChatUser({ 
+								id: item.id_user_si, 
+								name: item.nama, 
+								nim: '' 
+							});
+							setIsChatOpen(true);
+						}}
+						className="flex items-center gap-2 text-white px-3 py-2 transition shadow-sm hover:opacity-90 font-semibold"
+						style={{ backgroundColor: '#16874B', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
+					>
+						<MessageCircle className="w-4 h-4" />
+						Chat
+					</button>
+				</div>
+			);
+		},
 	};
 
 	return (
@@ -167,9 +210,6 @@ export default function DetailKelasPage({ params }) {
 									{classInfo.name_subject || '-'}
 								</p>
 								<div className="mt-3 flex flex-wrap gap-3">
-									<span className="px-3 py-1 rounded-lg font-medium" style={{ backgroundColor: '#f3f4f6', color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-										ID: {classInfo.id_class || '-'}
-									</span>
 									<span className="px-3 py-1 rounded-lg font-medium" style={{ backgroundColor: '#f3f4f6', color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
 										Kode: {classInfo.code_subject || '-'}
 									</span>
