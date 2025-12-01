@@ -246,10 +246,12 @@ export default function ScanQRPage({ params }) {
 
     const formatWaktuScan = (timestamp) => {
         const date = new Date(timestamp);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
-        const seconds = String(date.getSeconds()).padStart(2, '0');
-        return `${hours}:${minutes}:${seconds}`;
+        return `${day}/${month}/${year} ${hours}:${minutes}`;
     };
 
     // Format tanggal
@@ -305,7 +307,6 @@ export default function ScanQRPage({ params }) {
     };
 
     const columns = [
-        { key: 'no', label: 'No', width: '80px', cellClassName: 'text-center font-medium' },
         { key: 'nim', label: 'NIM', width: '150px', cellClassName: 'font-medium' },
         { key: 'nama', label: 'Nama Mahasiswa', className: 'text-left', cellClassName: 'text-left font-medium' },
         { key: 'waktuScan', label: 'Waktu Scan', width: '150px', cellClassName: 'text-center' },
@@ -313,7 +314,6 @@ export default function ScanQRPage({ params }) {
     ];
 
     const customRender = {
-        no: (value, item) => item.no,
         waktuScan: (value) => (
             <span className="font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                 {value}
