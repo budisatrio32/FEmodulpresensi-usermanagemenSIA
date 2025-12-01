@@ -170,6 +170,20 @@ export const getStudentClassesForAttendance = async (academicPeriodId = '') => {
 };
 
 /**
+ * Get student's attendance history by class
+ * @param {string} classId - The class ID
+ * @returns {Promise} - Student attendance history with statistics
+ */
+export const getStudentAttendanceHistoryByClass = async (classId) => {
+    try {
+        const response = await api.get(`/student/classes/${classId}/attendance-history`);
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
+};
+
+/**
  * Get student's classes
  * @returns {Promise} - Student classes data
  */
