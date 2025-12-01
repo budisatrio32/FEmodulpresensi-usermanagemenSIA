@@ -16,10 +16,33 @@ export default function NotifikasiPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false)
+  const [highlightId, setHighlightId] = useState(null)
 
   // Fetch notifications on mount
   useEffect(() => {
     fetchNotifications()
+    
+    // Check for highlight parameter in URL
+    const params = new URLSearchParams(window.location.search)
+    const highlight = params.get('highlight')
+    if (highlight) {
+      setHighlightId(parseInt(highlight))
+      
+      // Remove highlight after 3 seconds
+      setTimeout(() => {
+        setHighlightId(null)
+        // Clean URL without reload
+        window.history.replaceState({}, '', '/notif')
+      }, 3000)
+      
+      // Scroll to highlighted notification after data loaded
+      setTimeout(() => {
+        const element = document.getElementById(`notif-${highlight}`)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 500)
+    }
   }, [])
 
   const fetchNotifications = async () => {
@@ -301,19 +324,23 @@ export default function NotifikasiPage() {
               filteredNotifications.map((notif) => {
                 const Icon = notif.type === 'chat' ? MessageCircle : Bell;
                 
+                const isHighlighted = highlightId === notif.id;
+                
                 return (
                   <div 
                     key={notif.id}
+                    id={`notif-${notif.id}`}
                     style={{
-                      backgroundColor: notif.isRead ? 'white' : '#F0FDF4',
+                      backgroundColor: isHighlighted ? '#FEF3C7' : (notif.isRead ? 'white' : '#F0FDF4'),
                       borderRadius: '16px',
                       padding: '24px',
-                      border: '1px solid rgba(1, 80, 35, 0.1)',
+                      border: isHighlighted ? '2px solid #DABC4E' : '1px solid rgba(1, 80, 35, 0.1)',
                       position: 'relative',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '12px',
-                      transition: 'background-color 0.2s'
+                      transition: 'all 0.3s ease',
+                      boxShadow: isHighlighted ? '0 4px 12px rgba(218, 188, 78, 0.3)' : 'none'
                     }}
                   >
                     {/* Header Badge & Unread Dot */}

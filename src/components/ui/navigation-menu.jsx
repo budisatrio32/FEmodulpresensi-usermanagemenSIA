@@ -92,6 +92,7 @@ const NavbarActions = React.forwardRef(({ className, ...props }, ref) => (
 ))
 
 const NavbarNotification = React.forwardRef(({ className, ...props }, ref) => {
+  const router = useRouter();
   const [notifications, setNotifications] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
 
@@ -214,7 +215,15 @@ const NavbarNotification = React.forwardRef(({ className, ...props }, ref) => {
             <React.Fragment key={notification.id}>
               <DropdownMenuItem
                 className="flex-col items-start p-3 cursor-pointer"
-                onClick={() => !notification.isRead && handleMarkAsRead(notification.id)}
+                onClick={async () => {
+                  // Mark as read if unread
+                  if (!notification.isRead) {
+                    await handleMarkAsRead(notification.id);
+                  }
+                  
+                  // Redirect to notif page with highlight parameter
+                  router.push(`/notif?highlight=${notification.id}`);
+                }}
               >
                 <div>
                   <div className="flex items-start justify-between w-full mb-1">
