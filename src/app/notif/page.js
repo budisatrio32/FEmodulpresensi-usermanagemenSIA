@@ -387,6 +387,51 @@ export default function NotifikasiPage() {
                         {notif.judul}
                       </h3>
 
+                      {/* Rich template untuk class announcement */}
+                      {notif.type === 'announcement' && notif.metadata?.subject_name && (
+                        <div style={{
+                          marginBottom: '12px',
+                          padding: '12px',
+                          backgroundColor: '#F0FDF4',
+                          borderRadius: '8px',
+                          borderLeft: '4px solid #015023'
+                        }}>
+                          <p style={{
+                            fontSize: '14px',
+                            color: '#015023',
+                            margin: 0,
+                            marginBottom: '4px'
+                          }}>
+                            <strong>Yth.</strong> {notif.metadata.student_name || 'Mahasiswa'} ({notif.metadata.student_nim || 'NIM'})
+                          </p>
+                          <p style={{
+                            fontSize: '14px',
+                            color: '#015023',
+                            margin: 0,
+                            marginBottom: '4px'
+                          }}>
+                            <strong>Matakuliah:</strong> {notif.metadata.subject_code} - {notif.metadata.subject_name}
+                          </p>
+                          <p style={{
+                            fontSize: '14px',
+                            color: '#015023',
+                            margin: 0,
+                            marginBottom: '4px'
+                          }}>
+                            <strong>Kelas:</strong> {notif.metadata.class_code}
+                          </p>
+                          {notif.metadata.lecturer_name && (
+                            <p style={{
+                              fontSize: '14px',
+                              color: '#015023',
+                              margin: 0
+                            }}>
+                              <strong>Dosen:</strong> {notif.metadata.lecturer_name}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
                       <div style={{
                         display: 'flex',
                         gap: '16px',
@@ -396,7 +441,7 @@ export default function NotifikasiPage() {
                         opacity: 0.7,
                         flexWrap: 'wrap'
                       }}>
-                        {notif.kelas && (
+                        {notif.kelas && !notif.metadata?.subject_name && (
                           <>
                             <span>{notif.kelas}</span>
                             <span>•</span>

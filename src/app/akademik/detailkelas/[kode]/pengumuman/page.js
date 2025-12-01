@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Navbar from '@/components/ui/navigation-menu';
 import Footer from '@/components/ui/footer';
 import { ArrowLeft, Send, Megaphone } from 'lucide-react';
 import { PrimaryButton, SecondaryButton } from '@/components/ui/button';
+import { createAnnouncement } from '@/lib/notificationApi';
+import LoadingEffect from '@/components/ui/loading-effect';
 
 export default function BuatPengumumanPage() {
 	const router = useRouter();
@@ -15,10 +17,40 @@ export default function BuatPengumumanPage() {
 	const [formData, setFormData] = useState({
 		judul: '',
 		isi: '',
-		prioritas: 'normal',
 	});
 
 	const [errors, setErrors] = useState({});
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [classId, setClassId] = useState(null);
+	const [isLoading, setIsLoading] = useState(true);
+
+	// Get class ID from code
+	useEffect(() => {
+		const fetchClassId = async () => {
+			try {
+				// Assuming kode is in format like "SI001-A"
+				// You may need to adjust based on your API
+				// For now, we'll use kode as identifier
+				const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/lecturer/classes`, {
+					credentials: 'include'
+				});
+				const data = await response.json();
+				
+				if (data.status === 'success') {
+					const targetClass = data.data.find(c => c.code_class === kode);
+					if (targetClass) {
+						setClassId(targetClass.id_class);
+					}
+				}
+			} catch (error) {
+				console.error('Error fetching class ID:', error);
+			} finally {
+				setIsLoading(false);
+			}
+		};
+		
+		fetchClassId();
+	}, [kode]);
 
 	const handleChange = (e) => {
 		const { name, value } = e.target;
@@ -38,9 +70,10 @@ export default function BuatPengumumanPage() {
 	const validateForm = () => {
 		const newErrors = {};
 
-		if (!formData.judul.trim()) {
-			newErrors.judul = 'Judul pengumuman harus diisi';
-		}
+		// Title is now optional - will auto-generate if empty
+		// if (!formData.judul.trim()) {
+		// 	newErrors.judul = 'Judul pengumuman harus diisi';
+		// }
 
 		if (!formData.isi.trim()) {
 			newErrors.isi = 'Isi pengumuman harus diisi';
@@ -52,24 +85,46 @@ export default function BuatPengumumanPage() {
 		return Object.keys(newErrors).length === 0;
 	};
 
-	const handleSubmit = (e) => {
+	const handleSubmit = async (e) => {
 		e.preventDefault();
 
 		if (!validateForm()) {
 			return;
 		}
 
-		// TODO: Replace dengan API call
-		console.log('Pengumuman data:', {
-			kode_kelas: kode,
-			...formData,
-			created_at: new Date().toISOString(),
-		});
+		if (!classId) {
+			alert('Gagal mendapatkan ID kelas. Silakan coba lagi.');
+			return;
+		}
 
-		// Simulasi success
-		alert('Pengumuman berhasil dibuat!');
-		router.back();
+		setIsSubmitting(true);
+
+		try {
+			const payload = {
+				id_class: classId,
+				title: formData.judul.trim() || null, // null will trigger auto-generate
+				message: formData.isi.trim()
+			};
+
+			const response = await createAnnouncement(payload);
+
+			if (response.status === 'success') {
+				alert('Pengumuman berhasil dikirim!');
+				router.back();
+			} else {
+				alert('Gagal mengirim pengumuman: ' + (response.message || 'Terjadi kesalahan'));
+			}
+		} catch (error) {
+			console.error('Error submitting announcement:', error);
+			alert('Gagal mengirim pengumuman: ' + (error.message || 'Terjadi kesalahan'));
+		} finally {
+			setIsSubmitting(false);
+		}
 	};
+
+	if (isLoading) {
+		return <LoadingEffect message="Memuat form..." />;
+	}
 
 	return (
 		<div className="min-h-screen bg-brand-light-sage flex flex-col">
@@ -114,7 +169,7 @@ export default function BuatPengumumanPage() {
 								className="block text-sm font-semibold mb-2"
 								style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}
 							>
-								Judul Pengumuman <span className="text-red-600">*</span>
+								Judul Pengumuman
 							</label>
 							<input
 								type="text"
@@ -124,21 +179,22 @@ export default function BuatPengumumanPage() {
 								onChange={handleChange}
 								placeholder="Masukkan judul pengumuman"
 								className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-opacity-100 transition"
-								style={{
-									fontFamily: 'Urbanist, sans-serif',
-									borderColor: errors.judul ? '#BE0414' : '#015023',
-									borderRadius: '12px',
-									opacity: errors.judul ? 1 : 0.7
-								}}
-							/>
-							{errors.judul && (
-								<p className="mt-1 text-sm" style={{ color: '#BE0414', fontFamily: 'Urbanist, sans-serif' }}>
-									{errors.judul}
+									style={{
+										fontFamily: 'Urbanist, sans-serif',
+										borderColor: errors.judul ? '#BE0414' : '#015023',
+										borderRadius: '12px',
+										opacity: errors.judul ? 1 : 0.7
+									}}
+								/>
+								{errors.judul && (
+									<p className="mt-1 text-sm" style={{ color: '#BE0414', fontFamily: 'Urbanist, sans-serif' }}>
+										{errors.judul}
+									</p>
+								)}
+								<p className="mt-1 text-xs" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
+									Opsional. Jika kosong, akan otomatis menjadi "Pengumuman Kelas - {kode}"
 								</p>
-							)}
-						</div>
-
-						{/* Isi Pengumuman */}
+							</div>						{/* Isi Pengumuman */}
 						<div>
 							<label 
 								htmlFor="isi"
@@ -176,7 +232,8 @@ export default function BuatPengumumanPage() {
 						<div className="flex gap-3 pt-4">
 							<button
 								type="submit"
-								className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition shadow-sm hover:opacity-90"
+								disabled={isSubmitting}
+								className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
 								style={{
 									backgroundColor: '#015023',
 									color: 'white',
@@ -185,7 +242,7 @@ export default function BuatPengumumanPage() {
 								}}
 							>
 								<Send className="w-5 h-5" />
-								Kirim Pengumuman
+								{isSubmitting ? 'Mengirim...' : 'Kirim Pengumuman'}
 							</button>
 							<button
 								type="button"
