@@ -3,12 +3,13 @@
 import { useRouter } from 'next/navigation';
 import { Eye } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getLecturerClasses, getAcademicPeriods } from '@/lib/attendanceApi';
+import { getLecturerClasses, getStudentClassesForAttendance, getAcademicPeriods } from '@/lib/attendanceApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 import Navbar from '@/components/ui/navigation-menu';
 import DataTable from '@/components/ui/table';
 import Footer from '@/components/ui/footer';
 import LoadingEffect from '@/components/ui/loading-effect';
+import { getProfile } from '@/lib/profileApi';
 
 export default function KehadiranPage() {
 	const router = useRouter();
@@ -18,32 +19,51 @@ export default function KehadiranPage() {
 	const [isLoading, setIsLoading] = useState(true);
 	const [loadingClass, setLoadingClass] = useState(false);
 	const [errors, setErrors] = useState({});
+	const [userRole, setUserRole] = useState(null);
 
 	// Fetch all data on mount
 	useEffect(() => {
 		fetchAll();
 	}, []);
 
-	// Fetch classes when semester changes
+	// Fetch classes when semester changes or userRole is loaded
 	useEffect(() => {
-		if (selectedSemester !== '') {
+		if (selectedSemester !== '' && userRole) {
 			fetchClasses();
 		}
-	}, [selectedSemester]);
+	}, [selectedSemester, userRole]);
 
 	// Fetch All
 	const fetchAll = async () => {
 		setErrors(prev => ({...prev, fetch: null}));
 		setIsLoading(true);
+		await fetchUserProfile();
 		await fetchAcademicPeriods();
 		setIsLoading(false);
+	};
+
+	const fetchUserProfile = async () => {
+		try {
+			const data = await getProfile();
+			if (data.status === 'success') {
+				// Determine role from profile data
+				const role = data.data.role;
+				setUserRole(role);
+			}
+		} catch (err) {
+			console.error('Error fetching user profile:', err);
+			setErrors(prev => ({...prev, fetch: 'Gagal memuat profil pengguna: ' + err.message}));
+		}
 	};
 
 	const fetchClasses = async () => {
 		setLoadingClass(true);
 		setErrors(prev => ({...prev, classes: null}));
 		try {
-			const data = await getLecturerClasses(selectedSemester);
+			// Use different API based on user role
+			const data = userRole === 'mahasiswa' 
+				? await getStudentClassesForAttendance(selectedSemester)
+				: await getLecturerClasses(selectedSemester);
 
 			if (data.status === 'success') {
 				setClasses(data.data);

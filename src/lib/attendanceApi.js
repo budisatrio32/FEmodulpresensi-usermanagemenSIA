@@ -153,6 +153,23 @@ export const closeAttendanceSession = async (scheduleId) => {
 // ========================================
 
 /**
+ * Get student's classes for attendance page
+ * @param {string} academicPeriodId - Optional academic period ID
+ * @returns {Promise} - Student classes data for attendance
+ */
+export const getStudentClassesForAttendance = async (academicPeriodId = '') => {
+    try {
+        const url = academicPeriodId 
+            ? `/student/classes/attendance-list?id_academic_period=${academicPeriodId}`
+            : `/student/classes/attendance-list`;
+        const response = await api.get(url);
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
+};
+
+/**
  * Get student's classes
  * @returns {Promise} - Student classes data
  */
