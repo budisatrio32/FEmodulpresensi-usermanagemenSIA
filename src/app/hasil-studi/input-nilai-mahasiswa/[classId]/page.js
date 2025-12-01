@@ -8,6 +8,7 @@ import { PrimaryButton, OutlineButton } from '@/components/ui/button';
 import Navbar from '@/components/ui/navigation-menu';
 import LoadingEffect from '@/components/ui/loading-effect';
 import { getClassStudentsWithGrades, saveGradesBulk } from '@/lib/gradingApi';
+import { getGradeConversions } from '@/lib/gradeConv';
 
 export default function InputNilaiMahasiswa() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function InputNilaiMahasiswa() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [mahasiswaData, setMahasiswaData] = useState([]);
+  const [gradeConversions, setGradeConversions] = useState([]);
   const [classInfo, setClassInfo] = useState({
     code_class: '-',
     subject: {
@@ -44,14 +46,24 @@ export default function InputNilaiMahasiswa() {
   const fetchClassData = async () => {
     setIsLoading(true);
     try {
-      const response = await getClassStudentsWithGrades(classId);
+      // Fetch both grade conversions and class data
+      const [gradeConvResponse, classResponse] = await Promise.all([
+        getGradeConversions(),
+        getClassStudentsWithGrades(classId)
+      ]);
       
-      if (response.status === 'success' && response.data) {
-        setClassInfo(response.data.class_info);
-        setStatistics(response.data.statistics);
+      // Set grade conversions
+      if (gradeConvResponse.status === 'success') {
+        setGradeConversions(gradeConvResponse.data);
+      }
+      
+      // Set class data
+      if (classResponse.status === 'success' && classResponse.data) {
+        setClassInfo(classResponse.data.class_info);
+        setStatistics(classResponse.data.statistics);
         
         // Transform data ke format yang sesuai dengan table
-        const formattedData = response.data.students.map(student => ({
+        const formattedData = classResponse.data.students.map(student => ({
           id: student.id_user_si,
           nim: student.nim,
           nama: student.name,
@@ -89,18 +101,16 @@ export default function InputNilaiMahasiswa() {
     });
   };
 
-  // Convert nilai to grade
+  // Convert nilai to grade using backend grade conversions
   const nilaiToGrade = (nilai) => {
-    if (nilai === null) return '-';
-    if (nilai >= 85) return 'A';
-    if (nilai >= 80) return 'A-';
-    if (nilai >= 75) return 'B+';
-    if (nilai >= 70) return 'B';
-    if (nilai >= 65) return 'B-';
-    if (nilai >= 60) return 'C+';
-    if (nilai >= 55) return 'C';
-    if (nilai >= 40) return 'D';
-    return 'E';
+    if (nilai === null || nilai === undefined) return '-';
+    
+    // Find matching grade conversion from backend
+    const conversion = gradeConversions.find(
+      conv => nilai >= conv.min_grade && nilai <= conv.max_grade
+    );
+    
+    return conversion ? conversion.letter : '-';
   };
 
   // Custom render for nilai column
@@ -152,10 +162,24 @@ export default function InputNilaiMahasiswa() {
               borderRadius: '12px',
               fontSize: '16px',
               maxWidth: '120px',
-              backgroundColor: isInvalid ? '#fee2e2' : 'white'
+              backgroundColor: isInvalid ? '#fee2e2' : 'white',
+              /* Hide number input arrows for perfect centering */
+              MozAppearance: 'textfield',
+              WebkitAppearance: 'none',
+              appearance: 'none'
             }}
             placeholder="0-100"
           />
+          <style jsx>{`
+            input[type='number']::-webkit-inner-spin-button,
+            input[type='number']::-webkit-outer-spin-button {
+              -webkit-appearance: none;
+              margin: 0;
+            }
+            input[type='number'] {
+              -moz-appearance: textfield;
+            }
+          `}</style>
         </div>
       );
     }
@@ -334,7 +358,14 @@ export default function InputNilaiMahasiswa() {
             <div className="text-sm" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
               <p className="font-medium">Keterangan Konversi Nilai:</p>
               <p className="text-gray-600 mt-1">
-                A: 85-100 | A-: 80-84 | B+: 75-79 | B: 70-74 | B-: 65-69 | C+: 60-64 | C: 55-59 | D: 40-54 | E: 0-39
+                {gradeConversions.length > 0 ? (
+                  gradeConversions
+                    .sort((a, b) => b.min_grade - a.min_grade)
+                    .map(conv => `${conv.letter}: ${conv.min_grade}-${conv.max_grade}`)
+                    .join(' | ')
+                ) : (
+                  'Memuat konversi nilai...'
+                )}
               </p>
             </div>
 
