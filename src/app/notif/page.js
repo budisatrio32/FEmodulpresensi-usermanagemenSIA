@@ -7,6 +7,7 @@ import Footer from '@/components/ui/footer'
 import LoadingEffect from '@/components/ui/loading-effect'
 import { ArrowLeft, Bell, MessageCircle, Check, X } from 'lucide-react'
 import { getNotifications, markAsRead, markAllAsRead, deleteNotification } from '@/lib/notificationApi'
+import { AlertConfirmationDialog } from '@/components/ui/alert-dialog'
 
 export default function NotifikasiPage() {
   const router = useRouter()
@@ -14,6 +15,7 @@ export default function NotifikasiPage() {
   const [allNotifications, setAllNotifications] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false)
 
   // Fetch notifications on mount
   useEffect(() => {
@@ -28,7 +30,6 @@ export default function NotifikasiPage() {
       const response = await getNotifications()
 
       if (response.status === 'success') {
-        // Transform API data to match component format
         const transformedNotifications = response.data.notifications.map(notif => ({
           id: notif.id_notification,
           type: notif.type,
@@ -55,7 +56,6 @@ export default function NotifikasiPage() {
     try {
       await markAsRead(notificationId)
 
-      // Update local state
       setAllNotifications(prev =>
         prev.map(notif =>
           notif.id === notificationId
@@ -72,7 +72,6 @@ export default function NotifikasiPage() {
     try {
       await markAllAsRead()
 
-      // Update local state
       setAllNotifications(prev =>
         prev.map(notif => ({ ...notif, isRead: true }))
       )
@@ -85,12 +84,39 @@ export default function NotifikasiPage() {
     try {
       await deleteNotification(notificationId)
 
-      // Remove from local state
       setAllNotifications(prev =>
         prev.filter(notif => notif.id !== notificationId)
       )
     } catch (err) {
       console.error('Error deleting notification:', err)
+    }
+  }
+
+  const handleDeleteAll = () => {
+    // Show confirmation dialog
+    setShowDeleteAllDialog(true)
+  }
+
+  const confirmDeleteAll = async () => {
+    try {
+      setShowDeleteAllDialog(false)
+      setLoading(true) // Set loading agar user tidak klik tombol berkali-kali
+      
+      // Delete all notifications one by one
+      const deletePromises = allNotifications.map(notif => 
+        deleteNotification(notif.id)
+      )
+      
+      await Promise.all(deletePromises)
+
+      // Clear local state
+      setAllNotifications([])
+    } catch (err) {
+      console.error('Error deleting all notifications:', err)
+      // Jika error, refresh data agar sinkron dengan server
+      fetchNotifications() 
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -148,28 +174,54 @@ export default function NotifikasiPage() {
                 </p>
               </div>
 
-              {/* Mark All as Read Button */}
-              {unreadCount > 0 && (
-                <button
-                  onClick={handleMarkAllAsRead}
-                  style={{
-                    padding: '12px 24px',
-                    backgroundColor: '#015023',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    fontFamily: 'Urbanist, sans-serif',
-                    transition: 'opacity 0.2s'
-                  }}
-                  onMouseEnter={(e) => e.target.style.opacity = '0.9'}
-                  onMouseLeave={(e) => e.target.style.opacity = '1'}
-                >
-                  Tandai Semua Dibaca
-                </button>
-              )}
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '12px' }}>
+                {/* Mark All as Read Button */}
+                {unreadCount > 0 && (
+                  <button
+                    onClick={handleMarkAllAsRead}
+                    style={{
+                      padding: '12px 24px',
+                      backgroundColor: '#015023',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '12px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      fontFamily: 'Urbanist, sans-serif',
+                      transition: 'opacity 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.target.style.opacity = '0.9'}
+                    onMouseLeave={(e) => e.target.style.opacity = '1'}
+                  >
+                    Tandai Semua Dibaca
+                  </button>
+                )}
+
+                {/* Delete All Button */}
+                {allNotifications.length > 0 && (
+                  <button
+                    onClick={handleDeleteAll}
+                    style={{
+                      padding: '12px 24px',
+                      backgroundColor: '#BE0414', // Warna merah untuk aksi destruktif
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '12px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      fontFamily: 'Urbanist, sans-serif',
+                      transition: 'opacity 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.target.style.opacity = '0.9'}
+                    onMouseLeave={(e) => e.target.style.opacity = '1'}
+                  >
+                    Hapus Semua
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -241,7 +293,6 @@ export default function NotifikasiPage() {
                 border: '2px solid rgba(1, 80, 35, 0.2)'
               }}>
                 <Bell size={48} style={{ color: '#015023', opacity: 0.3, margin: '0 auto 16px' }} />
-                {/* FIX: Removed extra ' in opacity */}
                 <p style={{ fontSize: '18px', color: '#015023', opacity: 0.7 }}>
                   Tidak ada notifikasi
                 </p>
@@ -410,6 +461,17 @@ export default function NotifikasiPage() {
       </main>
 
       <Footer />
+
+      {/* Delete All Confirmation Dialog */}
+      <AlertConfirmationDialog
+        open={showDeleteAllDialog}
+        onOpenChange={setShowDeleteAllDialog}
+        onConfirm={confirmDeleteAll}
+        title="Hapus Semua Notifikasi"
+        description="Apakah Anda yakin ingin menghapus SEMUA notifikasi? Tindakan ini tidak dapat dibatalkan."
+        confirmText="Ya, Hapus Semua"
+        cancelText="Batal"
+      />
     </div>
   )
 }
