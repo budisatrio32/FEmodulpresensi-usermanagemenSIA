@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation'
 import Navbar from '@/components/ui/navigation-menu'
 import Footer from '@/components/ui/footer'
 import LoadingEffect from '@/components/ui/loading-effect'
-import { ArrowLeft, Bell, MessageCircle } from 'lucide-react'
-import { getNotifications, markAsRead, markAllAsRead } from '@/lib/notificationApi'
+import { ArrowLeft, Bell, MessageCircle, Check, X } from 'lucide-react'
+import { getNotifications, markAsRead, markAllAsRead, deleteNotification } from '@/lib/notificationApi'
 
 export default function NotifikasiPage() {
   const router = useRouter()
@@ -78,6 +78,19 @@ export default function NotifikasiPage() {
       )
     } catch (err) {
       console.error('Error marking all as read:', err)
+    }
+  }
+
+  const handleDeleteNotification = async (notificationId) => {
+    try {
+      await deleteNotification(notificationId)
+
+      // Remove from local state
+      setAllNotifications(prev =>
+        prev.filter(notif => notif.id !== notificationId)
+      )
+    } catch (err) {
+      console.error('Error deleting notification:', err)
     }
   }
 
@@ -217,7 +230,7 @@ export default function NotifikasiPage() {
             })}
           </div>
 
-          {/* Notifications List - FIX STARTS HERE */}
+          {/* Notifications List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {filteredNotifications.length === 0 ? (
               <div style={{
@@ -228,6 +241,7 @@ export default function NotifikasiPage() {
                 border: '2px solid rgba(1, 80, 35, 0.2)'
               }}>
                 <Bell size={48} style={{ color: '#015023', opacity: 0.3, margin: '0 auto 16px' }} />
+                {/* FIX: Removed extra ' in opacity */}
                 <p style={{ fontSize: '18px', color: '#015023', opacity: 0.7 }}>
                   Tidak ada notifikasi
                 </p>
@@ -239,13 +253,11 @@ export default function NotifikasiPage() {
                 return (
                   <div 
                     key={notif.id}
-                    onClick={() => !notif.isRead && handleMarkAsRead(notif.id)}
                     style={{
-                      backgroundColor: notif.isRead ? 'white' : '#F0FDF4', // Highlight if unread
+                      backgroundColor: notif.isRead ? 'white' : '#F0FDF4',
                       borderRadius: '16px',
                       padding: '24px',
                       border: '1px solid rgba(1, 80, 35, 0.1)',
-                      cursor: !notif.isRead ? 'pointer' : 'default',
                       position: 'relative',
                       display: 'flex',
                       flexDirection: 'column',
@@ -322,10 +334,72 @@ export default function NotifikasiPage() {
                         color: '#015023',
                         opacity: 0.8,
                         lineHeight: '1.6',
-                        margin: 0
+                        margin: 0,
+                        marginBottom: '16px'
                       }}>
                         {notif.isi}
                       </p>
+
+                      {/* Action Buttons */}
+                      <div style={{
+                        display: 'flex',
+                        gap: '8px',
+                        justifyContent: 'flex-end'
+                      }}>
+                        {/* Mark as Read Button - Only show if unread */}
+                        {!notif.isRead && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleMarkAsRead(notif.id)
+                            }}
+                            style={{
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '8px',
+                              backgroundColor: '#015023',
+                              color: 'white',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'opacity 0.2s',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            }}
+                            onMouseEnter={(e) => e.target.style.opacity = '0.8'}
+                            onMouseLeave={(e) => e.target.style.opacity = '1'}
+                            title="Tandai sudah dibaca"
+                          >
+                            <Check size={20} strokeWidth={3} />
+                          </button>
+                        )}
+
+                        {/* Dismiss Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteNotification(notif.id)
+                          }}
+                          style={{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '8px',
+                            backgroundColor: '#BE0414',
+                            color: 'white',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'opacity 0.2s',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                          }}
+                          onMouseEnter={(e) => e.target.style.opacity = '0.8'}
+                          onMouseLeave={(e) => e.target.style.opacity = '1'}
+                          title="Hapus notifikasi"
+                        >
+                          <X size={20} strokeWidth={3} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )
