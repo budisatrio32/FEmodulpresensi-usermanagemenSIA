@@ -28,20 +28,29 @@ export default function NotifikasiPage() {
     if (highlight) {
       setHighlightId(parseInt(highlight))
       
-      // Remove highlight after 3 seconds
-      setTimeout(() => {
-        setHighlightId(null)
-        // Clean URL without reload
-        window.history.replaceState({}, '', '/notif')
-      }, 3000)
-      
-      // Scroll to highlighted notification after data loaded
-      setTimeout(() => {
+      // Auto-scroll to highlighted notification with retry logic
+      const scrollToNotification = () => {
         const element = document.getElementById(`notif-${highlight}`)
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          // Scroll with offset for better visibility
+          const yOffset = -100 // Offset dari top (untuk spacing)
+          const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset
+          window.scrollTo({ top: y, behavior: 'smooth' })
+          
+          // Remove highlight after 3 seconds
+          setTimeout(() => {
+            setHighlightId(null)
+            // Clean URL without reload
+            window.history.replaceState({}, '', '/notif')
+          }, 3000)
+        } else {
+          // Retry if element not found (data might still be loading)
+          setTimeout(scrollToNotification, 100)
         }
-      }, 500)
+      }
+      
+      // Wait for data to load and DOM to render
+      setTimeout(scrollToNotification, 300)
     }
   }, [])
 
@@ -163,7 +172,7 @@ export default function NotifikasiPage() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: 'Urbanist, sans-serif' }}>
       <Navbar />
 
-      <main style={{ flex: 1, backgroundColor: '#f8f9fa', padding: '32px 0' }}>
+      <main style={{ flex: 1, backgroundColor: '#E6EEE9', padding: '32px 0' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
           {/* Header */}
           <div style={{ marginBottom: '32px' }}>

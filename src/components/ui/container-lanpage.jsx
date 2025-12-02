@@ -125,30 +125,99 @@ return (
 export function NotificationItem({ 
 tag, 
 title, 
-content, 
+content,
+date,
+pengumum = 'System',
+metadata,
+onClick,
 className = '' 
 }) {
-return (
-<div className={`p-4 sm:p-6 bg-gray-50 ${className}`} style={{ fontFamily: 'Urbanist, sans-serif' }}>
-    {/* Tag Badge */}
-    <div className="flex justify-end mb-3 sm:mb-4">
-    <Badge variant="primary" size="sm">
-        {tag}
-    </Badge>
-    </div>
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    const d = new Date(dateString);
+    return d.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+  };
 
-    {/* Content */}
-    <div className="space-y-3 sm:space-y-4">
-    <h4 className="font-bold text-base sm:text-lg leading-tight" style={{ color: '#015023' }}>
-        {title}
-    </h4>
-    
-    <div className="text-xs sm:text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-        {content}
+  return (
+    <div 
+        className={`p-4 sm:p-6 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer ${className}`} 
+        style={{ fontFamily: 'Urbanist, sans-serif' }}
+        onClick={onClick}
+    >
+        {/* Tag Badge */}
+        <div className="flex justify-end mb-3 sm:mb-4">
+        <Badge variant="primary" size="sm">
+            {tag}
+        </Badge>
+        </div>
+
+        {/* Content */}
+        <div className="space-y-3 sm:space-y-4">
+        <h4 className="font-bold text-base sm:text-lg leading-tight" style={{ color: '#015023' }}>
+            {title}
+        </h4>
+        
+        {/* Sender info only (no date shown in landing page) */}
+        <div style={{
+            display: 'flex',
+            gap: '12px',
+            fontSize: '14px',
+            color: '#015023',
+            opacity: 0.7
+        }}>
+            <span>{pengumum}</span>
+        </div>
+
+        {/* Rich template untuk class announcement */}
+        {metadata?.subject_name && (
+            <div style={{
+                padding: '12px',
+                backgroundColor: '#F0FDF4',
+                borderRadius: '8px',
+                borderLeft: '4px solid #015023'
+            }}>
+                <p style={{
+                    fontSize: '14px',
+                    color: '#015023',
+                    margin: 0,
+                    marginBottom: '4px'
+                }}>
+                    <strong>Yth.</strong> {metadata.student_name || 'Mahasiswa'} ({metadata.student_nim || 'NIM'})
+                </p>
+                <p style={{
+                    fontSize: '14px',
+                    color: '#015023',
+                    margin: 0,
+                    marginBottom: '4px'
+                }}>
+                    <strong>Matakuliah:</strong> {metadata.subject_code} - {metadata.subject_name}
+                </p>
+                <p style={{
+                    fontSize: '14px',
+                    color: '#015023',
+                    margin: 0,
+                    marginBottom: '4px'
+                }}>
+                    <strong>Kelas:</strong> {metadata.class_code}
+                </p>
+                {metadata.lecturer_name && (
+                    <p style={{
+                        fontSize: '14px',
+                        color: '#015023',
+                        margin: 0
+                    }}>
+                        <strong>Dosen:</strong> {metadata.lecturer_name}
+                    </p>
+                )}
+            </div>
+        )}
+        
+        <div className="text-xs sm:text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+            {content}
+        </div>
+        </div>
     </div>
-    </div>
-</div>
-);
+  );
 }
 
 // ===== Section Title Component =====

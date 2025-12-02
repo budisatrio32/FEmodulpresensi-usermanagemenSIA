@@ -6,11 +6,14 @@ import Navbar from '@/components/ui/navigation-menu';
 import Footer from '@/components/ui/footer';
 import { useState, useEffect } from 'react';
 import { getMyClasses, formatTime, getDayName, formatDate } from '@/lib/scheduleApi';
-import { getNotifications } from '@/lib/notificationApi';
+import { getNotifications, markAsRead } from '@/lib/notificationApi';
 import Cookies from 'js-cookie';
 import Link from 'next/link';
+import { ArrowRight, Bell } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function LandingPage() {
+    const router = useRouter();
     const [classes, setClasses] = useState([]);
     const [announcements, setAnnouncements] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -62,7 +65,7 @@ export default function LandingPage() {
     };
 
 return (
-<div className="min-h-screen flex flex-col bg-gray-50">
+<div className="min-h-screen flex flex-col" style={{ backgroundColor: '#E6EEE9' }}>
     {/* Navbar */}
     <Navbar />
     
@@ -108,10 +111,22 @@ return (
             <SectionTitle>Pengumuman</SectionTitle>
             <Link 
                 href="/notif" 
-                className="text-m font-semibold hover:underline transition-all"
-                style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    color: '#015023',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    fontFamily: 'Urbanist, sans-serif',
+                    textDecoration: 'none',
+                    transition: 'opacity 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
             >
                 Lihat semua pengumuman
+                <ArrowRight size={20} />
             </Link>
         </div>
         
@@ -123,12 +138,25 @@ return (
                     Memuat pengumuman...
                 </div>
             ) : announcements.length > 0 ? (
-                announcements.slice(0, 5).map((notif) => (
+                announcements.slice(0, 3).map((notif) => (
                     <NotificationItem
                         key={notif.id_notification}
-                        tag={notif.metadata?.subject_name || notif.metadata?.class_code || 'Pengumuman Umum'}
+                        tag={notif.metadata?.class_code || 'Pengumuman Umum'}
                         title={notif.title || 'Pengumuman'}
-                        content={notif.message.length > 100 ? notif.message.substring(0, 100) + '...' : notif.message}
+                        content={notif.message}
+                        date={notif.created_at}
+                        pengumum={notif.pengumum || 'System'}
+                        metadata={notif.metadata}
+                        onClick={async () => {
+                            // Mark as read
+                            try {
+                                await markAsRead(notif.id_notification);
+                            } catch (err) {
+                                console.error('Error marking as read:', err);
+                            }
+                            // Redirect to notif page with highlight
+                            router.push(`/notif?highlight=${notif.id_notification}`);
+                        }}
                     />
                 ))
             ) : (

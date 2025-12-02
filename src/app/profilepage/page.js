@@ -3,6 +3,7 @@
 
 import Navbar from '@/components/ui/navigation-menu';
 import AdminNavbar from '@/components/ui/admin-navbar';
+import Footer from '@/components/ui/footer';
 import ProfileMahasiswa from '@/components/ui/profilemahasiswa';
 import ProfileDMA from '@/components/ui/profileDMA';
 import Cookies from 'js-cookie';
@@ -28,6 +29,7 @@ export default function ProfilePage() {
       {(userRole === 'mahasiswa' || userRole === 'dosen') && <Navbar />}
       {(userRole === 'admin' || userRole === 'manager') && <AdminNavbar title="Dashboard Admin - Profil" />}
       {renderProfileComponent()}
+      <Footer />
     </>
   );
 }
