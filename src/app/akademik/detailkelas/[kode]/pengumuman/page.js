@@ -8,6 +8,7 @@ import { ArrowLeft, Send, Megaphone } from 'lucide-react';
 import { PrimaryButton, SecondaryButton } from '@/components/ui/button';
 import { createAnnouncement } from '@/lib/notificationApi';
 import LoadingEffect from '@/components/ui/loading-effect';
+import { AlertSuccessDialog, AlertErrorDialog } from '@/components/ui/alert-dialog';
 
 export default function BuatPengumumanPage() {
 	const router = useRouter();
@@ -24,6 +25,11 @@ export default function BuatPengumumanPage() {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [classId, setClassId] = useState(null);
 	const [isLoading, setIsLoading] = useState(true);
+	
+	// Alert states
+	const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+	const [showErrorAlert, setShowErrorAlert] = useState(false);
+	const [errorMessage, setErrorMessage] = useState('');
 
 	// Get class ID from URL params
 	useEffect(() => {
@@ -100,7 +106,8 @@ export default function BuatPengumumanPage() {
 		}
 
 		if (!classId) {
-			alert('Gagal mendapatkan ID kelas. Silakan coba lagi.');
+			setErrorMessage('Gagal mendapatkan ID kelas. Silakan coba lagi.');
+			setShowErrorAlert(true);
 			return;
 		}
 
@@ -116,14 +123,15 @@ export default function BuatPengumumanPage() {
 			const response = await createAnnouncement(payload);
 
 			if (response.status === 'success') {
-				alert('Pengumuman berhasil dikirim!');
-				router.back();
+				setShowSuccessAlert(true);
 			} else {
-				alert('Gagal mengirim pengumuman: ' + (response.message || 'Terjadi kesalahan'));
+				setErrorMessage(response.message || 'Terjadi kesalahan');
+				setShowErrorAlert(true);
 			}
 		} catch (error) {
 			console.error('Error submitting announcement:', error);
-			alert('Gagal mengirim pengumuman: ' + (error.message || 'Terjadi kesalahan'));
+			setErrorMessage(error.message || 'Terjadi kesalahan');
+			setShowErrorAlert(true);
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -268,6 +276,30 @@ export default function BuatPengumumanPage() {
 					</form>
 				</div>
 			</div>
+
+			{/* Success Alert */}
+			<AlertSuccessDialog
+				open={showSuccessAlert}
+				onOpenChange={(open) => {
+					setShowSuccessAlert(open);
+					if (!open) {
+						router.back();
+					}
+				}}
+				title="Pengumuman berhasil dikirim!"
+				description="Pengumuman telah dikirim ke semua mahasiswa di kelas ini."
+				closeText="OK"
+			/>
+
+			{/* Error Alert */}
+			<AlertErrorDialog
+				open={showErrorAlert}
+				onOpenChange={setShowErrorAlert}
+				title="Gagal mengirim pengumuman"
+				description={errorMessage}
+				closeText="Tutup"
+			/>
+
 			<Footer/>
 		</div>
 	);

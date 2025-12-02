@@ -450,7 +450,7 @@ export default function NotifikasiPage() {
                         <div style={{
                           marginBottom: '12px',
                           padding: '12px',
-                          backgroundColor: '#F0FDF4',
+                          backgroundColor: '#E0FFEAFF',
                           borderRadius: '8px',
                           borderLeft: '4px solid #015023'
                         }}>
