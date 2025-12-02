@@ -1,9 +1,66 @@
 // src/app/landingpage/page.jsx
+'use client';
+
 import { Container, SectionTitle, Card, CardHeader, CardContent, ScheduleItem, NotificationItem } from '@/components/ui/container-lanpage';
 import Navbar from '@/components/ui/navigation-menu';
 import Footer from '@/components/ui/footer';
+import { useState, useEffect } from 'react';
+import { getMyClasses, formatTime, getDayName, formatDate } from '@/lib/scheduleApi';
+import { getNotifications } from '@/lib/notificationApi';
+import Cookies from 'js-cookie';
+import Link from 'next/link';
 
 export default function LandingPage() {
+    const [classes, setClasses] = useState([]);
+    const [announcements, setAnnouncements] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [userRole, setUserRole] = useState('mahasiswa');
+    const [todayDate, setTodayDate] = useState('');
+
+    // Get today's date and user role
+    useEffect(() => {
+        const today = new Date();
+        setTodayDate(formatDate(today));
+        
+        const role = Cookies.get('roles') || 'mahasiswa';
+        setUserRole(role);
+        
+        fetchData(role);
+    }, []);
+
+    const fetchData = async (role) => {
+        setIsLoading(true);
+        try {
+            // Fetch classes and announcements in parallel
+            const [classesRes, notificationsRes] = await Promise.all([
+                getMyClasses(role),
+                getNotifications({ type: 'announcement' })
+            ]);
+
+            if (classesRes.status === 'success') {
+                setClasses(classesRes.data || []);
+            }
+
+            if (notificationsRes.status === 'success') {
+                setAnnouncements(notificationsRes.data.notifications || []);
+            }
+        } catch (error) {
+            console.error('Error fetching landing page data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Filter today's schedules from classes
+    const getTodaySchedules = () => {
+        const today = new Date();
+        const todayName = getDayName(today.getDay());
+        
+        // Since API doesn't return schedules relation, we'll use the class data directly
+        // This is a workaround - in production, backend should include schedules relation
+        return classes;
+    };
+
 return (
 <div className="min-h-screen flex flex-col bg-gray-50">
     {/* Navbar */}
@@ -17,42 +74,68 @@ return (
         <SectionTitle>Jadwal Harian</SectionTitle>
         
         <Card>
-            <CardHeader date="Jumat, 26 September 2025" />
+            <CardHeader date={todayDate} />
             <CardContent>
-            <ScheduleItem
-                matakuliah="Rekayasa Kebutuhan Perangkat Lunak"
-                waktu="Senin, 09:25 - 12:00 WIB"
-                kelas="Kelas 3A-IMA | KP 5"
-                dosen="Dosen: P. Suwirno"
-                ruang="Lokasi: Gedung D3 (D3) | CU 207"
-                sks="2.00 SKS"
-                kode="SVPLI2345"
-            />
-            <ScheduleItem
-                matakuliah="Basis Data Lanjut"
-                waktu="Selasa, 13:00 - 15:30 WIB"
-                kelas="Kelas 3A-IMA | KP 3"
-                dosen="Dosen: Dr. Ahmad"
-                ruang="Lokasi: Gedung A1 (A1) | Lab 202"
-                sks="3.00 SKS"
-                kode="BDLJ2234"
-            />
+            {isLoading ? (
+                <div className="text-center py-8 text-gray-500">
+                    Memuat jadwal...
+                </div>
+            ) : classes.length > 0 ? (
+                classes.map((classItem) => (
+                    <ScheduleItem
+                        key={classItem.id_class}
+                        matakuliah={classItem.name_subject || classItem.subject?.name_subject || '-'}
+                        waktu="Lihat jadwal lengkap di halaman kelas"
+                        kelas={`Kelas ${classItem.code_class}`}
+                        dosen={`Dosen: ${classItem.lecturers?.map(lec => lec.name).join(', ') || '-'}`}
+                        ruang="-"
+                        sks={`${classItem.sks || classItem.subject?.sks || 0} SKS`}
+                        kode={classItem.code_subject || classItem.subject?.code_subject || '-'}
+                    />
+                ))
+            ) : (
+                <div className="text-center py-8 text-gray-500">
+                    Tidak ada data kelas tersedia
+                </div>
+            )}
             </CardContent>
         </Card>
         </section>
 
         {/* Notifikasi Section */}
         <section className="mb-12">
-        <SectionTitle>Notifikasi</SectionTitle>
+        <div className="flex items-center justify-between mb-4">
+            <SectionTitle>Pengumuman</SectionTitle>
+            <Link 
+                href="/notif" 
+                className="text-m font-semibold hover:underline transition-all"
+                style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}
+            >
+                Lihat semua pengumuman
+            </Link>
+        </div>
         
         <Card>
-            <CardHeader date="Jumat, 26 September 2025" />
+            <CardHeader date={todayDate} />
             <CardContent>
-            <NotificationItem
-                tag="Indonesian Environmental & Energy"
-                title="Yth Dear Sultan Nathaya"
-                content="Get ready! The 2025-2026 Indonesian Environmental..."
-            />
+            {isLoading ? (
+                <div className="text-center py-8 text-gray-500">
+                    Memuat pengumuman...
+                </div>
+            ) : announcements.length > 0 ? (
+                announcements.slice(0, 5).map((notif) => (
+                    <NotificationItem
+                        key={notif.id_notification}
+                        tag={notif.metadata?.subject_name || notif.metadata?.class_code || 'Pengumuman Umum'}
+                        title={notif.title || 'Pengumuman'}
+                        content={notif.message.length > 100 ? notif.message.substring(0, 100) + '...' : notif.message}
+                    />
+                ))
+            ) : (
+                <div className="text-center py-8 text-gray-500">
+                    Tidak ada pengumuman baru
+                </div>
+            )}
             </CardContent>
         </Card>
         </section>
