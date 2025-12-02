@@ -3,16 +3,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Send, MessageCircle } from 'lucide-react';
 import { findOrCreatePrivateConversation, getMessages, sendMessage } from '@/lib/chatApi';
+import { getNotifications, markAsRead } from '@/lib/notificationApi';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 
-export default function ChatModal({ isOpen, onClose, userName, userNim = '', userId = '' }) {
+export default function ChatModal({ isOpen, onClose, userName, userNim = '', userId = '', conversationId: propConversationId = null }) {
     // State
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [conversationId, setConversationId] = useState(null);
+    const [conversationId, setConversationId] = useState(propConversationId);
     const [currentUserId, setCurrentUserId] = useState(null);
+    const [displayNim, setDisplayNim] = useState(userNim);
     
     // Refs
     const messagesEndRef = useRef(null);
@@ -68,7 +70,39 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
         fetchCurrentUser();
     }, []);
 
-    // 3. Find or create conversation and load messages
+    useEffect(() => {
+        // Only run when modal is open AND conversationId is available
+        if (!isOpen || !conversationId) return;
+
+        const dismissConversationNotifications = async () => {
+            try {
+                // Fetch all unread chat notifications
+                const response = await getNotifications({ type: 'chat', is_read: false });
+                
+                if (response.status === 'success' && response.data?.notifications) {
+                    // Filter notifications that belong to this conversation
+                    const conversationNotifs = response.data.notifications.filter(
+                        notif => notif.metadata?.id_conversation?.toString() === conversationId.toString()
+                    );
+                    
+                    // Mark each notification as read (bulk operation)
+                    const markPromises = conversationNotifs.map(notif => 
+                        markAsRead(notif.id_notification).catch(err => 
+                            console.error(`Failed to mark notification ${notif.id_notification}:`, err)
+                        )
+                    );
+                    
+                    await Promise.all(markPromises);
+                }
+            } catch (error) {
+                console.error('Error dismissing conversation notifications:', error);
+            }
+        };
+
+        dismissConversationNotifications();
+    }, [isOpen, conversationId]);
+
+    // 4. Find or create conversation and load messages
     useEffect(() => {
         if (!isOpen || !userId) return;
 
@@ -87,7 +121,14 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
                     const messagesResponse = await getMessages(convId);
 
                     if (messagesResponse.data) {
-                        setMessages(messagesResponse.data);
+                        // Handle nested response structure: { messages: [...], conversation: {...} }
+                        const messagesList = messagesResponse.data.messages || messagesResponse.data;
+                        setMessages(messagesList);
+                        
+                        // Get NIM from conversation info if available
+                        if (messagesResponse.data.conversation?.other_participant?.nim) {
+                            setDisplayNim(messagesResponse.data.conversation.other_participant.nim);
+                        }
                     }
 
                     // Subscribe to new messages via WebSocket
@@ -118,12 +159,10 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
         };
     }, [isOpen, userId, currentUserId]);
 
-    // 4. Scroll to bottom when messages change
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    // 5. Prevent body scroll when modal is open
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = 'hidden';
@@ -217,8 +256,8 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
                             <h3 className="text-lg font-bold text-white leading-tight">
                                 {userName}
                             </h3>
-                            {userNim && (
-                                <p className="text-xs text-white/80">{userNim}</p>
+                            {displayNim && (
+                                <p className="text-xs text-white/80">{displayNim}</p>
                             )}
                         </div>
                     </div>
@@ -300,13 +339,21 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
 
                 {/* Input Area */}
                 <form onSubmit={handleSendMessage} className="p-4 border-t bg-white">
-                    <div className="flex items-center gap-3">
-                        <input
-                            type="text"
+                    <div className="flex items-end gap-3">
+                        <textarea
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
+                            onKeyDown={(e) => {
+                                // Enter tanpa Shift = kirim pesan
+                                // Shift + Enter = buat baris baru
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSendMessage(e);
+                                }
+                            }}
                             placeholder="Ketik pesan..."
-                            className="flex-1 px-5 py-3 rounded-full border border-gray-300 focus:outline-none focus:border-[#015023] focus:ring-1 focus:ring-[#015023] transition"
+                            rows={1}
+                            className="flex-1 px-5 py-3 rounded-2xl border border-gray-300 focus:outline-none focus:border-[#015023] focus:ring-1 focus:ring-[#015023] transition resize-none min-h-[48px] max-h-[120px] overflow-y-auto"
                             style={{
                                 color: '#015023',
                                 fontFamily: 'Urbanist, sans-serif',
@@ -316,7 +363,7 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
                         <button
                             type="submit"
                             disabled={!message.trim() || !conversationId}
-                            className="p-3 rounded-full transition shadow-md disabled:opacity-50 disabled:shadow-none hover:scale-105 active:scale-95"
+                            className="p-3 rounded-full transition shadow-md disabled:opacity-50 disabled:shadow-none hover:scale-105 active:scale-95 flex-shrink-0"
                             style={{
                                 backgroundColor: '#015023',
                                 color: 'white',

@@ -7,7 +7,9 @@ import Footer from '@/components/ui/footer'
 import LoadingEffect from '@/components/ui/loading-effect'
 import { ArrowLeft, Bell, MessageCircle, Check, X } from 'lucide-react'
 import { getNotifications, markAsRead, markAllAsRead, deleteNotification } from '@/lib/notificationApi'
+import { getConversationDetail } from '@/lib/chatApi'
 import { AlertConfirmationDialog } from '@/components/ui/alert-dialog'
+import ChatModal from '@/components/ui/chatmodal'
 
 export default function NotifikasiPage() {
   const router = useRouter()
@@ -17,6 +19,10 @@ export default function NotifikasiPage() {
   const [error, setError] = useState(null)
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false)
   const [highlightId, setHighlightId] = useState(null)
+
+  // Chat modal state
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [chatUser, setChatUser] = useState({ id: '', name: '', nim: '', conversationId: '' })
 
   // Fetch notifications on mount
   useEffect(() => {
@@ -129,6 +135,33 @@ export default function NotifikasiPage() {
     setShowDeleteAllDialog(true)
   }
 
+  const handleNotificationClick = async (notif) => {
+    // Mark as read if unread
+    if (!notif.isRead) {
+      await handleMarkAsRead(notif.id)
+    }
+
+    // Handle redirect for chat notifications
+    if (notif.type === 'chat' && notif.metadata?.id_conversation) {
+      try {
+        // Fetch conversation detail to get participant info
+        const response = await getConversationDetail(notif.metadata.id_conversation)
+        const otherParticipant = response.data?.conversation?.other_participant
+        
+        // Open chat modal directly
+        setChatUser({
+          id: otherParticipant?.id_user_si?.toString() || '',
+          name: otherParticipant?.name || 'User',
+          nim: otherParticipant?.nim || '',
+          conversationId: notif.metadata.id_conversation.toString()
+        })
+        setIsChatOpen(true)
+      } catch (err) {
+        console.error('Error fetching conversation:', err)
+      }
+    }
+  }
+
   const confirmDeleteAll = async () => {
     try {
       setShowDeleteAllDialog(false)
@@ -237,7 +270,7 @@ export default function NotifikasiPage() {
                     onClick={handleDeleteAll}
                     style={{
                       padding: '12px 24px',
-                      backgroundColor: '#BE0414', // Warna merah untuk aksi destruktif
+                      backgroundColor: '#BE0414', 
                       color: 'white',
                       border: 'none',
                       borderRadius: '12px',
@@ -339,6 +372,7 @@ export default function NotifikasiPage() {
                   <div 
                     key={notif.id}
                     id={`notif-${notif.id}`}
+                    onClick={() => notif.type === 'chat' && handleNotificationClick(notif)}
                     style={{
                       backgroundColor: isHighlighted ? '#FEF3C7' : (notif.isRead ? 'white' : '#F0FDF4'),
                       borderRadius: '16px',
@@ -349,7 +383,8 @@ export default function NotifikasiPage() {
                       flexDirection: 'column',
                       gap: '12px',
                       transition: 'all 0.3s ease',
-                      boxShadow: isHighlighted ? '0 4px 12px rgba(218, 188, 78, 0.3)' : 'none'
+                      boxShadow: isHighlighted ? '0 4px 12px rgba(218, 188, 78, 0.3)' : 'none',
+                      cursor: notif.type === 'chat' ? 'pointer' : 'default'
                     }}
                   >
                     {/* Header Badge & Unread Dot */}
@@ -546,6 +581,20 @@ export default function NotifikasiPage() {
         description="Apakah Anda yakin ingin menghapus SEMUA notifikasi? Tindakan ini tidak dapat dibatalkan."
         confirmText="Ya, Hapus Semua"
         cancelText="Batal"
+      />
+
+      {/* Chat Modal */}
+      <ChatModal
+        isOpen={isChatOpen}
+        onClose={() => {
+          setIsChatOpen(false)
+          // Refresh notifications after closing chat to update read status
+          fetchNotifications()
+        }}
+        userId={chatUser.id}
+        userName={chatUser.name}
+        userNim={chatUser.nim}
+        conversationId={chatUser.conversationId}
       />
     </div>
   )

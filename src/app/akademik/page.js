@@ -5,6 +5,7 @@ import Navbar from '@/components/ui/navigation-menu';
 import Footer from '@/components/ui/footer';
 import DataTable from '@/components/ui/table';
 import LoadingEffect from '@/components/ui/loading-effect';
+import ChatModal from '@/components/ui/chatmodal';
 import { Eye, GraduationCap, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getTeachingClasses, getStudentClasses } from '@/lib/ClassApi';
@@ -18,6 +19,10 @@ export default function AkademikPage() {
 	const [semesterOptions, setSemesterOptions] = useState([]);
 	const [data, setData] = useState([]);
 	const [userRole, setUserRole] = useState(null);
+
+	// Chat modal state
+	const [isChatOpen, setIsChatOpen] = useState(false);
+	const [chatUser, setChatUser] = useState({ id: '', name: '', nim: '' });
 
 	// Fetch initial data saat component mount
 	useEffect(() => {
@@ -182,6 +187,16 @@ export default function AkademikPage() {
 					customRender={customRender}
 				/>
 			</div>
+
+			{/* Chat Modal */}
+			<ChatModal
+				isOpen={isChatOpen}
+				onClose={() => setIsChatOpen(false)}
+				userId={chatUser.id}
+				userName={chatUser.name}
+				userNim={chatUser.nim}
+			/>
+
 			<Footer />
 		</div>
 	);

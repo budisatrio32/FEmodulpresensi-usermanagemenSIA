@@ -30,6 +30,8 @@ import {
 import { PrimaryButton, OutlineButton } from '@/components/ui/button'
 import { logout } from '@/lib/sessionApi'
 import { getNotifications, markAsRead } from '@/lib/notificationApi'
+import { getConversationDetail } from '@/lib/chatApi'
+import ChatModal from '@/components/ui/chatmodal'
 
 const NavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
   <Link
@@ -80,18 +82,39 @@ const NavbarMenuItem = React.forwardRef(({ className, href, children, ...props }
   </Link>
 ))
 
-const NavbarActions = React.forwardRef(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex items-center gap-4 sm:gap-6 lg:gap-10", className)}
-    {...props}
-  >
-    <NavbarNotification />
-    <NavbarProfile />
-  </div>
-))
+const NavbarActions = React.forwardRef(({ className, ...props }, ref) => {
+  // Chat modal state - shared between NavbarNotification and other components
+  const [isChatOpen, setIsChatOpen] = React.useState(false);
+  const [chatUser, setChatUser] = React.useState({ id: '', name: '', nim: '', conversationId: '' });
 
-const NavbarNotification = React.forwardRef(({ className, ...props }, ref) => {
+  return (
+    <>
+      <div
+        ref={ref}
+        className={cn("flex items-center gap-4 sm:gap-6 lg:gap-10", className)}
+        {...props}
+      >
+        <NavbarNotification 
+          setChatUser={setChatUser}
+          setIsChatOpen={setIsChatOpen}
+        />
+        <NavbarProfile />
+      </div>
+      
+      {/* Chat Modal */}
+      <ChatModal
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        userId={chatUser.id}
+        userName={chatUser.name}
+        userNim={chatUser.nim}
+        conversationId={chatUser.conversationId}
+      />
+    </>
+  );
+})
+
+const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChatOpen, ...props }, ref) => {
   const router = useRouter();
   const [notifications, setNotifications] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
@@ -110,7 +133,8 @@ const NavbarNotification = React.forwardRef(({ className, ...props }, ref) => {
           title: notif.title,
           message: notif.message,
           date: notif.send_at,
-          isRead: notif.is_read
+          isRead: notif.is_read,
+          metadata: notif.metadata
         }));
 
         setNotifications(transformed);
@@ -221,8 +245,28 @@ const NavbarNotification = React.forwardRef(({ className, ...props }, ref) => {
                     await handleMarkAsRead(notification.id);
                   }
                   
-                  // Redirect to notif page with highlight parameter
-                  router.push(`/notif?highlight=${notification.id}`);
+                  // Handle redirect based on notification type
+                  if (notification.type === 'chat' && notification.metadata?.id_conversation) {
+                    try {
+                      // Fetch conversation detail to get participant info
+                      const response = await getConversationDetail(notification.metadata.id_conversation);
+                      const otherParticipant = response.data?.conversation?.other_participant;
+                      
+                      // Open chat modal directly
+                      setChatUser({
+                        id: otherParticipant?.id_user_si?.toString() || '',
+                        name: otherParticipant?.name || 'User',
+                        nim: otherParticipant?.nim || '',
+                        conversationId: notification.metadata.id_conversation.toString()
+                      });
+                      setIsChatOpen(true);
+                    } catch (err) {
+                      console.error('Error fetching conversation:', err);
+                    }
+                  } else {
+                    // Redirect to notif page with highlight parameter for announcement
+                    router.push(`/notif?highlight=${notification.id}`);
+                  }
                 }}
               >
                 <div>

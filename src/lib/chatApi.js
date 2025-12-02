@@ -78,10 +78,25 @@ export const getContactList = async () => {
     }
 };
 
+/**
+ * Get conversation detail (untuk redirect dari notifikasi)
+ * @param {number} conversationId - ID of the conversation
+ * @returns {Promise} Response dengan detail conversation termasuk participants
+ */
+export const getConversationDetail = async (conversationId) => {
+    try {
+        const response = await api.get(`/chat/conversations/${conversationId}/messages`);
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
+};
+
 export default {
     getConversations,
     findOrCreatePrivateConversation,
     getMessages,
     sendMessage,
     getContactList,
+    getConversationDetail,
 };
