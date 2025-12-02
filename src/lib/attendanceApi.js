@@ -16,8 +16,8 @@ import api from './axios';
 export async function getLecturerClasses(academicPeriodId = '') {
     try {
         const url = academicPeriodId 
-            ? `/lecturer/classes/attendance-list?id_academic_period=${academicPeriodId}`
-            : `/lecturer/classes/attendance-list`;
+            ? `/lecturer/attendance/classes?id_academic_period=${academicPeriodId}`
+            : `/lecturer/attendance/classes`;
         const response = await api.get(url);
         return response.data;
     } catch (error) {
@@ -32,7 +32,7 @@ export async function getLecturerClasses(academicPeriodId = '') {
  */
 export const getClassSchedules = async (classId) => {
     try {
-        const response = await api.get(`/lecturer/classes/${classId}/schedules`);
+        const response = await api.get(`/lecturer/attendance/classes/${classId}/schedules`);
         return response.data;
     } catch (error) {
         throw (error.response?.data ?? error);
@@ -46,7 +46,7 @@ export const getClassSchedules = async (classId) => {
  */
 export const getClassDetail = async (classId) => {
     try {
-        const response = await api.get(`/lecturer/classes/${classId}`);
+        const response = await api.get(`/lecturer/attendance/classes/${classId}`);
         return response.data;
     } catch (error) {
         throw (error.response?.data ?? error);
@@ -160,8 +160,8 @@ export const closeAttendanceSession = async (scheduleId) => {
 export const getStudentClassesForAttendance = async (academicPeriodId = '') => {
     try {
         const url = academicPeriodId 
-            ? `/student/classes/attendance-list?id_academic_period=${academicPeriodId}`
-            : `/student/classes/attendance-list`;
+            ? `/student/attendance/classes?id_academic_period=${academicPeriodId}`
+            : `/student/attendance/classes`;
         const response = await api.get(url);
         return response.data;
     } catch (error) {
@@ -176,7 +176,7 @@ export const getStudentClassesForAttendance = async (academicPeriodId = '') => {
  */
 export const getStudentAttendanceHistoryByClass = async (classId) => {
     try {
-        const response = await api.get(`/student/classes/${classId}/attendance-history`);
+        const response = await api.get(`/student/attendance/classes/${classId}/history`);
         return response.data;
     } catch (error) {
         throw (error.response?.data ?? error);
