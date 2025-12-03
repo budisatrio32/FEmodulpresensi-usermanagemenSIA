@@ -127,7 +127,7 @@ export default function InputNilaiMahasiswa() {
     try {
       const response = await getClassStudentsWithGrades(classId);
       
-      if (response.status === 'success' && response.data) {
+      if (response.status === 'success') {
         setClassInfo(response.data.class_info);
         setStatistics(response.data.statistics);
         

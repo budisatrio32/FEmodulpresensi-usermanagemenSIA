@@ -1,8 +1,8 @@
 import api from "./axios";
 
 /**
- * Class API Services
- * Semua endpoint khusus untuk Class Management
+ * permissionApi.js
+ * Semua fungsi terkait permission API
  */
 
 /**
