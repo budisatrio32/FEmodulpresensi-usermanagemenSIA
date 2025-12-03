@@ -37,7 +37,7 @@ return (
 // src/components/ui/CardContent.jsx
 export function CardContent({ children, className = '' }) {
 return (
-<div className={`divide-y divide-gray-200 ${className}`} style={{ fontFamily: 'Urbanist, sans-serif' }}>
+<div className={`divide-y divide-gray-200 ${className}`} style={{ fontFamily: 'Urbanist, sans-serif' }  }>
     {children}
 </div>
 );

@@ -8,7 +8,7 @@ import { AlertConfirmationDialog, AlertSuccessDialog, AlertErrorDialog } from '@
 import Navbar from '@/components/ui/navigation-menu';
 import DataTable from '@/components/ui/table';
 import { ArrowLeft, CalendarDays, Save, QrCode } from 'lucide-react';
-import { PrimaryButton, OutlineButton } from '@/components/ui/button';
+import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import Footer from '@/components/ui/footer';
 import LoadingEffect from '@/components/ui/loading-effect';
@@ -403,12 +403,12 @@ return (
         </div>
 
         <div className="flex gap-3">
-            <OutlineButton
+            <WarningButton
             onClick={() => router.back()}
             disabled={isLoading}
             >
             Batal
-            </OutlineButton>
+            </WarningButton>
             
             <PrimaryButton
             onClick={handleSaveAll}

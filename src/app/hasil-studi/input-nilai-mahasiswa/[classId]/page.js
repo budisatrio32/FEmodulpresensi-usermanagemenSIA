@@ -4,7 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, FileText, Save } from 'lucide-react';
 import DataTable from '@/components/ui/table';
-import { PrimaryButton, OutlineButton } from '@/components/ui/button';
+import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
 import Navbar from '@/components/ui/navigation-menu';
 import LoadingEffect from '@/components/ui/loading-effect';
 import { getClassStudentsWithGrades, saveGradesBulk } from '@/lib/gradingApi';
@@ -491,12 +491,12 @@ export default function InputNilaiMahasiswa() {
             </div>
 
             <div className="flex gap-3">
-              <OutlineButton
+              <WarningButton
                 onClick={() => router.back()}
                 disabled={isSaving}
               >
                 Batal
-              </OutlineButton>
+              </WarningButton>
               
               <PrimaryButton
                 onClick={handleSaveAll}

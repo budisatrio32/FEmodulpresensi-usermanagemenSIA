@@ -9,7 +9,7 @@ import { getMyClasses, formatTime, getDayName, formatDate } from '@/lib/schedule
 import { getNotifications, markAsRead } from '@/lib/notificationApi';
 import Cookies from 'js-cookie';
 import Link from 'next/link';
-import { ArrowRight, Bell } from 'lucide-react';
+import { ArrowRight, Bell, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function LandingPage() {
@@ -19,6 +19,7 @@ export default function LandingPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [userRole, setUserRole] = useState('mahasiswa');
     const [todayDate, setTodayDate] = useState('');
+    const [error, setError] = useState(null);
 
     // Get today's date and user role
     useEffect(() => {
@@ -33,6 +34,7 @@ export default function LandingPage() {
 
     const fetchData = async (role) => {
         setIsLoading(true);
+        setError(null);
         try {
             // Fetch classes and announcements in parallel
             const [classesRes, notificationsRes] = await Promise.all([
@@ -42,13 +44,18 @@ export default function LandingPage() {
 
             if (classesRes.status === 'success') {
                 setClasses(classesRes.data || []);
+            } else {
+                throw new Error(classesRes.message || 'Gagal mengambil data kelas');
             }
 
             if (notificationsRes.status === 'success') {
                 setAnnouncements(notificationsRes.data.notifications || []);
+            } else {
+                throw new Error(notificationsRes.message || 'Gagal mengambil data pengumuman');
             }
         } catch (error) {
             console.error('Error fetching landing page data:', error);
+            setError(error.response?.data?.message || error.message || 'Terjadi kesalahan saat memuat data');
         } finally {
             setIsLoading(false);
         }
@@ -72,6 +79,42 @@ return (
     {/* Main Content */}
     <main className="flex-1">
     <Container className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Error Message */}
+        {error && (
+            <div 
+                className="mb-6 p-4 rounded-lg border"
+                style={{
+                    backgroundColor: '#FEE2E2',
+                    borderColor: '#EF4444'
+                }}
+            >
+                <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#DC2626' }} />
+                    <div className="flex-1">
+                        <h3 className="font-semibold mb-1" style={{ color: '#DC2626', fontFamily: 'Urbanist, sans-serif' }}>
+                            Terjadi Kesalahan
+                        </h3>
+                        <p className="text-sm" style={{ color: '#991B1B', fontFamily: 'Urbanist, sans-serif' }}>
+                            {error}
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => fetchData(userRole)}
+                        className="px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
+                        style={{
+                            backgroundColor: '#DC2626',
+                            color: 'white',
+                            fontFamily: 'Urbanist, sans-serif'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#B91C1C'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#DC2626'}
+                    >
+                        Coba Lagi
+                    </button>
+                </div>
+            </div>
+        )}
+        
         {/* Jadwal Section */}
         <section className="mb-12">
         <SectionTitle>Jadwal Harian</SectionTitle>
@@ -82,6 +125,10 @@ return (
             {isLoading ? (
                 <div className="text-center py-8 text-gray-500">
                     Memuat jadwal...
+                </div>
+            ) : error ? (
+                <div className="text-center py-8 text-gray-500">
+                    Gagal memuat data jadwal
                 </div>
             ) : classes.length > 0 ? (
                 classes.map((classItem) => (
@@ -136,6 +183,10 @@ return (
             {isLoading ? (
                 <div className="text-center py-8 text-gray-500">
                     Memuat pengumuman...
+                </div>
+            ) : error ? (
+                <div className="text-center py-8 text-gray-500">
+                    Gagal memuat data pengumuman
                 </div>
             ) : announcements.length > 0 ? (
                 announcements.slice(0, 3).map((notif) => (

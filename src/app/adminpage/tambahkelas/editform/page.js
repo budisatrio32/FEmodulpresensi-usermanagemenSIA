@@ -683,7 +683,7 @@ export default function EditKelasForm() {
                 
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="warning"
                   onClick={handleCancel}
                   disabled={isLoading}
                   className="flex-1 sm:flex-none sm:min-w-[200px]"

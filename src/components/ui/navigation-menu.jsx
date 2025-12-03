@@ -27,7 +27,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { PrimaryButton, OutlineButton } from '@/components/ui/button'
+import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button'
 import { logout } from '@/lib/sessionApi'
 import { getNotifications, markAsRead } from '@/lib/notificationApi'
 import { getConversationDetail } from '@/lib/chatApi'
@@ -40,12 +40,12 @@ const NavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
     className={cn("flex items-center gap-2 sm:gap-3", className)}
     {...props}
   >
-    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center p-1 flex-shrink-0">
+    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center p-1 flex-shrink-0">
       <Image
         src="/Logo.png"
         alt="UGN Logo"
-        width={100}
-        height={100}
+        width={80}
+        height={80}
         className="rounded-full"
       />
     </div>
@@ -67,20 +67,34 @@ const NavbarMenu = React.forwardRef(({ className, ...props }, ref) => (
   </div>
 ))
 
-const NavbarMenuItem = React.forwardRef(({ className, href, children, ...props }, ref) => (
-  <Link
-    href={href}
-    ref={ref}
-    className={cn(
-      "text-white hover:text-brand-yellow transition-colors duration-200 font-medium text-sm lg:text-base",
-      className
-    )}
-    style={{ '--hover-color': '#DABC4E' }}
-    {...props}
-  >
-    {children}
-  </Link>
-))
+const NavbarMenuItem = React.forwardRef(({ className, href, children, ...props }, ref) => {
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const isActive = pathname === href;
+  const [isHovered, setIsHovered] = React.useState(false);
+  
+  return (
+    <Link
+      href={href}
+      ref={ref}
+      className={cn(
+        "text-white hover:text-brand-yellow transition-colors duration-200 font-medium text-sm lg:text-base relative pb-1",
+        className
+      )}
+      style={{ '--hover-color': '#DABC4E' }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      {...props}
+    >
+      {children}
+      {(isActive || isHovered) && (
+        <span 
+          className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full transition-opacity duration-200"
+          style={{ backgroundColor: '#DABC4E' }}
+        />
+      )}
+    </Link>
+  );
+})
 
 const NavbarActions = React.forwardRef(({ className, ...props }, ref) => {
   // Chat modal state - shared between NavbarNotification and other components
@@ -200,9 +214,9 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
           style={{ color: '#DABC4E' }}
           {...props}
         >
-          <Bell className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" />
+          <Bell className="w-5 h-5 sm:w-6 sm:h-6 cursor-pointer" fill="currentColor" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-semibold">
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-semibold cursor-pointer">
               {unreadCount}
             </span>
           )}

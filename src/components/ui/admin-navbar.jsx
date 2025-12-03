@@ -36,12 +36,12 @@ ref={ref}
 className={cn("flex items-center gap-2 sm:gap-3", className)}
 {...props}
 >
-<div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center p-1 flex-shrink-0">
+<div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center p-1 flex-shrink-0">
     <Image 
     src="/Logo.png"
     alt="UGN Logo"
-    width={100}
-    height={100}
+    width={80}
+    height={80}
     className="rounded-full"
     />
 </div>
