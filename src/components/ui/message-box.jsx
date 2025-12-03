@@ -1,14 +1,30 @@
 "use client"
 
+import { AlertCircle } from "lucide-react";
 import { SuccessButton } from "./button";
 
 function ErrorMessageBox({
     message,
 }) {
     return (
-        <div className="my-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-            <p>Error: </p>
-            <p>{message}</p>
+        <div 
+            className="mb-6 p-4 rounded-lg border"
+            style={{
+                backgroundColor: '#FEE2E2',
+                borderColor: '#EF4444'
+            }}
+        >
+            <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#DC2626' }} />
+                <div className="flex-1">
+                    <h3 className="font-semibold mb-1" style={{ color: '#DC2626', fontFamily: 'Urbanist, sans-serif' }}>
+                        Terjadi Kesalahan
+                    </h3>
+                    <p className="text-sm" style={{ color: '#991B1B', fontFamily: 'Urbanist, sans-serif' }}>
+                        {message}
+                    </p>
+                </div>
+            </div>
         </div>
     );
 }
@@ -21,29 +37,77 @@ function ErrorMessageBoxWithButton({
     btntextback,
 }) {
     return (
-        <div className="my-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-            <p>Error: </p>
-            <p>{message}</p>
-            <div className="flex justify-start">
-                <button className="mt-2 px-4 py-2 bg-red-500 text-white rounded transition-colors duration-200 hover:bg-red-600 hover:shadow-md" onClick={action}>
+        <div 
+            className="mb-6 p-4 rounded-lg border"
+            style={{
+                backgroundColor: '#FEE2E2',
+                borderColor: '#EF4444'
+            }}
+        >
+            <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#DC2626' }} />
+                <div className="flex-1">
+                    <h3 className="font-semibold mb-1" style={{ color: '#DC2626', fontFamily: 'Urbanist, sans-serif' }}>
+                        Terjadi Kesalahan
+                    </h3>
+                    <p className="text-sm" style={{ color: '#991B1B', fontFamily: 'Urbanist, sans-serif' }}>
+                        {message}
+                    </p>
+                </div>
+                {back === true && (<button
+                    onClick={actionback}
+                    className="px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
+                    style={{
+                        backgroundColor: '#6B7280',
+                        color: 'white',
+                        fontFamily: 'Urbanist, sans-serif'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#4B5563'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#6B7280'}
+                >
+                    {btntextback ? btntextback : 'Kembali'}
+                </button>
+                )}
+                <button
+                    onClick={action}
+                    className="px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
+                    style={{
+                        backgroundColor: '#DC2626',
+                        color: 'white',
+                        fontFamily: 'Urbanist, sans-serif'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#B91C1C'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#DC2626'}
+                >
                     {btntext ? btntext : 'Coba Lagi'}
                 </button>
-                {back === true && (
-                    <button className="mt-2 ml-2 px-4 py-2 bg-gray-500 text-white rounded transition-colors duration-200 hover:bg-gray-600 hover:shadow-md" onClick={actionback}>
-                        {btntextback ? btntextback : 'Kembali'}
-                    </button>
-                )}
             </div>
         </div>
     );
 }
+
 function SuccessMessageBox({
     message,
 }) {
     return (
-        <div className="my-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
-            <p>Success: </p>
-            <p>{message}</p>
+        <div 
+            className="mb-6 p-4 rounded-lg border"
+            style={{
+                backgroundColor: '#D1FAE5',
+                borderColor: '#10B981'
+            }}
+        >
+            <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#059669' }} />
+                <div className="flex-1">
+                    <h3 className="font-semibold mb-1" style={{ color: '#059669', fontFamily: 'Urbanist, sans-serif' }}>
+                        Berhasil
+                    </h3>
+                    <p className="text-sm" style={{ color: '#047857', fontFamily: 'Urbanist, sans-serif' }}>
+                        {message}
+                    </p>
+                </div>
+            </div>
         </div>
     );
 }
@@ -53,13 +117,37 @@ function SuccessMessageBoxWithButton({
     btntext,
 }) {
     return (
-        <div className="my-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
-            <p>Success: </p>
-            <p>{message}</p>
-            <button className="mt-2 px-4 py-2 bg-green-500 text-white rounded transition-colors duration-200 hover:bg-green-600 hover:shadow-md" 
-            onClick={action}>
-                {btntext ? btntext : 'Lanjutkan'}
-            </button>
+        <div 
+            className="mb-6 p-4 rounded-lg border"
+            style={{
+                backgroundColor: '#D1FAE5',
+                borderColor: '#10B981'
+            }}
+        >
+            <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#059669' }} />
+                <div className="flex-1">
+                    <h3 className="font-semibold mb-1" style={{ color: '#059669', fontFamily: 'Urbanist, sans-serif' }}>
+                        Berhasil
+                    </h3>
+                    <p className="text-sm" style={{ color: '#047857', fontFamily: 'Urbanist, sans-serif' }}>
+                        {message}
+                    </p>
+                </div>
+                <button
+                    onClick={action}
+                    className="px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
+                    style={{
+                        backgroundColor: '#059669',
+                        color: 'white',
+                        fontFamily: 'Urbanist, sans-serif'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#047857'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+                >
+                    {btntext ? btntext : 'Lanjutkan'}
+                </button>
+            </div>
         </div>
     );
 }
