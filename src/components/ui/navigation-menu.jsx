@@ -132,7 +132,7 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
           type: notif.type,
           title: notif.title,
           message: notif.message,
-          date: notif.send_at,
+          date: notif.sent_at,
           isRead: notif.is_read,
           metadata: notif.metadata
         }));

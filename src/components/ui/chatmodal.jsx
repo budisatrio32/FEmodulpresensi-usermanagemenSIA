@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Send, MessageCircle } from 'lucide-react';
-import { findOrCreatePrivateConversation, getMessages, sendMessage } from '@/lib/chatApi';
+import { X, Send, MessageCircle, Check } from 'lucide-react';
+import { findOrCreatePrivateConversation, getMessages, sendMessage, markMessagesAsRead } from '@/lib/chatApi';
 import { getNotifications, markAsRead } from '@/lib/notificationApi';
-import Echo from 'laravel-echo';
-import Pusher from 'pusher-js';
+import { getEcho } from '@/lib/echo';
 
 export default function ChatModal({ isOpen, onClose, userName, userNim = '', userId = '', conversationId: propConversationId = null }) {
     // State
@@ -18,38 +17,6 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
     
     // Refs
     const messagesEndRef = useRef(null);
-    const echoRef = useRef(null);
-
-    // 1. Initialize Echo for WebSocket (Reverb/Pusher)
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            window.Pusher = Pusher;
-
-            echoRef.current = new Echo({
-                broadcaster: 'reverb',
-                key: process.env.NEXT_PUBLIC_REVERB_APP_KEY || 'local-app-key',
-                wsHost: process.env.NEXT_PUBLIC_REVERB_HOST || 'localhost',
-                wsPort: process.env.NEXT_PUBLIC_REVERB_PORT || 9090,
-                wssPort: process.env.NEXT_PUBLIC_REVERB_PORT || 9090,
-                forceTLS: (process.env.NEXT_PUBLIC_REVERB_SCHEME || 'http') === 'https',
-                enabledTransports: ['ws', 'wss'],
-                authEndpoint: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/broadcasting/auth`,
-                auth: {
-                    headers: {
-                        Accept: 'application/json',
-                    },
-                },
-            });
-
-            console.log('Echo initialized');
-        }
-
-        return () => {
-            if (echoRef.current) {
-                echoRef.current.disconnect();
-            }
-        };
-    }, []);
 
     // 2. Get current user ID from profile API
     useEffect(() => {
@@ -104,7 +71,7 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
 
     // 4. Find or create conversation and load messages
     useEffect(() => {
-        if (!isOpen || !userId) return;
+        if (!isOpen || !userId || !currentUserId) return;
 
         const initializeChat = async () => {
             try {
@@ -131,15 +98,60 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
                         }
                     }
 
-                    // Subscribe to new messages via WebSocket
-                    if (echoRef.current) {
-                        echoRef.current.private(`chat.${convId}`)
-                            .listen('NewChatMessage', (e) => {
-                                // Only add if it's not from current user (to avoid duplicates)
-                                if (e.message.id_user_si !== currentUserId) {
-                                    setMessages(prev => [...prev, e.message]);
-                                }
-                            });
+                    // Subscribe to new messages & read events via WebSocket
+                    const echo = getEcho();
+                    if (echo) {
+                        try {
+                            console.log('[ChatModal] Subscribing to chat.' + convId);
+                            
+                            echo.private(`chat.${convId}`)
+                                .listen('NewChatMessage', (e) => {
+                                    console.log('[ChatModal] New message received:', e);
+                                    // Only add if it's not from current user (to avoid duplicates)
+                                    if (e.message.id_user_si !== currentUserId) {
+                                        setMessages(prev => {
+                                            // Prevent duplicate by checking if message already exists
+                                            const exists = prev.some(msg => msg.id_message === e.message.id_message);
+                                            if (exists) {
+                                                console.log('[ChatModal] Message already exists, skipping');
+                                                return prev;
+                                            }
+                                            console.log('[ChatModal] Adding new message to state');
+                                            return [...prev, e.message];
+                                        });
+                                        
+                                        // Auto mark as read setelah 1 detik (simulate user seeing the message)
+                                        setTimeout(() => {
+                                            markMessagesAsRead(convId, [e.message.id_message])
+                                                .catch(err => console.error('Error auto-marking as read:', err));
+                                        }, 1000);
+                                    }
+                                })
+                                .listen('MessageRead', (e) => {
+                                    console.log('[ChatModal] Message read event:', e);
+                                    // Update read status - IMPORTANT: This fires for SENDER when recipient reads
+                                    setMessages(prev => prev.map(msg => {
+                                        if (msg.id_message === e.message_id) {
+                                            return {
+                                                ...msg,
+                                                read_status: {
+                                                    ...msg.read_status,
+                                                    // Increment count (this makes checkmark turn white)
+                                                    read_by_count: (msg.read_status?.read_by_count || 0) + 1,
+                                                    read_by_users: [...(msg.read_status?.read_by_users || []), e.user_id],
+                                                }
+                                            };
+                                        }
+                                        return msg;
+                                    }));
+                                });
+                            
+                            console.log('[ChatModal] WebSocket subscribed successfully');
+                        } catch (wsError) {
+                            console.error('[ChatModal] WebSocket subscription error:', wsError);
+                        }
+                    } else {
+                        console.warn('[ChatModal] Echo not initialized yet');
                     }
                 }
             } catch (error) {
@@ -153,15 +165,38 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
 
         // Cleanup: leave channel when modal closes
         return () => {
-            if (echoRef.current && conversationId) {
-                echoRef.current.leave(`private-chat.${conversationId}`);
+            if (conversationId) {
+                const echo = getEcho();
+                if (echo) {
+                    console.log('[ChatModal] Leaving channel chat.' + conversationId);
+                    echo.leave(`chat.${conversationId}`);
+                }
             }
         };
-    }, [isOpen, userId, currentUserId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, userId]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+        
+        // Auto mark unread messages as read when opening chat or new messages arrive
+        if (isOpen && conversationId && messages.length > 0 && currentUserId) {
+            const unreadMessageIds = messages
+                .filter(msg => 
+                    msg.id_user_si !== currentUserId && // Bukan pesan sendiri
+                    !msg.read_status?.is_read_by_me // Belum dibaca
+                )
+                .map(msg => msg.id_message);
+            
+            if (unreadMessageIds.length > 0) {
+                // Delay sedikit biar user sempet liat message dulu
+                setTimeout(() => {
+                    markMessagesAsRead(conversationId, unreadMessageIds)
+                        .catch(err => console.error('Error marking messages as read:', err));
+                }, 1000);
+            }
+        }
+    }, [messages, isOpen, conversationId, currentUserId]);
 
     useEffect(() => {
         if (isOpen) {
@@ -302,6 +337,8 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
                                 {/* Messages List */}
                                 {msgs.map((msg) => {
                                     const isMe = msg.id_user_si === currentUserId;
+                                    const isRead = msg.read_status?.read_by_count > 0;
+                                    
                                     return (
                                         <div
                                             key={msg.id_message}
@@ -320,13 +357,33 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
                                                     </p>
                                                 )}
                                                 <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.message}</p>
-                                                <p
-                                                    className={`text-[10px] mt-1 text-right ${
-                                                        isMe ? 'text-white/70' : 'text-gray-400'
-                                                    }`}
-                                                >
-                                                    {formatTime(msg.created_at)}
-                                                </p>
+                                                <div className="flex items-center justify-end gap-1 mt-1">
+                                                    <p
+                                                        className={`text-[10px] ${
+                                                            isMe ? 'text-white/70' : 'text-gray-400'
+                                                        }`}
+                                                    >
+                                                        {formatTime(msg.created_at)}
+                                                    </p>
+                                                    {/* Read Status (Double Check) - Only for sender's messages */}
+                                                    {isMe && (
+                                                        <div className="flex items-center ml-1">
+                                                            {isRead ? (
+                                                                // Centang putih (sudah dibaca)
+                                                                <div className="flex">
+                                                                    <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                                                                    <Check className="w-3 h-3 text-white -ml-2" strokeWidth={3} />
+                                                                </div>
+                                                            ) : (
+                                                                // Centang abu-abu (belum dibaca)
+                                                                <div className="flex">
+                                                                    <Check className="w-3 h-3 text-white/40" strokeWidth={3} />
+                                                                    <Check className="w-3 h-3 text-white/40 -ml-2" strokeWidth={3} />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     );

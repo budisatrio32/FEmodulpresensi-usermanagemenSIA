@@ -25,21 +25,32 @@ export const getEcho = () => {
   }
 
   if (!echoInstance) {
+    // Get token from cookies
+    const token = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('token='))
+      ?.split('=')[1];
+
     const config = {
       broadcaster: 'reverb',
       key: process.env.NEXT_PUBLIC_REVERB_APP_KEY || 'rfmp9pmudhfkb6dvdybr',
       wsHost: process.env.NEXT_PUBLIC_REVERB_HOST || 'localhost',
-      wsPort: process.env.NEXT_PUBLIC_REVERB_PORT || 9090, // Changed to 9090 to match Reverb
+      wsPort: process.env.NEXT_PUBLIC_REVERB_PORT || 9090,
       wssPort: process.env.NEXT_PUBLIC_REVERB_PORT || 9090,
-      forceTLS: false, // Explicitly disable TLS for local development
+      forceTLS: false,
       enabledTransports: ['ws', 'wss'],
       disableStats: true,
+      authEndpoint: 'http://localhost:8000/broadcasting/auth',
+      auth: {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+        },
+      },
     };
 
-    console.log('[Echo] Initializing with config:', {
+    console.log('[Echo] Initializing with auth:', {
       wsHost: config.wsHost,
       wsPort: config.wsPort,
-      forceTLS: config.forceTLS,
       key: config.key.substring(0, 8) + '...',
     });
 

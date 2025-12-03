@@ -92,6 +92,23 @@ export const getConversationDetail = async (conversationId) => {
     }
 };
 
+/**
+ * Mark messages as read
+ * @param {number} conversationId - ID of the conversation
+ * @param {Array<number>} messageIds - Array of message IDs to mark as read
+ * @returns {Promise} Response dengan data marked messages
+ */
+export const markMessagesAsRead = async (conversationId, messageIds) => {
+    try {
+        const response = await api.post(`/chat/conversations/${conversationId}/read`, {
+            message_ids: messageIds
+        });
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
+};
+
 export default {
     getConversations,
     findOrCreatePrivateConversation,
@@ -99,4 +116,5 @@ export default {
     sendMessage,
     getContactList,
     getConversationDetail,
+    markMessagesAsRead,
 };

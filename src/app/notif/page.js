@@ -73,7 +73,7 @@ export default function NotifikasiPage() {
           type: notif.type,
           judul: notif.title,
           isi: notif.message,
-          tanggal: notif.send_at,
+          tanggal: notif.sent_at,
           kelas: notif.metadata?.class_code || null,
           pengumum: notif.sender || 'System',
           isRead: notif.is_read,
