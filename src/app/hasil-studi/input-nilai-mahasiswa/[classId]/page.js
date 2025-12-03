@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, FileText, Save } from 'lucide-react';
 import DataTable from '@/components/ui/table';
@@ -9,16 +9,23 @@ import Navbar from '@/components/ui/navigation-menu';
 import LoadingEffect from '@/components/ui/loading-effect';
 import { getClassStudentsWithGrades, saveGradesBulk } from '@/lib/gradingApi';
 import { getGradeConversions } from '@/lib/gradeConv';
+import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
+import { getPermissionForAClass } from '@/lib/permissionApi';
 
 export default function InputNilaiMahasiswa() {
   const router = useRouter();
   const params = useParams();
   const classId = params.classId; // Get classId from URL params
   
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingGrade, setLoadingGrade] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [mahasiswaData, setMahasiswaData] = useState([]);
   const [gradeConversions, setGradeConversions] = useState([]);
+  const [permissionChecked, setPermissionChecked] = useState(false);
+  const [permissionGranted, setPermissionGranted] = useState(null);
+  const [loadingPermission, setLoadingPermission] = useState(true);
+  const [countdown, setCountdown] = useState(5);
   const [classInfo, setClassInfo] = useState({
     code_class: '-',
     subject: {
@@ -35,35 +42,97 @@ export default function InputNilaiMahasiswa() {
     graded_students: 0,
     ungraded_students: 0
   });
+  const [errors, setErrors] = useState({});
 
   // Fetch data saat component mount
   useEffect(() => {
     if (classId) {
-      fetchClassData();
+      checkPermission();
     }
   }, [classId]);
 
-  const fetchClassData = async () => {
-    setIsLoading(true);
+  const checkPermission = async () => {
+    setErrors(prev => ({...prev, permission: null}));
+    setLoadingPermission(true);
     try {
-      // Fetch both grade conversions and class data
-      const [gradeConvResponse, classResponse] = await Promise.all([
-        getGradeConversions(),
-        getClassStudentsWithGrades(classId)
-      ]);
-      
-      // Set grade conversions
-      if (gradeConvResponse.status === 'success') {
-        setGradeConversions(gradeConvResponse.data);
+      // Here you can add actual permission check logic if needed
+      const Response = await getPermissionForAClass(classId);
+      if (Response.status === 'success') {
+        // Check if permission is granted
+        if (Response.data.permission === false) {
+          setPermissionGranted(false);
+        } else {
+          setPermissionChecked(true);
+        }
+      } else {
+        setErrors(prev => ({...prev, permission: 'Gagal memeriksa izin akses: ' + Response.message}));
       }
+    } catch (error) {
+      setErrors(prev => ({...prev, permission: 'Gagal memeriksa izin akses: ' + error.message}));
+    } finally {
+      setLoadingPermission(false);
+    }
+  };
+
+  useEffect(() => {
+    if (permissionChecked) {
+      fetchAllData();
+    }
+  }, [permissionChecked]);
+
+  // Countdown redirect effect ketika ada error permission atau permissionGranted false
+  useEffect(() => {
+    let timer;
+    if (permissionGranted === false) {
+      if (countdown > 0) {
+        timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+      } else {
+        handleBack();
+      }
+    }
+    return () => clearTimeout(timer);
+  }, [permissionGranted, countdown]);
+
+  // Fetch All
+  const fetchAllData = async () => {
+    setErrors(prev => ({...prev, fetch: null}));
+    setIsLoading(true);
+    await Promise.all([
+      fetchGradeConversions(),
+      fetchClassData()
+    ]);
+    setIsLoading(false);
+  };
+
+  const fetchGradeConversions = async () => {
+    setLoadingGrade(true);
+    setErrors(prev => ({...prev, grades: null}));
+    try {
+      const response = await getGradeConversions();
       
-      // Set class data
-      if (classResponse.status === 'success' && classResponse.data) {
-        setClassInfo(classResponse.data.class_info);
-        setStatistics(classResponse.data.statistics);
+      if (response.status === 'success') {
+        setGradeConversions(response.data);
+      } else {
+        setErrors(prev => ({...prev, grades: 'Gagal memuat konversi nilai: ' + response.message}));
+      }
+    } catch (error) {
+      setErrors(prev => ({...prev, grades: 'Terjadi kesalahan saat memuat konversi nilai: ' + error.message}));
+    } finally {
+      setLoadingGrade(false);
+    }
+  };
+
+  const fetchClassData = async () => {
+    setErrors(prev => ({...prev, fetch: null}));
+    try {
+      const response = await getClassStudentsWithGrades(classId);
+      
+      if (response.status === 'success' && response.data) {
+        setClassInfo(response.data.class_info);
+        setStatistics(response.data.statistics);
         
         // Transform data ke format yang sesuai dengan table
-        const formattedData = classResponse.data.students.map(student => ({
+        const formattedData = response.data.students.map(student => ({
           id: student.id_user_si,
           nim: student.nim,
           nama: student.name,
@@ -72,12 +141,11 @@ export default function InputNilaiMahasiswa() {
         }));
         
         setMahasiswaData(formattedData);
+      } else {
+        setErrors(prev => ({...prev, fetch: 'Gagal memuat data mahasiswa: ' + response.message}));
       }
     } catch (error) {
-      console.error('Error fetching class data:', error);
-      alert('Gagal memuat data mahasiswa: ' + (error.message || 'Terjadi kesalahan'));
-    } finally {
-      setIsLoading(false);
+      setErrors(prev => ({...prev, fetch: 'Terjadi kesalahan saat memuat data mahasiswa: ' + error.message}));
     }
   };
 
@@ -230,6 +298,7 @@ export default function InputNilaiMahasiswa() {
     }
 
     setIsSaving(true);
+    setErrors(prev => ({...prev, save: null}));
     try {
       // Prepare grades data (only for students with grades)
       const gradesToSave = mahasiswaData
@@ -250,19 +319,63 @@ export default function InputNilaiMahasiswa() {
         alert(`Berhasil menyimpan nilai untuk ${gradesToSave.length} mahasiswa!`);
         router.back();
       } else {
-        alert('Gagal menyimpan nilai: ' + (response.message || 'Terjadi kesalahan'));
+        setErrors(prev => ({...prev, save: 'Gagal menyimpan nilai: ' + response.message}));
       }
     } catch (error) {
-      console.error('Error saving grades:', error);
-      alert('Gagal menyimpan nilai: ' + (error.message || 'Terjadi kesalahan'));
+      setErrors(prev => ({...prev, save: 'Terjadi kesalahan saat menyimpan nilai: ' + error.message}));
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleBack = () => {
+    router.push('/hasil-studi');
+  };
+
   // Show loading
-  if (isLoading) {
+  if (loadingPermission) {
+    return <LoadingEffect message="Memeriksa izin akses..." />;
+  } else if (permissionGranted === false) {
+    return (
+      <div className="min-h-screen bg-brand-light-sage">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          <ErrorMessageBoxWithButton
+            message={'Anda tidak memiliki izin untuk mengakses kelas ini.' + `\n\nAkan dialihkan kembali dalam ${countdown} detik.`}
+            action={handleBack}
+            btntext={countdown > 0 ? `Kembali (${countdown})` : 'Kembali'}
+          />
+        </div>
+      </div>
+    );
+  } else if (errors.permission) {
+    return (
+      <div className="min-h-screen bg-brand-light-sage">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          <ErrorMessageBoxWithButton
+            message={errors.permission}
+            action={checkPermission}
+          />
+        </div>
+      </div>
+    );
+  } else if (isLoading) {
     return <LoadingEffect message="Memuat data mahasiswa..." />;
+  } else if (errors.fetch) {
+    return (
+      <div className="min-h-screen bg-brand-light-sage">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          <ErrorMessageBoxWithButton
+            message={errors.fetch}
+            action={fetchAllData}
+            back={true}
+            actionback={handleBack}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -340,6 +453,14 @@ export default function InputNilaiMahasiswa() {
             </div>
           </div>
         </div>
+
+        {/* Error Message Save */}
+        {errors.save && (
+          <ErrorMessageBoxWithButton
+            message={errors.save}
+            action={handleSaveAll}
+          />
+        )}
 
         {/* Table Mahasiswa */}
         <div className="mb-6">
