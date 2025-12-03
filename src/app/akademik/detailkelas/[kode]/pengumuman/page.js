@@ -5,7 +5,7 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/ui/navigation-menu';
 import Footer from '@/components/ui/footer';
 import { ArrowLeft, Send, Megaphone } from 'lucide-react';
-import { PrimaryButton, SecondaryButton } from '@/components/ui/button';
+import { PrimaryButton, SecondaryButton, WarningButton} from '@/components/ui/button';
 import { createAnnouncement } from '@/lib/notificationApi';
 import LoadingEffect from '@/components/ui/loading-effect';
 import { AlertSuccessDialog, AlertErrorDialog } from '@/components/ui/alert-dialog';
@@ -259,19 +259,13 @@ export default function BuatPengumumanPage() {
 								<Send className="w-5 h-5" />
 								{isSubmitting ? 'Mengirim...' : 'Kirim Pengumuman'}
 							</button>
-							<button
+							<WarningButton
 								type="button"
 								onClick={() => router.back()}
 								className="px-6 py-3 rounded-xl font-semibold transition shadow-sm hover:opacity-90"
-								style={{
-									backgroundColor: '#f3f4f6',
-									color: '#015023',
-									fontFamily: 'Urbanist, sans-serif',
-									borderRadius: '12px'
-								}}
 							>
 								Batal
-							</button>
+							</WarningButton>
 						</div>
 					</form>
 				</div>

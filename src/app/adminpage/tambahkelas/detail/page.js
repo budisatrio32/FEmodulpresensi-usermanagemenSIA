@@ -915,7 +915,7 @@ export default function DetailKelas() {
                     <div className="flex justify-end gap-4 mt-6">
                     <Button
                         type="button"
-                        variant="outline"
+                        variant="warning"
                         onClick={handleBack}
                         disabled={isSubmitting || isLoading}
                     >

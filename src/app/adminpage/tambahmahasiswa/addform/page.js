@@ -634,16 +634,16 @@ export default function AddMahasiswaForm() {
                     )}
                 </Button>
                 
-                <Button
+                  <Button
                     type="button"
-                    variant="outline"
+                    variant="warning"
                     onClick={handleCancel}
                     disabled={isLoading}
                     className="flex-1 sm:flex-none sm:min-w-[200px]"
-                >
+                  >
                     <X className="w-5 h-5 mr-2" />
                     Batal
-                </Button>
+                  </Button>
                 </div>
             </div>
             </form>
