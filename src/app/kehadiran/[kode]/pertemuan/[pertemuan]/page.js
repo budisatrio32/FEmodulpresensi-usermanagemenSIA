@@ -230,12 +230,24 @@ const savePresences = async () => {
         }
     } catch (error) {
         console.error('Error saving attendance:', error);
+        
+        // Handle specific error messages from refactored backend
         let errorMessage = 'Gagal menyimpan presensi';
+        
         if (error.response?.data?.message) {
             errorMessage = error.response.data.message;
+        } else if (error.response?.data?.errors?.id_schedule) {
+            const scheduleError = error.response.data.errors.id_schedule;
+            errorMessage = Array.isArray(scheduleError) ? scheduleError[0] : scheduleError;
         } else if (error.message) {
             errorMessage = error.message;
         }
+        
+        // Show more helpful message for academic period validation
+        if (errorMessage.includes('periode akademik')) {
+            console.log('[Manual Attendance] Academic period validation failed');
+        }
+        
         setAlertMessage(errorMessage);
         setShowErrorDialog(true);
     } finally {

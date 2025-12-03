@@ -81,7 +81,7 @@ export const openQRSession = async (scheduleId) => {
  */
 export const getActiveQR = async (scheduleId) => {
     try {
-        const response = await api.get(`/lecturer/schedules/${scheduleId}/qr`);
+        const response = await api.get(`/lecturer/schedules/${scheduleId}/active-qr`);
         return response.data;
     } catch (error) {
         throw (error.response?.data ?? error);
@@ -141,7 +141,7 @@ export const deletePresence = async (scheduleId, studentId) => {
  */
 export const closeAttendanceSession = async (scheduleId) => {
     try {
-        const response = await api.post(`/lecturer/schedules/${scheduleId}/close`);
+        const response = await api.put(`/lecturer/schedules/${scheduleId}/close-session`);
         return response.data;
     } catch (error) {
         throw (error.response?.data ?? error);

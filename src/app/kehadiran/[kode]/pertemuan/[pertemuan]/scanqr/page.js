@@ -48,17 +48,37 @@ export default function ScanQRPage({ params }) {
         initializeQRSession();
 
         return () => {
-            // Cleanup WebSocket on unmount
+            // Cleanup: Sesi auto close dan disconnect WebSocket.
             const cleanup = async () => {
-                if (echo) {
-                    echo.leave(`attendance.${id_schedule}`);
-                    const { disconnectEcho } = await import('@/lib/echo');
-                    disconnectEcho();
+                console.log('[Cleanup] Component unmounting, starting cleanup...');
+                
+                // 1. Close QR session 
+                if (id_schedule) {
+                    try {
+                        console.log('[Cleanup] Attempting to close QR session:', id_schedule);
+                        await closeAttendanceSession(id_schedule);
+                        console.log('[Cleanup] ✅ Session closed successfully');
+                    } catch (error) {
+                        console.log('[Cleanup] ⚠️ Close session failed (ignored):', error.message || error);
+                    }
+                }
+                
+                // 2. Disconnect WebSocket (always try)
+                try {
+                    if (echo) {
+                        console.log('[Cleanup] Disconnecting WebSocket...');
+                        echo.leave(`attendance.${id_schedule}`);
+                        const { disconnectEcho } = await import('@/lib/echo');
+                        disconnectEcho();
+                        console.log('[Cleanup] ✅ WebSocket disconnected');
+                    }
+                } catch (error) {
+                    console.log('[Cleanup] ⚠️ WebSocket disconnect failed (ignored):', error.message || error);
                 }
             };
             cleanup();
         };
-    }, [id_schedule]);
+    }, [id_schedule, echo]);
 
     // Monitor QR code changes
     useEffect(() => {
@@ -71,7 +91,7 @@ export default function ScanQRPage({ params }) {
         try {
             setLoading(true);
 
-            console.log('Initializing QR session with:', { id_schedule, id_class });
+            console.log('[QR Init] Initializing QR session with:', { id_schedule, id_class });
 
             // Validate params
             if (!id_schedule || !id_class) {
@@ -79,43 +99,51 @@ export default function ScanQRPage({ params }) {
             }
 
             // 1. Fetch class detail to get total students
-            console.log('Fetching class detail...');
+            console.log('[QR Init] Fetching class detail...');
             const classDetailResponse = await getClassDetail(id_class);
-            console.log('Class detail response:', classDetailResponse);
+            console.log('[QR Init] Class detail response:', classDetailResponse);
 
             if (classDetailResponse.status === 'success') {
                 setAllStudents(classDetailResponse.data.students || []);
             }
 
-            // 2. Open QR session FIRST
-            console.log('[QR Init] Opening QR session with id_schedule:', id_schedule);
+            // 2. Always try to open NEW session
+            console.log('[QR Init] Opening NEW QR session...');
             const openResponse = await openQRSession(id_schedule);
-            console.log('[QR Init] Open QR response:', openResponse);
-            console.log('[QR Init] Response status:', openResponse?.status);
-            console.log('[QR Init] Response data:', openResponse?.data);
+            console.log('[QR Init] Open response:', openResponse);
 
-            if (openResponse && openResponse.status === 'success' && openResponse.data) {
-                console.log('[QR Init] Setting initial QR Key:', openResponse.data.key);
-                setQrCode(openResponse.data.key);
-            } else if (openResponse && openResponse.status === 'failed' && openResponse.data) {
-                // Session sudah aktif, gunakan key yang ada
-                console.log('[QR Init] Session already active, using existing key:', openResponse.data.key);
+            if (openResponse && openResponse.status === 'success' && openResponse.data?.key) {
+                console.log('[QR Init] ✅ New session opened successfully:', openResponse.data.key);
                 setQrCode(openResponse.data.key);
             } else {
-                throw new Error(openResponse?.message || 'Gagal membuka sesi QR - No data received');
+                throw new Error(openResponse?.message || 'Gagal membuka sesi QR');
             }
 
-            // 3. Setup WebSocket connection (wait for it to complete)
+            // 3. Setup WebSocket connection
             await setupWebSocket();
 
-            // 4. Fetch existing presences (after QR session opened)
+            // 4. Fetch existing presences
             await fetchPresences();
 
         } catch (error) {
-            console.error('Error initializing QR session:', error);
-            const errorMessage = error.response?.data?.message
-                || error.message
-                || 'Gagal membuka sesi QR. Pastikan backend Laravel sudah berjalan di port 8000.';
+            console.error('[QR Init] ❌ Error initializing QR session:', error);
+            
+            // Handle specific error messages from refactored backend
+            let errorMessage = 'Gagal membuka sesi QR.';
+            
+            // Try to extract error message from various response formats
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.response?.data?.errors) {
+                // Handle Laravel validation errors
+                const errors = error.response.data.errors;
+                const firstError = Object.values(errors)[0];
+                errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            console.log('[QR Init] Final error message:', errorMessage);
 
             setAlertMessage(errorMessage);
             setShowErrorDialog(true);
