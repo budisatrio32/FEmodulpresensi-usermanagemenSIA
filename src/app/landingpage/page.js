@@ -11,6 +11,7 @@ import Cookies from 'js-cookie';
 import Link from 'next/link';
 import { ArrowRight, Bell, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 
 export default function LandingPage() {
     const router = useRouter();
@@ -81,38 +82,10 @@ return (
     <Container className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Error Message */}
         {error && (
-            <div 
-                className="mb-6 p-4 rounded-lg border"
-                style={{
-                    backgroundColor: '#FEE2E2',
-                    borderColor: '#EF4444'
-                }}
-            >
-                <div className="flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#DC2626' }} />
-                    <div className="flex-1">
-                        <h3 className="font-semibold mb-1" style={{ color: '#DC2626', fontFamily: 'Urbanist, sans-serif' }}>
-                            Terjadi Kesalahan
-                        </h3>
-                        <p className="text-sm" style={{ color: '#991B1B', fontFamily: 'Urbanist, sans-serif' }}>
-                            {error}
-                        </p>
-                    </div>
-                    <button
-                        onClick={() => fetchData(userRole)}
-                        className="px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
-                        style={{
-                            backgroundColor: '#DC2626',
-                            color: 'white',
-                            fontFamily: 'Urbanist, sans-serif'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#B91C1C'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#DC2626'}
-                    >
-                        Coba Lagi
-                    </button>
-                </div>
-            </div>
+            <ErrorMessageBoxWithButton 
+                message={error}
+                action={() => fetchData(userRole)}
+            />
         )}
         
         {/* Jadwal Section */}
