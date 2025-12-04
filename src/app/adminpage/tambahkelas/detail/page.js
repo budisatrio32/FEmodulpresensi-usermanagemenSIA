@@ -579,6 +579,28 @@ export default function DetailKelas() {
     <div className="min-h-screen bg-brand-light-sage">
         <AdminNavbar title="Dashboard Admin - Detail Kelas" />
         
+        {/* Fixed Notification Container */}
+        <div className="fixed top-20 right-4 z-50 space-y-2" style={{ maxWidth: '400px' }}>
+            {assignSuccess.dosen && (
+                <SuccessMessageBox message={assignSuccess.dosen} />
+            )}
+            {removeSuccess.dosen && (
+                <SuccessMessageBox message={removeSuccess.dosen} />
+            )}
+            {removeErrors.dosen && (
+                <ErrorMessageBox message={removeErrors.dosen} />
+            )}
+            {assignSuccess.mahasiswa && (
+                <SuccessMessageBox message={assignSuccess.mahasiswa} />
+            )}
+            {removeSuccess.mahasiswa && (
+                <SuccessMessageBox message={removeSuccess.mahasiswa} />
+            )}
+            {removeErrors.mahasiswa && (
+                <ErrorMessageBox message={removeErrors.mahasiswa} />
+            )}
+        </div>
+        
         <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
@@ -684,7 +706,7 @@ export default function DetailKelas() {
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left Column - Form Data Kelas */}
-            <div className="bg-white border-2 p-6 shadow-lg" style={{ borderColor: '#015023', borderRadius: '12px' }}>
+            <div className="bg-white border-2 p-6 shadow-lg" style={{ borderColor: '#015023', borderRadius: '12px', maxHeight: '900px' }}>
                 <h2 className="text-2xl font-bold mb-6" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                 Informasi Kelas
                 </h2>
@@ -961,23 +983,6 @@ export default function DetailKelas() {
                     </button>
                 </div>
 
-                {/* Pesan sukses atau error */}
-                {assignSuccess.dosen && (
-                    <div className="mb-3">
-                        <SuccessMessageBox message={assignSuccess.dosen} />
-                    </div>
-                )}
-                {removeSuccess.dosen && (
-                    <div className="mb-3">
-                        <SuccessMessageBox message={removeSuccess.dosen} />
-                    </div>
-                )}
-                {removeErrors.dosen && (
-                    <div className="mb-3">
-                        <ErrorMessageBox message={removeErrors.dosen} />
-                    </div>
-                )}
-
                 <div className="overflow-y-auto pr-2 space-y-2" style={{ maxHeight: '300px' }}>
                         {assignedDosen.length === 0 ? (
                         <p className="text-gray-500 text-center py-4" style={{ fontFamily: 'Urbanist, sans-serif' }}>
@@ -1032,22 +1037,6 @@ export default function DetailKelas() {
                     Tambah
                     </button>
                 </div>
-
-                {assignSuccess.mahasiswa && (
-                    <div className="mb-3">
-                        <SuccessMessageBox message={assignSuccess.mahasiswa} />
-                    </div>
-                )}
-                {removeSuccess.mahasiswa && (
-                    <div className="mb-3">
-                        <SuccessMessageBox message={removeSuccess.mahasiswa} />
-                    </div>
-                )}
-                {removeErrors.mahasiswa && (
-                    <div className="mb-3">
-                        <ErrorMessageBox message={removeErrors.mahasiswa} />
-                    </div>
-                )}
 
                 <div className="overflow-y-auto pr-2 space-y-2" style={{ maxHeight: '300px' }}>
                         {assignedMahasiswa.length === 0 ? (
