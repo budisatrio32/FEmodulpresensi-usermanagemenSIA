@@ -26,10 +26,15 @@ export const getEcho = () => {
 
   if (!echoInstance) {
     // Get token from cookies
-    const token = document.cookie
+    let token = document.cookie
       .split('; ')
       .find(row => row.startsWith('token='))
       ?.split('=')[1];
+
+    // Fallback to localStorage if not found in cookies
+    if (!token) {
+      token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    }
 
     const config = {
       broadcaster: 'reverb',
@@ -40,10 +45,11 @@ export const getEcho = () => {
       forceTLS: false,
       enabledTransports: ['ws', 'wss'],
       disableStats: true,
-      authEndpoint: 'http://localhost:8000/broadcasting/auth',
+      authEndpoint: 'http://localhost:8000/api/broadcasting/auth',
       auth: {
         headers: {
           Authorization: token ? `Bearer ${token}` : '',
+          Accept: 'application/json',
         },
       },
     };

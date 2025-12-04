@@ -105,7 +105,7 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
                             console.log('[ChatModal] Subscribing to chat.' + convId);
                             
                             echo.private(`chat.${convId}`)
-                                .listen('NewChatMessage', (e) => {
+                                .listen('.NewChatMessage', (e) => {
                                     console.log('[ChatModal] New message received:', e);
                                     // Only add if it's not from current user (to avoid duplicates)
                                     if (e.message.id_user_si !== currentUserId) {
@@ -127,7 +127,7 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
                                         }, 1000);
                                     }
                                 })
-                                .listen('MessageRead', (e) => {
+                                .listen('.MessageRead', (e) => {
                                     console.log('[ChatModal] Message read event:', e);
                                     // Update read status - IMPORTANT: This fires for SENDER when recipient reads
                                     setMessages(prev => prev.map(msg => {
