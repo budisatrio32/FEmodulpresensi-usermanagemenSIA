@@ -19,7 +19,8 @@ export default function DataTable({
   onDetail,
   onActivate,
   customRender = {},
-  headerClassName = "text-white"
+  headerClassName = "text-white",
+  nomertext = "No",
 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -120,7 +121,7 @@ export default function DataTable({
               color: '#015023',
               fontFamily: 'Urbanist, sans-serif'
             }}>
-              No
+              {nomertext}
             </th>
             
             {/* Dynamic columns */}

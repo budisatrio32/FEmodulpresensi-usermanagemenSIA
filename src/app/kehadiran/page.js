@@ -107,11 +107,15 @@ export default function KehadiranPage() {
 		{ key: 'detail', label: 'Detail', width: '120px' },
 	];
 
+	const handleDetailClick = (item) => {
+		router.push(`/kehadiran/${item.id_class}`);
+	}
+
 	const customRender = {
 		detail: (_value, item) => (
 			<div className="flex items-center justify-center">
 				<button
-					onClick={() => router.push(`/kehadiran/${item.kode_matkul}?id_class=${item.id_class}&nama=${encodeURIComponent(item.nama_matkul)}&kelas=${encodeURIComponent(item.kelas)}&sks=${item.sks}&dosen=${encodeURIComponent(item.dosen)}`)}
+					onClick={() => handleDetailClick(item)}
 					className="flex items-center gap-2 text-white px-4 py-2 transition shadow-sm hover:opacity-90 font-semibold"
 					style={{ backgroundColor: '#015023', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
 				>
