@@ -130,7 +130,7 @@ export default function DetailKehadiranDosen() {
 
 	// Columns untuk dosen
 	const columns = [
-		{ key: 'tanggal', label: 'Tanggal Pertemuan', className: 'text-left', cellClassName: 'text-left' },
+		{ key: 'tanggal', label: 'Tanggal', className: 'text-left', cellClassName: 'text-left' },
 		{ key: 'jam', label: 'Jam Mulai - Selesai', width: '180px', cellClassName: 'text-center' },
 		{ key: 'aksi', label: 'Aksi Presensi', width: '200px' },
 	];
