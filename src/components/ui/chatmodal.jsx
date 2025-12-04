@@ -18,7 +18,7 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
     // Refs
     const messagesEndRef = useRef(null);
 
-    // 2. Get current user ID from profile API
+    // Get current user ID from profile API
     useEffect(() => {
         const fetchCurrentUser = async () => {
             try {
@@ -69,7 +69,7 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
         dismissConversationNotifications();
     }, [isOpen, conversationId]);
 
-    // 4. Find or create conversation and load messages
+    // Find or create conversation and load messages
     useEffect(() => {
         if (!isOpen || !userId || !currentUserId) return;
 
@@ -351,11 +351,6 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
                                                         : 'bg-white text-gray-800 border border-gray-100 rounded-tl-sm'
                                                 }`}
                                             >
-                                                {!isMe && (
-                                                    <p className="text-[10px] font-bold mb-1 text-[#015023] opacity-80 uppercase tracking-wide">
-                                                        {msg.sender?.name || userName}
-                                                    </p>
-                                                )}
                                                 <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.message}</p>
                                                 <div className="flex items-center justify-end gap-1 mt-1">
                                                     <p
