@@ -9,22 +9,31 @@ import Navbar from '@/components/ui/navigation-menu';
 import DataTable from '@/components/ui/table';
 import Footer from '@/components/ui/footer';
 import LoadingEffect from '@/components/ui/loading-effect';
-import { getProfile } from '@/lib/profileApi';
+import Cookies from 'js-cookie';
 
 export default function KehadiranPage() {
 	const router = useRouter();
 	const [selectedSemester, setSelectedSemester] = useState('');
 	const [semesterOptions, setSemesterOptions] = useState([]);
 	const [classes, setClasses] = useState([]);
-	const [isLoading, setIsLoading] = useState(true);
+	const [isLoading, setIsLoading] = useState(false);
 	const [loadingClass, setLoadingClass] = useState(false);
 	const [errors, setErrors] = useState({});
 	const [userRole, setUserRole] = useState(null);
+	const [permissionChecked, setPermissionChecked] = useState(false);
+	const [loadingPermission, setLoadingPermission] = useState(true);
 
-	// Fetch all data on mount
+	// Check permission on mount
 	useEffect(() => {
-		fetchAll();
+		checkRoleAndPermission();
 	}, []);
+
+	// Fetch data after permission is checked
+	useEffect(() => {
+		if (permissionChecked) {
+			fetchAcademicPeriods();
+		}
+	}, [permissionChecked]);
 
 	// Fetch classes when semester changes or userRole is loaded
 	useEffect(() => {
@@ -33,26 +42,25 @@ export default function KehadiranPage() {
 		}
 	}, [selectedSemester, userRole]);
 
-	// Fetch All
-	const fetchAll = async () => {
-		setErrors(prev => ({...prev, fetch: null}));
-		setIsLoading(true);
-		await fetchUserProfile();
-		await fetchAcademicPeriods();
-		setIsLoading(false);
-	};
-
-	const fetchUserProfile = async () => {
+	// Check Role and Permission
+	const checkRoleAndPermission = async () => {
+		setErrors(prev => ({...prev, permission: null}));
+		setLoadingPermission(true);
 		try {
-			const data = await getProfile();
-			if (data.status === 'success') {
-				// Determine role from profile data
-				const role = data.data.role;
-				setUserRole(role);
+			// Get role from cookie
+			const role = Cookies.get('roles');
+			if (!(role === 'mahasiswa' || role === 'dosen')) {
+				router.push('/unauthorized');
+				return;
 			}
-		} catch (err) {
-			console.error('Error fetching user profile:', err);
-			setErrors(prev => ({...prev, fetch: 'Gagal memuat profil pengguna: ' + err.message}));
+			setUserRole(role);
+			
+			// Permission granted for kehadiran page (all authenticated users can access)
+			setPermissionChecked(true);
+		} catch (error) {
+			setErrors(prev => ({...prev, permission: 'Gagal memeriksa izin akses: ' + error.message}));
+		} finally {
+			setLoadingPermission(false);
 		}
 	};
 
@@ -80,12 +88,14 @@ export default function KehadiranPage() {
 	};
 
 	const fetchAcademicPeriods = async () => {
+		setErrors(prev => ({...prev, fetch: null}));
+		setIsLoading(true);
 		try {
-			const data = await getAcademicPeriods();
+			const response = await getAcademicPeriods();
 
-			if (data.status === 'success') {
+			if (response.status === 'success') {
 				// Transform to dropdown options
-				const options = data.data.map(period => ({
+				const options = response.data.map(period => ({
 					value: period.id_academic_period.toString(),
 					label: period.name,
 					is_active: period.is_active
@@ -102,6 +112,8 @@ export default function KehadiranPage() {
 			}
 		} catch (err) {
 			setErrors(prev => ({...prev, fetch: 'Terjadi kesalahan saat memuat data: ' + err.message}));
+		} finally {
+			setIsLoading(false);
 		}
 	};
 
@@ -139,8 +151,24 @@ export default function KehadiranPage() {
 		),
 	};
 
-	// Show loading
-	if (isLoading) {
+	// Show loading permission
+	if (loadingPermission) {
+		return <LoadingEffect message="Memeriksa izin akses..." />;
+	} else if (errors.permission) {
+		return (
+			<div className="min-h-screen bg-brand-light-sage">
+				<Navbar />
+				<div className="container mx-auto px-4 py-8 max-w-7xl">
+					<ErrorMessageBoxWithButton
+						message={errors.permission}
+						action={checkRoleAndPermission}
+						back={true}
+						actionback={handleBack}
+					/>
+				</div>
+			</div>
+		);
+	} else if (isLoading) {
 		return <LoadingEffect message="Memuat data periode akademik..." />;
 	} else if (errors.fetch) {
 		return (
@@ -149,7 +177,23 @@ export default function KehadiranPage() {
 				<div className="container mx-auto px-4 py-8 max-w-7xl">
 					<ErrorMessageBoxWithButton
 						message={errors.fetch}
-						action={fetchAll}
+						action={fetchAcademicPeriods}
+						back={true}
+						actionback={handleBack}
+					/>
+				</div>
+			</div>
+		);
+	} else if  (loadingClass) {
+		return <LoadingEffect message="Memuat data kelas..." />;
+	} else if (errors.classes) {
+		return (
+			<div className="min-h-screen bg-brand-light-sage">
+				<Navbar />
+				<div className="container mx-auto px-4 py-8 max-w-7xl">
+					<ErrorMessageBoxWithButton
+						message={errors.classes}
+						action={fetchClasses}
 						back={true}
 						actionback={handleBack}
 					/>

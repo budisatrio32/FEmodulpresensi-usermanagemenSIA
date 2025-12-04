@@ -18,3 +18,16 @@ export const getPermissionForAClass = async (classId) => {
         throw (error.response?.data ?? error);
     }
 };
+/**
+ * Get permission for a specific class for student
+ * @param {string} classId - ID of the class
+ * @returns {Promise} Response dengan data permission
+ */
+export const getStudentPermissionForAClass = async (classId) => {
+    try {
+        const response = await api.get(`student/classes/${classId}/permission`);
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
+};
