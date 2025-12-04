@@ -181,7 +181,7 @@ export default function AkunManagerDashboard() {
               className="text-white px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition shadow-md hover:opacity-90" 
               style={{ backgroundColor: '#015023', borderRadius: '12px' }}
             >
-              + Tambah
+              + Tambah Data Akun Manager
             </button>
           </div>
         </div>
