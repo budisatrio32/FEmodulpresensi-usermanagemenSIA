@@ -8,7 +8,7 @@ function ErrorMessageBox({
 }) {
     return (
         <div 
-            className="mb-6 p-4 rounded-lg border"
+            className="my-6 p-4 rounded-lg border"
             style={{
                 backgroundColor: '#FEE2E2',
                 borderColor: '#EF4444'
@@ -38,7 +38,7 @@ function ErrorMessageBoxWithButton({
 }) {
     return (
         <div 
-            className="mb-6 p-4 rounded-lg border"
+            className="my-6 p-4 rounded-lg border"
             style={{
                 backgroundColor: '#FEE2E2',
                 borderColor: '#EF4444'
@@ -91,7 +91,7 @@ function SuccessMessageBox({
 }) {
     return (
         <div 
-            className="mb-6 p-4 rounded-lg border"
+            className="my-6 p-4 rounded-lg border"
             style={{
                 backgroundColor: '#D1FAE5',
                 borderColor: '#10B981'
@@ -118,7 +118,7 @@ function SuccessMessageBoxWithButton({
 }) {
     return (
         <div 
-            className="mb-6 p-4 rounded-lg border"
+            className="my-6 p-4 rounded-lg border"
             style={{
                 backgroundColor: '#D1FAE5',
                 borderColor: '#10B981'

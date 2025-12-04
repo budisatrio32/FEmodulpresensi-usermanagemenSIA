@@ -5,12 +5,12 @@ import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, CalendarDays, QrCode, UserCheck, ClipboardCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getClassSchedules, getStudentAttendanceHistoryByClass } from '@/lib/attendanceApi';
-import { getProfile } from '@/lib/profileApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 import Navbar from '@/components/ui/navigation-menu';
 import DataTable from '@/components/ui/table';
 import Footer from '@/components/ui/footer';
 import LoadingEffect from '@/components/ui/loading-effect';
+import Cookies from 'js-cookie';
 
 export default function DetailKehadiranPage({ params }) {
 const router = useRouter();
@@ -42,17 +42,14 @@ useEffect(() => {
 	}
 }, [role, id_class]);
 
-// Fetch user role from profile API
-const fetchUserRole = async () => {
-	try {
-		const data = await getProfile();
-		if (data.status === 'success') {
-			setRole(data.data.role);
-		}
-	} catch (err) {
-		console.error('Error fetching user role:', err);
-		setRole('mahasiswa'); // fallback
-	}
+// Fetch user role from cookies
+const fetchUserRole = () => {
+	const role = Cookies.get('roles');
+	if (role) {
+		setRole(role);
+    } else {
+        setError('Role pengguna tidak ditemukan. Silakan login kembali.');
+    }
 };
 
 // Fetch data based on role
@@ -60,7 +57,6 @@ const fetchData = async () => {
 	setLoading(true);
 	try {
 		setError(null);
-		
 		if (role === 'dosen') {
 			await fetchClassSchedules();
 		} else if (role === 'mahasiswa') {
@@ -290,7 +286,7 @@ return (
         {/* Statistics for Student */}
         {role === 'mahasiswa' && statistics && (
         <div className="border-t pt-6" style={{ borderColor: '#e5e7eb' }}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {/* Total Pertemuan */}
             <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl" style={{ backgroundColor: '#015023' }}>
@@ -313,10 +309,25 @@ return (
                 </div>
                 <div>
                 <p className="text-sm font-medium" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
-                    Sudah Presensi
+                    Sudah Hadir
                 </p>
                 <p className="text-3xl font-bold" style={{ color: '#16874B', fontFamily: 'Urbanist, sans-serif' }}>
                     {statistics.sudah_presensi}
+                </p>
+                </div>
+            </div>
+
+            {/* Total Tidak Hadir */}
+            <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl" style={{ backgroundColor: '#DC2626' }}>
+                <ClipboardCheck className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                <p className="text-sm font-medium" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
+                    Total Tidak Hadir
+                </p>
+                <p className="text-3xl font-bold" style={{ color: '#DC2626', fontFamily: 'Urbanist, sans-serif' }}>
+                    {statistics.total_tidak_hadir || 0}
                 </p>
                 </div>
             </div>
