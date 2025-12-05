@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Navbar from '@/components/ui/navigation-menu'
 import Footer from '@/components/ui/footer'
 import LoadingEffect from '@/components/ui/loading-effect'
@@ -15,151 +15,21 @@ import Cookies from 'js-cookie'
 
 export default function NotifikasiPage() {
   const router = useRouter()
+  // Gunakan searchParams untuk menangkap ?highlight=...
+  const searchParams = useSearchParams()
+  
   const [filter, setFilter] = useState('all') // all, announcement, chat
   const [allNotifications, setAllNotifications] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false)
-  const [highlightId, setHighlightId] = useState(null)
+  
+  // Ambil ID highlight dari URL saat pertama load
+  const [highlightId, setHighlightId] = useState(searchParams.get('highlight'))
 
   // Chat modal state
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [chatUser, setChatUser] = useState({ id: '', name: '', nim: '', conversationId: '' })
-
-  // WebSocket Real-time Notification Listener
-  useEffect(() => {
-    const echo = getEcho()
-    if (!echo) {
-      console.warn('[NotifPage] Echo not initialized')
-      return
-    }
-
-    // Get user ID - PRIORITY: Cookies, FALLBACK: localStorage
-    let userId = null
-    
-    // Try cookies first (recommended)
-    const userIdFromCookie = Cookies.get('user_id')
-    if (userIdFromCookie) {
-      userId = userIdFromCookie
-      console.log('[NotifPage] User ID from cookies:', userId)
-    } else {
-      // Fallback to localStorage
-      const userStr = localStorage.getItem('user')
-      if (userStr) {
-        try {
-          const user = JSON.parse(userStr)
-          userId = user.id_user_si
-          console.log('[NotifPage] User ID from localStorage (fallback):', userId)
-        } catch (err) {
-          console.error('[NotifPage] Failed to parse user data:', err)
-        }
-      }
-    }
-
-    if (!userId) {
-      console.warn('[NotifPage] No user ID found in cookies or localStorage')
-      return
-    }
-
-    console.log('[NotifPage] Setting up subscription for user:', userId)
-
-    // Wait for connection to be established
-    const setupSubscription = () => {
-      const pusher = echo.connector?.pusher
-      if (!pusher) {
-        console.error('[NotifPage] Pusher instance not found')
-        return
-      }
-
-      const state = pusher.connection.state
-      console.log('[NotifPage] Current connection state:', state)
-
-      if (state === 'connected') {
-        subscribeToChannel()
-      } else {
-        console.log('[NotifPage] Waiting for connection...')
-        pusher.connection.bind('connected', subscribeToChannel)
-      }
-    }
-
-    const subscribeToChannel = () => {
-      console.log('[NotifPage] Subscribing to user channel:', userId)
-      
-      const channel = echo.private(`user.${userId}`)
-
-      channel
-        .listen('.NewNotification', (event) => {
-          console.log('[NotifPage] ✅ New notification received:', event)
-          
-          // Add new notification to the list
-          const newNotif = {
-            id: event.notification.id_notification || Date.now(),
-            type: event.notification.type,
-            judul: event.notification.title,
-            isi: event.notification.message,
-            tanggal: event.notification.sentAt,
-            isRead: event.notification.isRead,
-            metadata: event.notification.metadata
-          }
-          
-          console.log('[NotifPage] Adding notification to list:', newNotif)
-          setAllNotifications(prev => [newNotif, ...prev])
-          
-          // Optionally fetch full list to sync with backend after 1 second
-          setTimeout(() => {
-            fetchNotifications()
-          }, 1000)
-        })
-        .error((error) => {
-          console.error('[NotifPage] ❌ Channel subscription error:', error)
-        })
-
-      console.log('[NotifPage] ✅ Subscription setup complete')
-    }
-
-    setupSubscription()
-
-    return () => {
-      console.log('[NotifPage] Cleaning up subscription')
-      echo.leave(`user.${userId}`)
-    }
-  }, [])
-
-  // Fetch notifications on mount
-  useEffect(() => {
-    fetchNotifications()
-    
-    // Check for highlight parameter in URL
-    const params = new URLSearchParams(window.location.search)
-    const highlight = params.get('highlight')
-    if (highlight) {
-      setHighlightId(parseInt(highlight))
-      
-      // Auto-scroll to highlighted notification with retry logic
-      const scrollToNotification = () => {
-        const element = document.getElementById(`notif-${highlight}`)
-        if (element) {
-          // Scroll with offset for better visibility
-          const yOffset = -100 // Offset dari top (untuk spacing)
-          const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset
-          window.scrollTo({ top: y, behavior: 'smooth' })
-          
-          // Remove highlight after 3 seconds
-          setTimeout(() => {
-            setHighlightId(null)
-            // Clean URL without reload
-            window.history.replaceState({}, '', '/notif')
-          }, 3000)
-        } else {
-          // Retry if element not found (data might still be loading)
-          setTimeout(scrollToNotification, 100)
-        }
-      }
-      
-      // Wait for data to load and DOM to render
-      setTimeout(scrollToNotification, 300)
-    }
-  }, [])
 
   const fetchNotifications = async () => {
     try {
@@ -191,17 +61,146 @@ export default function NotifikasiPage() {
     }
   }
 
+  useEffect(() => {
+    fetchNotifications()
+  }, [])
+
+  // WebSocket Real-time Notification Listener
+  useEffect(() => {
+    const echo = getEcho()
+    if (!echo) {
+      console.warn('[NotifPage] Echo not initialized')
+      return
+    }
+
+    // Get user ID dengan cookies dan localStorage fallback
+    let userId = null
+    const userIdFromCookie = Cookies.get('user_id')
+    if (userIdFromCookie) {
+      userId = userIdFromCookie
+    } else {
+      const userStr = localStorage.getItem('user')
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr)
+          userId = user.id_user_si
+        } catch (err) {
+          console.error('[NotifPage] Failed to parse user data:', err)
+        }
+      }
+    }
+
+    if (!userId) return
+
+    const setupSubscription = () => {
+      const pusher = echo.connector?.pusher
+      if (!pusher) return
+
+      const state = pusher.connection.state
+      if (state === 'connected') {
+        subscribeToChannel()
+      } else {
+        pusher.connection.bind('connected', subscribeToChannel)
+      }
+    }
+
+    const subscribeToChannel = () => {
+      const channel = echo.private(`user.${userId}`)
+
+      channel
+        .listen('.NewNotification', (event) => {
+          console.log('[NotifPage] ✅ New notification received:', event)
+
+          // Generate ID unik agar tidak bentrok key React
+          const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+          
+          const newNotif = {
+            id: event.notification.id_notification || tempId,
+            type: event.notification.type,
+            judul: event.notification.title,
+            isi: event.notification.message,
+            tanggal: event.notification.sentAt,
+            isRead: event.notification.isRead,
+            metadata: event.notification.metadata
+          }
+          
+          setAllNotifications(prev => {
+            // Cek duplikat agar tidak muncul ganda
+            const isDuplicate = prev.some(n => 
+                n.judul === newNotif.judul && 
+                n.isi === newNotif.isi && 
+                (Date.now() - new Date(n.tanggal).getTime() < 5000)
+            )
+            if (isDuplicate) return prev
+
+            return [newNotif, ...prev]
+          })
+        })
+    }
+
+    setupSubscription()
+
+    return () => {
+      if (userId) echo.leave(`user.${userId}`)
+    }
+  }, [])
+
+  // Logic Auto Scroll & Highlight (akan berjalan setelah notifikasi dimuat)
+  useEffect(() => {
+    if (!highlightId || loading || allNotifications.length === 0) return
+
+    const scrollToNotification = () => {
+      const targetNotif = allNotifications.find(n => n.id.toString() === highlightId.toString())
+      
+      if (targetNotif) {
+        const element = document.getElementById(`notif-${targetNotif.id}`)
+        
+        if (element) {
+          console.log('Scrolling to notification:', highlightId)
+          const yOffset = -120
+          const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset
+          
+          window.scrollTo({ top: y, behavior: 'smooth' })
+          
+          // Efek highlight
+          const originalTransition = element.style.transition
+          const originalBg = element.style.backgroundColor
+
+          element.style.transition = 'background-color 0.5s ease'
+          element.style.backgroundColor = '#FEF3C7' 
+          
+          // Hapus highlight dan parameter URL setelah 3 detik
+          setTimeout(() => {
+            setHighlightId(null)
+            window.history.replaceState({}, '', '/notif') 
+            element.style.backgroundColor = originalBg
+            element.style.transition = originalTransition
+          }, 3000)
+        }
+      }
+    }
+
+    const timer = setTimeout(scrollToNotification, 300)
+    return () => clearTimeout(timer)
+
+  }, [highlightId, loading, allNotifications])
+
+
   const handleMarkAsRead = async (notificationId) => {
+    // Cek ID sementara (realtime)
+    const isTempId = typeof notificationId === 'string' && notificationId.startsWith('temp-')
+
+    setAllNotifications(prev =>
+      prev.map(notif =>
+        notif.id === notificationId ? { ...notif, isRead: true } : notif
+      )
+    )
+
+    // Jangan panggil API jika ID-nya temp
+    if (isTempId) return
+
     try {
       await markAsRead(notificationId)
-
-      setAllNotifications(prev =>
-        prev.map(notif =>
-          notif.id === notificationId
-            ? { ...notif, isRead: true }
-            : notif
-        )
-      )
     } catch (err) {
       console.error('Error marking as read:', err)
     }
@@ -209,47 +208,49 @@ export default function NotifikasiPage() {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await markAllAsRead()
-
       setAllNotifications(prev =>
         prev.map(notif => ({ ...notif, isRead: true }))
       )
+      await markAllAsRead()
     } catch (err) {
       console.error('Error marking all as read:', err)
+      fetchNotifications()
     }
   }
 
   const handleDeleteNotification = async (notificationId) => {
     try {
-      await deleteNotification(notificationId)
-
+      // Cek ID sementara
+      const isTempId = typeof notificationId === 'string' && notificationId.startsWith('temp-')
+      
+      // Update UI optimis
       setAllNotifications(prev =>
         prev.filter(notif => notif.id !== notificationId)
       )
+
+      if (isTempId) return
+
+      await deleteNotification(notificationId)
     } catch (err) {
       console.error('Error deleting notification:', err)
+      fetchNotifications() 
     }
   }
 
   const handleDeleteAll = () => {
-    // Show confirmation dialog
     setShowDeleteAllDialog(true)
   }
 
   const handleNotificationClick = async (notif) => {
-    // Mark as read if unread
     if (!notif.isRead) {
       await handleMarkAsRead(notif.id)
     }
 
-    // Handle redirect for chat notifications
     if (notif.type === 'chat' && notif.metadata?.id_conversation) {
       try {
-        // Fetch conversation detail to get participant info
         const response = await getConversationDetail(notif.metadata.id_conversation)
         const otherParticipant = response.data?.conversation?.other_participant
         
-        // Open chat modal directly
         setChatUser({
           id: otherParticipant?.id_user_si?.toString() || '',
           name: otherParticipant?.name || 'User',
@@ -266,20 +267,20 @@ export default function NotifikasiPage() {
   const confirmDeleteAll = async () => {
     try {
       setShowDeleteAllDialog(false)
-      setLoading(true) // Set loading agar user tidak klik tombol berkali-kali
+      setLoading(true)
       
-      // Delete all notifications one by one
-      const deletePromises = allNotifications.map(notif => 
-        deleteNotification(notif.id)
-      )
-      
+      // Filter yang punya ID asli saja untuk request ke server
+      const realIds = allNotifications
+        .filter(n => !(typeof n.id === 'string' && n.id.startsWith('temp-')))
+        .map(n => n.id)
+
+      // Delete request
+      const deletePromises = realIds.map(id => deleteNotification(id))
       await Promise.all(deletePromises)
 
-      // Clear local state
       setAllNotifications([])
     } catch (err) {
       console.error('Error deleting all notifications:', err)
-      // Jika error, refresh data agar sinkron dengan server
       fetchNotifications() 
     } finally {
       setLoading(false)
@@ -291,8 +292,12 @@ export default function NotifikasiPage() {
     : allNotifications.filter(notif => notif.type === filter)
 
   const formatDate = (dateString) => {
+    // Handle tanggal tidak valid
+    if (!dateString) return ''
     const date = new Date(dateString)
-    const options = { year: 'numeric', month: 'long', day: 'numeric' }
+    if (isNaN(date.getTime())) return 'Baru saja'
+    
+    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }
     return date.toLocaleDateString('id-ID', options)
   }
 
@@ -340,9 +345,7 @@ export default function NotifikasiPage() {
                 </p>
               </div>
 
-              {/* Action Buttons */}
               <div style={{ display: 'flex', gap: '12px' }}>
-                {/* Mark All as Read Button */}
                 {unreadCount > 0 && (
                   <button
                     onClick={handleMarkAllAsRead}
@@ -365,7 +368,6 @@ export default function NotifikasiPage() {
                   </button>
                 )}
 
-                {/* Delete All Button */}
                 {allNotifications.length > 0 && (
                   <button
                     onClick={handleDeleteAll}
@@ -466,8 +468,7 @@ export default function NotifikasiPage() {
             ) : (
               filteredNotifications.map((notif) => {
                 const Icon = notif.type === 'chat' ? MessageCircle : Bell;
-                
-                const isHighlighted = highlightId === notif.id;
+                const isHighlighted = highlightId && (notif.id.toString() === highlightId.toString());
                 
                 return (
                   <div 
@@ -488,7 +489,6 @@ export default function NotifikasiPage() {
                       cursor: notif.type === 'chat' ? 'pointer' : 'default'
                     }}
                   >
-                    {/* Header Badge & Unread Dot */}
                     <div style={{
                       display: 'flex',
                       justifyContent: 'space-between',
@@ -520,7 +520,6 @@ export default function NotifikasiPage() {
                       </div>
                     </div>
 
-                    {/* Content */}
                     <div>
                       <h3 style={{
                         fontSize: '20px',
@@ -532,7 +531,6 @@ export default function NotifikasiPage() {
                         {notif.judul}
                       </h3>
 
-                      {/* Date and sender info */}
                       <div style={{
                         display: 'flex',
                         gap: '12px',
@@ -546,7 +544,6 @@ export default function NotifikasiPage() {
                         <span>{formatDate(notif.tanggal)}</span>
                       </div>
 
-                      {/* Rich template untuk class announcement */}
                       {notif.type === 'announcement' && notif.metadata?.subject_name && (
                         <div style={{
                           marginBottom: '12px',
@@ -555,36 +552,14 @@ export default function NotifikasiPage() {
                           borderRadius: '8px',
                           borderLeft: '4px solid #015023'
                         }}>
-                          <p style={{
-                            fontSize: '14px',
-                            color: '#015023',
-                            margin: 0,
-                            marginBottom: '4px'
-                          }}>
-                            <strong>Yth.</strong> {notif.metadata.student_name || 'Mahasiswa'} ({notif.metadata.student_nim || 'NIM'})
-                          </p>
-                          <p style={{
-                            fontSize: '14px',
-                            color: '#015023',
-                            margin: 0,
-                            marginBottom: '4px'
-                          }}>
+                          <p style={{ fontSize: '14px', color: '#015023', margin: '0 0 4px 0' }}>
                             <strong>Matakuliah:</strong> {notif.metadata.subject_code} - {notif.metadata.subject_name}
                           </p>
-                          <p style={{
-                            fontSize: '14px',
-                            color: '#015023',
-                            margin: 0,
-                            marginBottom: '4px'
-                          }}>
+                          <p style={{ fontSize: '14px', color: '#015023', margin: '0 0 4px 0' }}>
                             <strong>Kelas:</strong> {notif.metadata.class_code}
                           </p>
                           {notif.metadata.lecturer_name && (
-                            <p style={{
-                              fontSize: '14px',
-                              color: '#015023',
-                              margin: 0
-                            }}>
+                            <p style={{ fontSize: '14px', color: '#015023', margin: 0 }}>
                               <strong>Dosen:</strong> {notif.metadata.lecturer_name}
                             </p>
                           )}
@@ -596,19 +571,17 @@ export default function NotifikasiPage() {
                         color: '#015023',
                         opacity: 0.8,
                         lineHeight: '1.6',
-                        margin: 0,
-                        marginBottom: '16px'
+                        margin: '0 0 16px 0',
+                        whiteSpace: 'pre-wrap'
                       }}>
                         {notif.isi}
                       </p>
 
-                      {/* Action Buttons */}
                       <div style={{
                         display: 'flex',
                         gap: '8px',
                         justifyContent: 'flex-end'
                       }}>
-                        {/* Mark as Read Button - Only show if unread */}
                         {!notif.isRead && (
                           <button
                             onClick={(e) => {
@@ -626,17 +599,14 @@ export default function NotifikasiPage() {
                               alignItems: 'center',
                               justifyContent: 'center',
                               transition: 'opacity 0.2s',
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                              border: 'none'
                             }}
-                            onMouseEnter={(e) => e.target.style.opacity = '0.8'}
-                            onMouseLeave={(e) => e.target.style.opacity = '1'}
                             title="Tandai sudah dibaca"
                           >
                             <Check size={20} strokeWidth={3} />
                           </button>
                         )}
 
-                        {/* Dismiss Button */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
@@ -653,10 +623,8 @@ export default function NotifikasiPage() {
                             alignItems: 'center',
                             justifyContent: 'center',
                             transition: 'opacity 0.2s',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            border: 'none'
                           }}
-                          onMouseEnter={(e) => e.target.style.opacity = '0.8'}
-                          onMouseLeave={(e) => e.target.style.opacity = '1'}
                           title="Hapus notifikasi"
                         >
                           <X size={20} strokeWidth={3} />
@@ -673,7 +641,6 @@ export default function NotifikasiPage() {
 
       <Footer />
 
-      {/* Delete All Confirmation Dialog */}
       <AlertConfirmationDialog
         open={showDeleteAllDialog}
         onOpenChange={setShowDeleteAllDialog}
@@ -684,12 +651,10 @@ export default function NotifikasiPage() {
         cancelText="Batal"
       />
 
-      {/* Chat Modal */}
       <ChatModal
         isOpen={isChatOpen}
         onClose={() => {
           setIsChatOpen(false)
-          // Refresh notifications after closing chat to update read status
           fetchNotifications()
         }}
         userId={chatUser.id}

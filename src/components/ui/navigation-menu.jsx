@@ -233,8 +233,25 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
             console.log('[NavbarNotification] ✅ New notification received:', event);
             
             setNotifications(prev => {
+              // Biar ngecek duplikat. Jangan masukin kalo notifikasi dengan judul & pesan sama sudah ada
+              const isDuplicate = prev.some(n => 
+                n.title === event.notification.title && 
+                n.message === event.notification.message &&
+                // Fungsi tambahan biar ngecek waktu juga biar ngga blok notif sama yang beda waktu
+                (Date.now() - new Date(n.date).getTime() < 5000) 
+              );
+
+              if (isDuplicate) {
+                console.log('[Navbar] Duplicate notification ignored');
+                return prev;
+              }
+
+              // Generate id yg unik dengan Math.random() biar Key ngga tabrakan
+              // Backend ngirim id_notification: null, jadi butuh tempID yang bagus dan kuat
+              const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+              
               const newNotif = {
-                id: event.notification.id_notification || Date.now(),
+                id: event.notification.id_notification || tempId,
                 type: event.notification.type,
                 title: event.notification.title,
                 message: event.notification.message,
@@ -276,17 +293,29 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
 
   // Handle mark as read
   const handleMarkAsRead = async (notificationId) => {
-    try {
-      await markAsRead(notificationId);
-      setNotifications(prev =>
-        prev.map(notif =>
-          notif.id === notificationId ? { ...notif, isRead: true } : notif
-        )
-      );
-    } catch (err) {
-      console.error('Error marking as read:', err);
-    }
-  };
+  // Cek apakah ini ID sementara (string)?
+  const isTempId = typeof notificationId === 'string' && notificationId.startsWith('temp-');
+
+  // Update UI dulu (Optimistic UI)
+  setNotifications(prev =>
+    prev.map(notif =>
+      notif.id === notificationId ? { ...notif, isRead: true } : notif
+    )
+  );
+
+  // Jika ID sementara, JANGAN panggil API (karena belum ada di DB atau backend belum sync)
+  if (isTempId) {
+    console.log('[Navbar] Skipping API call for temporary ID:', notificationId);
+    return;
+  }
+
+  try {
+    await markAsRead(notificationId);
+  } catch (err) {
+    console.error('Error marking as read:', err);
+    // Opsional: Revert UI jika gagal (tapi biasanya tidak perlu untuk UX 'read')
+  }
+};
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
