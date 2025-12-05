@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Bell, User, UserCog, LogOut } from 'lucide-react'
+import { Bell, User, UserCog, LogOut, Menu, X } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { useAuth } from '@/lib/auth-context'
@@ -48,17 +48,94 @@ const NavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
   </Link>
 ))
 
-const NavbarMenu = React.forwardRef(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("hidden md:flex items-center gap-4 lg:gap-6", className)}
-    {...props}
-  >
-    <NavbarMenuItem href="/akademik">Akademik</NavbarMenuItem>
-    <NavbarMenuItem href="/kehadiran">Kehadiran</NavbarMenuItem>
-    <NavbarMenuItem href="/hasil-studi">Hasil Studi</NavbarMenuItem>
-  </div>
+const NavbarMenu = React.forwardRef(({ className, isMobileMenuOpen, setIsMobileMenuOpen, ...props }, ref) => (
+  <>
+    {/* Desktop Menu */}
+    <div
+      ref={ref}
+      className={cn("hidden md:flex items-center gap-4 lg:gap-6", className)}
+      {...props}
+    >
+      <NavbarMenuItem href="/akademik">Akademik</NavbarMenuItem>
+      <NavbarMenuItem href="/kehadiran">Kehadiran</NavbarMenuItem>
+      <NavbarMenuItem href="/hasil-studi">Hasil Studi</NavbarMenuItem>
+    </div>
+
+    {/* Mobile Menu Overlay */}
+    {isMobileMenuOpen && (
+      <div 
+        className="fixed inset-0 z-40 md:hidden"
+        style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}
+        onClick={() => setIsMobileMenuOpen(false)}
+      />
+    )}
+
+    {/* Mobile Menu Sidebar */}
+    <div
+      className={cn(
+        "fixed top-0 left-0 h-full bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 md:hidden w-64",
+        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+      )}
+    >
+      {/* Mobile Menu Header */}
+      <div className="flex items-center justify-between p-4 border-b" style={{ backgroundColor: '#015023' }}>
+        <span className="text-white font-semibold text-lg">Menu</span>
+        <button
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="text-white hover:text-gray-200 transition-colors"
+        >
+          <X size={24} />
+        </button>
+      </div>
+
+      {/* Mobile Menu Items */}
+      <div className="flex flex-col p-4 gap-2">
+        <MobileNavMenuItem 
+          href="/akademik" 
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          Akademik
+        </MobileNavMenuItem>
+        <MobileNavMenuItem 
+          href="/kehadiran" 
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          Kehadiran
+        </MobileNavMenuItem>
+        <MobileNavMenuItem 
+          href="/hasil-studi" 
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          Hasil Studi
+        </MobileNavMenuItem>
+      </div>
+    </div>
+  </>
 ))
+
+const MobileNavMenuItem = React.forwardRef(({ className, href, children, onClick, ...props }, ref) => {
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const isActive = pathname === href;
+  
+  return (
+    <Link
+      href={href}
+      ref={ref}
+      onClick={onClick}
+      className={cn(
+        "px-4 py-3 rounded-lg font-medium text-base transition-colors duration-200",
+        isActive 
+          ? "bg-green-50 text-green-700" 
+          : "text-gray-700 hover:bg-gray-50",
+        className
+      )}
+      style={isActive ? { backgroundColor: '#E6F4EA', color: '#015023' } : {}}
+      {...props}
+    >
+      {children}
+    </Link>
+  );
+})
 
 const NavbarMenuItem = React.forwardRef(({ className, href, children, ...props }, ref) => {
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
@@ -542,28 +619,58 @@ const NavbarProfile = React.forwardRef(({ className, userName, userImage, Name, 
   )
 })
 
-const Navbar = React.forwardRef(({ className, ...props }, ref) => (
-  <nav
-    ref={ref}
-    className={cn("bg-brand-green shadow-md rounded-b-[12px] sm:rounded-b-[18px]", className)}
-    style={{ backgroundColor: '#015023' }}
-    {...props}
-  >
-    <div className="container mx-auto px-4 sm:px-6">
-      <div className="flex justify-between items-center h-16 sm:h-20">
-        <NavbarBrand />
-        <div className="flex items-center gap-6 sm:gap-10 lg:gap-13">
-          <NavbarMenu />
-          <NavbarActions />
+const Navbar = React.forwardRef(({ className, ...props }, ref) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+
+  // Close mobile menu on window resize
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return (
+    <nav
+      ref={ref}
+      className={cn("bg-brand-green shadow-md rounded-b-[12px] sm:rounded-b-[18px]", className)}
+      style={{ backgroundColor: '#015023' }}
+      {...props}
+    >
+      <div className="container mx-auto px-4 sm:px-6">
+        <div className="flex justify-between items-center h-16 sm:h-20">
+          <div className="flex items-center gap-3">
+            {/* Hamburger Menu Button - Only visible on mobile/tablet (<800px) */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden text-white hover:text-gray-200 transition-colors p-2"
+              aria-label="Toggle menu"
+            >
+              <Menu size={24} />
+            </button>
+            <NavbarBrand />
+          </div>
+          <div className="flex items-center gap-6 sm:gap-10 lg:gap-13">
+            <NavbarMenu 
+              isMobileMenuOpen={isMobileMenuOpen}
+              setIsMobileMenuOpen={setIsMobileMenuOpen}
+            />
+            <NavbarActions />
+          </div>
         </div>
       </div>
-    </div>
-  </nav>
-))
+    </nav>
+  );
+})
 
 NavbarBrand.displayName = "NavbarBrand"
 NavbarMenu.displayName = "NavbarMenu"
 NavbarMenuItem.displayName = "NavbarMenuItem"
+MobileNavMenuItem.displayName = "MobileNavMenuItem"
 NavbarActions.displayName = "NavbarActions"
 NavbarNotification.displayName = "NavbarNotification"
 NavbarProfile.displayName = "NavbarProfile"
@@ -574,6 +681,7 @@ export {
   NavbarBrand,
   NavbarMenu,
   NavbarMenuItem,
+  MobileNavMenuItem,
   NavbarActions,
   NavbarNotification,
   NavbarProfile
