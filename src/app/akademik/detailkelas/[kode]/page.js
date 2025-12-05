@@ -248,7 +248,7 @@ export default function DetailKelasPage({ params }) {
 										Kode: {classInfo.code_subject || '-'}
 									</span>
 									<span className="px-3 py-1 rounded-lg font-medium" style={{ backgroundColor: '#DABC4E', color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-										Semester: {classInfo.academic_period || '-'}
+										{classInfo.academic_period || '-'}
 									</span>
 									<span className="px-3 py-1 rounded-lg font-medium" style={{ backgroundColor: '#f3f4f6', color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
 										{classInfo.sks || 0} SKS
