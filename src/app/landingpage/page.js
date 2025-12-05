@@ -5,7 +5,7 @@ import { Container, SectionTitle, Card, CardHeader, CardContent, ScheduleItem, N
 import Navbar from '@/components/ui/navigation-menu';
 import Footer from '@/components/ui/footer';
 import { useState, useEffect } from 'react';
-import { getMyClasses, formatTime, getDayName, formatDate } from '@/lib/scheduleApi';
+import { getMySchedules, formatTime, getDayName, formatDate } from '@/lib/scheduleApi';
 import { getNotifications, markAsRead } from '@/lib/notificationApi';
 import Cookies from 'js-cookie';
 import Link from 'next/link';
@@ -15,7 +15,7 @@ import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 
 export default function LandingPage() {
     const router = useRouter();
-    const [classes, setClasses] = useState([]);
+    const [schedules, setSchedules] = useState([]);
     const [announcements, setAnnouncements] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [userRole, setUserRole] = useState('mahasiswa');
@@ -37,16 +37,16 @@ export default function LandingPage() {
         setIsLoading(true);
         setError(null);
         try {
-            // Fetch classes and announcements in parallel
-            const [classesRes, notificationsRes] = await Promise.all([
-                getMyClasses(role),
+            // Fetch schedules and announcements in parallel
+            const [schedulesRes, notificationsRes] = await Promise.all([
+                getMySchedules(role),
                 getNotifications({ type: 'announcement' })
             ]);
 
-            if (classesRes.status === 'success') {
-                setClasses(classesRes.data || []);
+            if (schedulesRes.status === 'success') {
+                setSchedules(schedulesRes.data || []);
             } else {
-                throw new Error(classesRes.message || 'Gagal mengambil data kelas');
+                throw new Error(schedulesRes.message || 'Gagal mengambil data jadwal');
             }
 
             if (notificationsRes.status === 'success') {
@@ -62,14 +62,16 @@ export default function LandingPage() {
         }
     };
 
-    // Filter today's schedules from classes
+    // Filter today's schedules
     const getTodaySchedules = () => {
         const today = new Date();
         const todayName = getDayName(today.getDay());
         
-        // Since API doesn't return schedules relation, we'll use the class data directly
-        // This is a workaround - in production, backend should include schedules relation
-        return classes;
+        // Filter schedules by today's day
+        return schedules.filter(classItem => {
+            if (!classItem.schedules || classItem.schedules.length === 0) return false;
+            return classItem.schedules.some(schedule => schedule.day_of_week === todayName);
+        });
     };
 
 return (
@@ -103,24 +105,38 @@ return (
                 <div className="text-center py-8 text-gray-500">
                     Gagal memuat data jadwal
                 </div>
-            ) : classes.length > 0 ? (
-                classes.map((classItem) => (
-                    <ScheduleItem
-                        key={classItem.id_class}
-                        matakuliah={classItem.name_subject || classItem.subject?.name_subject || '-'}
-                        waktu="Lihat jadwal lengkap di halaman kelas"
-                        kelas={`Kelas ${classItem.code_class}`}
-                        dosen={`Dosen: ${classItem.lecturers?.map(lec => lec.name).join(', ') || '-'}`}
-                        ruang="-"
-                        sks={`${classItem.sks || classItem.subject?.sks || 0} SKS`}
-                        kode={classItem.code_subject || classItem.subject?.code_subject || '-'}
-                    />
-                ))
-            ) : (
-                <div className="text-center py-8 text-gray-500">
-                    Tidak ada data kelas tersedia
-                </div>
-            )}
+            ) : (() => {
+                const todaySchedules = getTodaySchedules();
+                return todaySchedules.length > 0 ? (
+                    todaySchedules.map((classItem) => {
+                        // Get today's schedules for this class
+                        const todayName = getDayName(new Date().getDay());
+                        const todayClassSchedules = classItem.schedules?.filter(
+                            schedule => schedule.day_of_week === todayName
+                        ) || [];
+                        
+                        return todayClassSchedules.map((schedule, idx) => (
+                            <ScheduleItem
+                                key={`${classItem.id_class}-${idx}`}
+                                matakuliah={classItem.name_subject || classItem.subject?.name_subject || '-'}
+                                waktu={schedule.start_time && schedule.end_time 
+                                    ? `${formatTime(schedule.start_time)} - ${formatTime(schedule.end_time)}`
+                                    : '-'
+                                }
+                                kelas={`Kelas ${classItem.code_class}`}
+                                dosen={`Dosen: ${classItem.lecturers?.map(lec => lec.name).join(', ') || '-'}`}
+                                ruang={schedule.room || '-'}
+                                sks={`${classItem.sks || classItem.subject?.sks || 0} SKS`}
+                                kode={classItem.code_subject || classItem.subject?.code_subject || '-'}
+                            />
+                        ));
+                    })
+                ) : (
+                    <div className="text-center py-8 text-gray-500">
+                        Tidak ada jadwal hari ini
+                    </div>
+                );
+            })()}
             </CardContent>
         </Card>
         </section>
