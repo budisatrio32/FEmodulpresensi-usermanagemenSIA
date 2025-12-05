@@ -5,8 +5,12 @@ import { X, Send, MessageCircle, Check } from 'lucide-react';
 import { findOrCreatePrivateConversation, getMessages, sendMessage, markMessagesAsRead } from '@/lib/chatApi';
 import { getNotifications, markAsRead } from '@/lib/notificationApi';
 import { getEcho } from '@/lib/echo';
+import { useChatContext } from '@/lib/chat-context';
 
 export default function ChatModal({ isOpen, onClose, userName, userNim = '', userId = '', conversationId: propConversationId = null }) {
+    // Chat Context for global state
+    const { openChat, closeChat } = useChatContext();
+    
     // State
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
@@ -43,8 +47,8 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
 
         const dismissConversationNotifications = async () => {
             try {
-                // Fetch all unread chat notifications
-                const response = await getNotifications({ type: 'chat', is_read: false });
+                // Fetch all unread chat notifications (use 'status: unread' not 'is_read')
+                const response = await getNotifications({ type: 'chat', status: 'unread' });
                 
                 if (response.status === 'success' && response.data?.notifications) {
                     // Filter notifications that belong to this conversation
@@ -52,14 +56,25 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
                         notif => notif.metadata?.id_conversation?.toString() === conversationId.toString()
                     );
                     
-                    // Mark each notification as read (bulk operation)
-                    const markPromises = conversationNotifs.map(notif => 
-                        markAsRead(notif.id_notification).catch(err => 
-                            console.error(`Failed to mark notification ${notif.id_notification}:`, err)
-                        )
-                    );
-                    
-                    await Promise.all(markPromises);
+                    if (conversationNotifs.length > 0) {
+                        console.log('[ChatModal] 📧 Dismissing', conversationNotifs.length, 'notifications for conversation', conversationId);
+                        
+                        // Mark each notification as read (bulk operation)
+                        const markPromises = conversationNotifs.map(notif => 
+                            markAsRead(notif.id_notification).catch(err => 
+                                console.error(`Failed to mark notification ${notif.id_notification}:`, err)
+                            )
+                        );
+                        
+                        await Promise.all(markPromises);
+                        
+                        // Notify navbar to update UI (with notification IDs to remove)
+                        const notifIds = conversationNotifs.map(n => n.id_notification);
+                        window.dispatchEvent(new CustomEvent('chatNotificationsDismissed', {
+                            detail: { notificationIds: notifIds, conversationId }
+                        }));
+                        console.log('[ChatModal] ✅ Notifications dismissed and event dispatched with IDs:', notifIds);
+                    }
                 }
             } catch (error) {
                 console.error('Error dismissing conversation notifications:', error);
@@ -83,6 +98,9 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
                 if (conversationResponse.data) {
                     const convId = conversationResponse.data.id_conversation;
                     setConversationId(convId);
+                    
+                    // Update global chat context
+                    openChat(String(convId));
 
                     // Load existing messages
                     const messagesResponse = await getMessages(convId);
@@ -171,6 +189,11 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
                     console.log('[ChatModal] Leaving channel chat.' + conversationId);
                     echo.leave(`chat.${conversationId}`);
                 }
+                
+                closeChat();
+                
+                console.log('[ChatModal] 📤 Dispatching chatModalClosed event');
+                window.dispatchEvent(new Event('chatModalClosed'));
             }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -24,6 +24,7 @@ import { getNotifications, markAsRead } from '@/lib/notificationApi'
 import { getConversationDetail } from '@/lib/chatApi'
 import ChatModal from '@/components/ui/chatmodal'
 import { getEcho } from '@/lib/echo'
+import { useChatContext } from '@/lib/chat-context'
 import Cookies from 'js-cookie'
 
 const NavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
@@ -94,6 +95,10 @@ const NavbarActions = React.forwardRef(({ className, ...props }, ref) => {
   const [isChatOpen, setIsChatOpen] = React.useState(false);
   const [chatUser, setChatUser] = React.useState({ id: '', name: '', nim: '', conversationId: '' });
 
+  const handleChatClose = React.useCallback(() => {
+    setIsChatOpen(false);
+  }, []);
+
   return (
     <>
       <div
@@ -102,6 +107,8 @@ const NavbarActions = React.forwardRef(({ className, ...props }, ref) => {
         {...props}
       >
         <NavbarNotification 
+          isChatOpen={isChatOpen}
+          chatUser={chatUser}
           setChatUser={setChatUser}
           setIsChatOpen={setIsChatOpen}
         />
@@ -111,7 +118,7 @@ const NavbarActions = React.forwardRef(({ className, ...props }, ref) => {
       {/* Chat Modal */}
       <ChatModal
         isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
+        onClose={handleChatClose}
         userId={chatUser.id}
         userName={chatUser.name}
         userNim={chatUser.nim}
@@ -121,11 +128,80 @@ const NavbarActions = React.forwardRef(({ className, ...props }, ref) => {
   );
 })
 
-const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChatOpen, ...props }, ref) => {
+const NavbarNotification = React.forwardRef(({ className, isChatOpen, chatUser, setChatUser, setIsChatOpen, ...props }, ref) => {
   const router = useRouter();
+  
+  const { activeChatConversation, isChatOpen: isAnyChatOpenContext } = useChatContext();
 
   const [notifications, setNotifications] = React.useState([]);
+  const [unreadCount, setUnreadCount] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
+  
+  // Expose fetchNotifications untuk bisa dipanggil dari luar
+  const fetchNotificationsRef = React.useRef(null);
+  
+  // Use refs to access latest chat state without re-subscribing
+  const isChatOpenRef = React.useRef(isChatOpen);
+  const chatUserRef = React.useRef(chatUser);
+  const activeChatConversationRef = React.useRef(activeChatConversation);
+  
+  // Update refs when props or context change
+  React.useEffect(() => {
+    isChatOpenRef.current = isChatOpen;
+    chatUserRef.current = chatUser;
+    activeChatConversationRef.current = activeChatConversation;
+    
+    console.log('[NavbarNotification] 🔄 State updated - isChatOpen:', isChatOpen, 'activeChatConv:', activeChatConversation);
+  }, [isChatOpen, chatUser, activeChatConversation]);
+  
+  // Listen to chat notifications dismissed event
+  React.useEffect(() => {
+    const handleNotificationsDismissed = (e) => {
+      const { notificationIds, conversationId } = e.detail || {};
+      
+      if (notificationIds && notificationIds.length > 0) {
+        console.log('[NavbarNotification] 🗑️ Removing dismissed notifications:', notificationIds);
+        
+        // Optimistic UI update: Remove notifications from list
+        setNotifications(prev => {
+          const filtered = prev.filter(n => !notificationIds.includes(n.id));
+          return filtered;
+        });
+        
+        // Decrement unread count
+        setUnreadCount(prev => Math.max(0, prev - notificationIds.length));
+        
+        console.log('[NavbarNotification] ✅ UI updated optimistically');
+        
+        // ❌ DON'T fetch immediately - trust optimistic update!
+        // Will fetch when chat closes or user manually refreshes
+      } else {
+        // Fallback: Just refresh if no IDs provided
+        console.log('[NavbarNotification] 🔄 Refreshing notifications (no IDs provided)');
+        if (fetchNotificationsRef.current) {
+          fetchNotificationsRef.current();
+        }
+      }
+    };
+    
+    // Listen to chat closed event - NOW fetch fresh data
+    const handleChatClosed = () => {
+      console.log('[NavbarNotification] 🔄 Chat closed, fetching fresh data');
+      setTimeout(() => {
+        if (fetchNotificationsRef.current) {
+          fetchNotificationsRef.current();
+        }
+      }, 500); // Small delay to ensure backend processed
+    };
+    
+    window.addEventListener('chatNotificationsDismissed', handleNotificationsDismissed);
+    window.addEventListener('chatModalClosed', handleChatClosed);
+    
+    return () => {
+      window.removeEventListener('chatNotificationsDismissed', handleNotificationsDismissed);
+      window.removeEventListener('chatModalClosed', handleChatClosed);
+    };
+  }, []);
 
   // Fetch notifications initial
   const fetchNotifications = React.useCallback(async () => {
@@ -134,7 +210,11 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
       const response = await getNotifications();
 
       if (response.status === 'success') {
-        const transformed = response.data.notifications.slice(0, 5).map(notif => ({
+        // Set unread count dari backend
+        setUnreadCount(response.data.unread_count || 0);
+        
+        // Limit notifikasi ke 10 items
+        const transformed = response.data.notifications.slice(0, 10).map(notif => ({
           id: notif.id_notification,
           type: notif.type,
           title: notif.title,
@@ -151,6 +231,11 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
       setLoading(false);
     }
   }, []);
+  
+  // Store ref untuk bisa dipanggil dari custom event
+  React.useEffect(() => {
+    fetchNotificationsRef.current = fetchNotifications;
+  }, [fetchNotifications]);
 
   // Fetch on mount
   React.useEffect(() => {
@@ -232,26 +317,74 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
           .listen('.NewNotification', (event) => {
             console.log('[NavbarNotification] ✅ New notification received:', event);
             
-            setNotifications(prev => {
-              // Biar ngecek duplikat. Jangan masukin kalo notifikasi dengan judul & pesan sama sudah ada
-              const isDuplicate = prev.some(n => 
-                n.title === event.notification.title && 
-                n.message === event.notification.message &&
-                // Fungsi tambahan biar ngecek waktu juga biar ngga blok notif sama yang beda waktu
-                (Date.now() - new Date(n.date).getTime() < 5000) 
-              );
+            // Jangan tampilkan notifikasi chat jika modal terbuka untuk conversation yang sama
+            const notifType = event.notification?.type || event.type;
+            const notifMetadata = event.notification?.metadata || event.metadata;
+            
+            console.log('[NavbarNotification] 🔍 Debug - Type:', notifType, 'Metadata:', notifMetadata);
+            
+            // Use context ref to get latest active conversation
+            const activeConvId = activeChatConversationRef.current;
+            
+            console.log('[NavbarNotification] 🔍 Active conversation from context:', activeConvId);
+            
+            if (notifType === 'chat' && activeConvId && notifMetadata?.id_conversation) {
+              if (String(notifMetadata.id_conversation) === String(activeConvId)) {
+                  
+                console.log('Sedang chatting, notifikasi disembunyikan dari UI');
 
-              if (isDuplicate) {
-                console.log('[Navbar] Duplicate notification ignored');
-                return prev;
+                // Kita harus lapor ke Backend bahwa notifikasi ini sudah "auto-read"
+                // karena user sedang melihat layarnya.
+                const notifId = event.notification?.id_notification || event.id_notification;
+                
+                if (notifId) {
+                    // Panggil API markAsRead secara background (tanpa await biar ga blocking)
+                    markAsRead(notifId).catch(err => console.error('Gagal auto-read:', err));
+                }
+
+                return; // Stop, jangan lanjut update state unreadCount
               }
-
+            }
+            
+            setNotifications(prev => {
               // Generate id yg unik dengan Math.random() biar Key ngga tabrakan
               // Backend ngirim id_notification: null, jadi butuh tempID yang bagus dan kuat
               const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+              const rawNotifId = event.notification?.id_notification;
+              // Convert ke string untuk konsistensi
+              const notifId = rawNotifId ? String(rawNotifId) : tempId;
               
+              // Cek duplikat berdasarkan ID (jika ada) atau title+message+type dalam 5 detik terakhir
+              const isDuplicate = prev.some(n => {
+                // Convert n.id juga ke string untuk comparison
+                const nId = String(n.id);
+                // Jika ada ID yang sama dan bukan temp ID, pasti duplikat
+                if (nId === notifId && !notifId.startsWith('temp-')) {
+                  console.log('[NavbarNotification] ⚠️ Duplicate by ID:', notifId);
+                  return true;
+                }
+                // Cek duplikat konten (title + message + type) dalam 5 detik terakhir
+                const isSameContent = n.type === event.notification.type &&
+                                     n.title === event.notification.title && 
+                                     n.message === event.notification.message;
+                const timeDiff = Date.now() - new Date(n.date).getTime();
+                const isRecent = timeDiff < 5000; // 5 seconds
+                
+                if (isSameContent && isRecent) {
+                  console.log('[NavbarNotification] ⚠️ Duplicate by content (age:', timeDiff, 'ms)');
+                  return true;
+                }
+                
+                return false;
+              });
+
+              if (isDuplicate) {
+                console.log('[NavbarNotification] ⚠️ Duplicate notification ignored:', event.notification.title);
+                return prev;
+              }
+
               const newNotif = {
-                id: event.notification.id_notification || tempId,
+                id: notifId,
                 type: event.notification.type,
                 title: event.notification.title,
                 message: event.notification.message,
@@ -261,8 +394,14 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
               };
               
               console.log('[NavbarNotification] Adding notification to list:', newNotif);
-              // Add to top and limit to 5 items
-              return [newNotif, ...prev].slice(0, 5);
+              
+              // Increment unread count jika notifikasi baru belum dibaca
+              if (!newNotif.isRead) {
+                setUnreadCount(prevCount => prevCount + 1);
+              }
+              
+              // Add to top and limit to 10 items
+              return [newNotif, ...prev].slice(0, 10);
             })
           })
           .error((error) => {
@@ -289,12 +428,16 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
         }
       }
     };
-  }, []); // Empty dependency - run once on mount 
+  }, []); // Empty dependency - subscribe once, use refs for latest state 
 
   // Handle mark as read
   const handleMarkAsRead = async (notificationId) => {
   // Cek apakah ini ID sementara (string)?
   const isTempId = typeof notificationId === 'string' && notificationId.startsWith('temp-');
+
+  // Cek apakah notifikasi ini belum dibaca sebelumnya
+  const notification = notifications.find(n => n.id === notificationId);
+  const wasUnread = notification && !notification.isRead;
 
   // Update UI dulu (Optimistic UI)
   setNotifications(prev =>
@@ -302,6 +445,11 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
       notif.id === notificationId ? { ...notif, isRead: true } : notif
     )
   );
+  
+  // Decrement unread count jika notifikasi sebelumnya unread
+  if (wasUnread) {
+    setUnreadCount(prev => Math.max(0, prev - 1));
+  }
 
   // Jika ID sementara, JANGAN panggil API (karena belum ada di DB atau backend belum sync)
   if (isTempId) {
@@ -316,8 +464,6 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
     // Opsional: Revert UI jika gagal (tapi biasanya tidak perlu untuk UX 'read')
   }
 };
-
-  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -360,7 +506,7 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
       >
         <DropdownMenuLabel>
           <div className="flex items-center justify-between">
-            <span className="text-base font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+            <span className="text-base font-bold" style={{ color: 'brand-green', fontFamily: 'Urbanist, sans-serif' }}>
               Notifikasi
             </span>
             {unreadCount > 0 && (
@@ -373,11 +519,11 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
         <DropdownMenuSeparator />
 
         {loading ? (
-          <div className="p-4 text-center text-sm" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
+          <div className="p-4 text-center text-sm" style={{ color: 'brand-green', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
             Memuat...
           </div>
         ) : notifications.length === 0 ? (
-          <div className="p-4 text-center text-sm" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
+          <div className="p-4 text-center text-sm" style={{ color: 'brand-green', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
             Tidak ada notifikasi
           </div>
         ) : (
@@ -386,6 +532,7 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
               <DropdownMenuItem
                 className="flex-col items-start p-3 cursor-pointer"
                 onClick={async () => {
+                  // Mark as read first
                   if (!notification.isRead) {
                     await handleMarkAsRead(notification.id);
                   }
@@ -402,6 +549,12 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
                         conversationId: notification.metadata.id_conversation.toString()
                       });
                       setIsChatOpen(true);
+                      
+                      // Remove chat notification immediately
+                      setTimeout(() => {
+                        setNotifications(prev => prev.filter(n => n.id !== notification.id));
+                        console.log('[NavbarNotification] 🗑️ Removed chat notification from UI:', notification.id);
+                      }, 100);
                     } catch (err) {
                       console.error('Error fetching conversation:', err);
                     }
@@ -416,13 +569,13 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
                       <div
                         className="px-2 py-0.5 rounded text-xs font-semibold shrink-0"
                         style={{
-                          backgroundColor: notification.type === 'chat' ? '#DABC4E' : '#015023',
+                          backgroundColor: notification.type === 'chat' ? '#DABC4E' : 'brand-green',
                           color: 'white'
                         }}
                       >
                         {notification.type === 'chat' ? 'Chat' : 'Info'}
                       </div>
-                      <p className="font-semibold text-sm line-clamp-1" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                      <p className="font-semibold text-sm line-clamp-1" style={{ color: 'brand-green', fontFamily: 'Urbanist, sans-serif' }}>
                         {notification.title}
                       </p>
                     </div>
@@ -430,10 +583,10 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
                       <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0 mt-1.5 ml-2" />
                     )}
                   </div>
-                  <p className="text-xs mb-2 line-clamp-2" style={{ color: '#015023', opacity: 0.7, fontFamily: 'Urbanist, sans-serif' }}>
+                  <p className="text-xs mb-2 line-clamp-2" style={{ color: 'brand-green', opacity: 0.7, fontFamily: 'Urbanist, sans-serif' }}>
                     {notification.message}
                   </p>
-                  <p className="text-xs" style={{ color: '#015023', opacity: 0.5, fontFamily: 'Urbanist, sans-serif' }}>
+                  <p className="text-xs" style={{ color: 'brand-green', opacity: 0.5, fontFamily: 'Urbanist, sans-serif' }}>
                     {formatDate(notification.date)}
                   </p>
                 </div>
@@ -445,7 +598,7 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
 
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/notif" className="text-center w-full cursor-pointer font-semibold text-sm py-2" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+          <Link href="/notif" className="text-center w-full cursor-pointer font-semibold text-sm py-2" style={{ color: 'brand-green', fontFamily: 'Urbanist, sans-serif' }}>
             Lihat Semua Notifikasi
           </Link>
         </DropdownMenuItem>
@@ -503,10 +656,10 @@ const NavbarProfile = React.forwardRef(({ className, userName, userImage, Name, 
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+              <p className="text-sm font-bold" style={{ color: 'brand-green', fontFamily: 'Urbanist, sans-serif' }}>
                 {displayName}
               </p>
-              <p className="text-xs" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
+              <p className="text-xs" style={{ color: 'brand-green', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
                 {displayuserName}
               </p>
             </div>
@@ -546,7 +699,7 @@ const Navbar = React.forwardRef(({ className, ...props }, ref) => (
   <nav
     ref={ref}
     className={cn("bg-brand-green shadow-md rounded-b-[12px] sm:rounded-b-[18px]", className)}
-    style={{ backgroundColor: '#015023' }}
+    style={{ backgroundColor: 'brand-green' }}
     {...props}
   >
     <div className="container mx-auto px-4 sm:px-6">
