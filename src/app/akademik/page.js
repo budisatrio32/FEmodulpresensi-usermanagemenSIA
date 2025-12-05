@@ -119,15 +119,10 @@ export default function AkademikPage() {
 		),
 	};
 
-	// Show loading
-	if (isLoading) {
-		return <LoadingEffect message="Memuat data kelas..." />;
-	}
-
 	return (
 		<div className="min-h-screen bg-brand-light-sage flex flex-col">
 			<Navbar/>
-			<div className="container mx-auto px-4 py-8 max-w-7xl flex-grow">
+			<div className="container mx-auto px-4 py-8 max-w-7xl grow">
 
 				{/* Semester Selector */}
 				<div className="bg-white rounded-2xl shadow-lg p-4 mb-6" style={{ borderRadius: '16px' }}>
@@ -185,6 +180,7 @@ export default function AkademikPage() {
 					actions={[]}
 					pagination={false}
 					customRender={customRender}
+					isLoading={isLoading}
 				/>
 			</div>
 

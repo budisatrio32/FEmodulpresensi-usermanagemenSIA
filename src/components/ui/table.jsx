@@ -21,6 +21,7 @@ export default function DataTable({
   customRender = {},
   headerClassName = "text-white",
   nomertext = "No",
+  isLoading = false,
 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -187,7 +188,7 @@ export default function DataTable({
                 className="text-center py-8 text-gray-500"
                 style={{ fontFamily: 'Urbanist, sans-serif' }}
               >
-                Tidak ada data
+                {isLoading ? 'Memuat data...' : 'Tidak ada data'}
               </td>
             </tr>
           )}
