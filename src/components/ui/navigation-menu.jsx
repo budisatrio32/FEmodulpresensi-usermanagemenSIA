@@ -26,14 +26,14 @@ import ChatModal from '@/components/ui/chatmodal'
 import { getEcho } from '@/lib/echo'
 import Cookies from 'js-cookie'
 
-const NavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
+const NavbarBrand = React.forwardRef(({ className, isScrolled, ...props }, ref) => (
   <Link
     href="/landingpage"
     ref={ref}
-    className={cn("flex items-center gap-2 sm:gap-3", className)}
+    className={cn("flex items-center gap-2 sm:gap-3 transition-all duration-300", className)}
     {...props}
   >
-    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center p-1 shrink-0">
+    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center p-1 shrink-0 transition-all duration-300">
       <Image
         src="/Logo.png"
         alt="UGN Logo"
@@ -42,7 +42,7 @@ const NavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
         className="rounded-full"
       />
     </div>
-    <span className="text-brand-yellow font-semibold text-sm sm:text-base md:text-lg tracking-wide hidden sm:inline" style={{ color: '#DABC4E' }}>
+    <span className="text-brand-yellow font-semibold text-sm sm:text-base md:text-lg tracking-wide hidden sm:inline transition-all duration-300" style={{ color: '#DABC4E' }}>
       Universitas Global Nusantara
     </span>
   </Link>
@@ -166,7 +166,7 @@ const NavbarMenuItem = React.forwardRef(({ className, href, children, ...props }
   );
 })
 
-const NavbarActions = React.forwardRef(({ className, ...props }, ref) => {
+const NavbarActions = React.forwardRef(({ className, isScrolled, ...props }, ref) => {
   // Chat modal state - shared between NavbarNotification and other components
   const [isChatOpen, setIsChatOpen] = React.useState(false);
   const [chatUser, setChatUser] = React.useState({ id: '', name: '', nim: '', conversationId: '' });
@@ -175,14 +175,18 @@ const NavbarActions = React.forwardRef(({ className, ...props }, ref) => {
     <>
       <div
         ref={ref}
-        className={cn("flex items-center gap-4 sm:gap-6 lg:gap-10", className)}
+        className={cn(
+          "flex items-center gap-4 sm:gap-6 lg:gap-10 transition-all duration-300",
+          className
+        )}
         {...props}
       >
         <NavbarNotification 
           setChatUser={setChatUser}
           setIsChatOpen={setIsChatOpen}
+          isScrolled={isScrolled}
         />
-        <NavbarProfile />
+        <NavbarProfile isScrolled={isScrolled} />
       </div>
       
       {/* Chat Modal */}
@@ -531,7 +535,7 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
   );
 })
 
-const NavbarProfile = React.forwardRef(({ className, userName, userImage, Name, ...props }, ref) => {
+const NavbarProfile = React.forwardRef(({ className, userName, userImage, Name, isScrolled, ...props }, ref) => {
   const router = useRouter()
   const { user, logoutLocal } = useAuth();
   const [showLogoutDialog, setShowLogoutDialog] = React.useState(false);
@@ -569,7 +573,7 @@ const NavbarProfile = React.forwardRef(({ className, userName, userImage, Name, 
             )}
             {...props}
           >
-            <Avatar className="size-9 sm:size-10">
+            <Avatar className="size-9 sm:size-10 transition-all duration-300">
               <AvatarImage src={displayImage} alt={displayuserName} />
               <AvatarFallback>
                 {displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
@@ -621,6 +625,21 @@ const NavbarProfile = React.forwardRef(({ className, userName, userImage, Name, 
 
 const Navbar = React.forwardRef(({ className, ...props }, ref) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isScrolled, setIsScrolled] = React.useState(false);
+
+  // Handle scroll event for floating navbar
+  React.useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Close mobile menu on window resize
   React.useEffect(() => {
@@ -635,35 +654,51 @@ const Navbar = React.forwardRef(({ className, ...props }, ref) => {
   }, []);
 
   return (
-    <nav
-      ref={ref}
-      className={cn("bg-brand-green shadow-md rounded-b-[12px] sm:rounded-b-[18px]", className)}
-      style={{ backgroundColor: '#015023' }}
-      {...props}
-    >
-      <div className="container mx-auto px-4 sm:px-6">
-        <div className="flex justify-between items-center h-16 sm:h-20">
-          <div className="flex items-center gap-3">
-            {/* Hamburger Menu Button - Only visible on mobile/tablet (<800px) */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden text-white hover:text-gray-200 transition-colors p-2"
+    <div className={cn(
+      "w-full transition-all duration-300",
+      isScrolled ? "fixed top-0 left-0 right-0 z-50 py-3 sm:py-4" : "relative"
+    )}>
+      <nav
+        ref={ref}
+        className={cn(
+          "bg-brand-green transition-all duration-300 ease-in-out",
+          isScrolled 
+            ? "mx-4 sm:mx-6 lg:mx-8 rounded-[12px] sm:rounded-[18px]" 
+            : "shadow-md rounded-b-[12px] sm:rounded-b-[18px] rounded-t-none",
+          className
+        )}
+        style={{ 
+          backgroundColor: '#015023',
+          ...(isScrolled && {
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1)'
+          })
+        }}
+        {...props}
+      >
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="flex justify-between items-center h-16 sm:h-20 transition-all duration-300">
+            <div className="flex items-center gap-3">
+              {/* Hamburger Menu Button - Only visible on mobile/tablet (<800px) */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden text-white hover:text-gray-200 transition-colors p-2"
               aria-label="Toggle menu"
             >
-              <Menu size={24} />
+              <Menu size={24} className="transition-all duration-300" />
             </button>
-            <NavbarBrand />
+            <NavbarBrand isScrolled={isScrolled} />
           </div>
           <div className="flex items-center gap-6 sm:gap-10 lg:gap-13">
             <NavbarMenu 
               isMobileMenuOpen={isMobileMenuOpen}
               setIsMobileMenuOpen={setIsMobileMenuOpen}
             />
-            <NavbarActions />
+            <NavbarActions isScrolled={isScrolled} />
           </div>
         </div>
       </div>
     </nav>
+    </div>
   );
 })
 
