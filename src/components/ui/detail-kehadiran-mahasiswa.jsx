@@ -252,7 +252,7 @@ export default function DetailKehadiranMahasiswa() {
 			<div className="container mx-auto px-4 py-8 max-w-7xl flex-grow">
 				
 				<button
-					onClick={() => router.back()}
+					onClick={handleBack}
 					className="flex items-center gap-2 mb-6 font-medium hover:opacity-80 transition"
 					style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}
 				>

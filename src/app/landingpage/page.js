@@ -5,7 +5,7 @@ import { Container, SectionTitle, Card, CardHeader, CardContent, ScheduleItem, N
 import Navbar from '@/components/ui/navigation-menu';
 import Footer from '@/components/ui/footer';
 import { useState, useEffect } from 'react';
-import { getMyClasses, formatTime, getDayName, formatDate } from '@/lib/scheduleApi';
+import { getMySchedules, formatTime, getDayName, formatDate } from '@/lib/scheduleApi';
 import { getNotifications, markAsRead } from '@/lib/notificationApi';
 import Cookies from 'js-cookie';
 import Link from 'next/link';
@@ -15,7 +15,7 @@ import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 
 export default function LandingPage() {
     const router = useRouter();
-    const [classes, setClasses] = useState([]);
+    const [schedules, setSchedules] = useState([]);
     const [announcements, setAnnouncements] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [userRole, setUserRole] = useState('mahasiswa');
@@ -37,16 +37,16 @@ export default function LandingPage() {
         setIsLoading(true);
         setError(null);
         try {
-            // Fetch classes and announcements in parallel
-            const [classesRes, notificationsRes] = await Promise.all([
-                getMyClasses(role),
+            // Fetch schedules and announcements in parallel
+            const [schedulesRes, notificationsRes] = await Promise.all([
+                getMySchedules(role),
                 getNotifications({ type: 'announcement' })
             ]);
 
-            if (classesRes.status === 'success') {
-                setClasses(classesRes.data || []);
+            if (schedulesRes.status === 'success') {
+                setSchedules(schedulesRes.data || []);
             } else {
-                throw new Error(classesRes.message || 'Gagal mengambil data kelas');
+                throw new Error(schedulesRes.message || 'Gagal mengambil data jadwal');
             }
 
             if (notificationsRes.status === 'success') {
@@ -62,23 +62,49 @@ export default function LandingPage() {
         }
     };
 
-    // Filter today's schedules from classes
+    // Filter today's schedules
     const getTodaySchedules = () => {
         const today = new Date();
-        const todayName = getDayName(today.getDay());
+        const todayDateString = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
         
-        // Since API doesn't return schedules relation, we'll use the class data directly
-        // This is a workaround - in production, backend should include schedules relation
-        return classes;
+        // Filter schedules by today's date
+        return schedules.filter(classItem => {
+            if (!classItem.schedules || classItem.schedules.length === 0) return false;
+            return classItem.schedules.some(schedule => schedule.date === todayDateString);
+        });
     };
 
 return (
-<div className="min-h-screen flex flex-col" style={{ backgroundColor: '#E6EEE9' }}>
+<div className="min-h-screen flex flex-col relative overflow-hidden" style={{ backgroundColor: '#E6EEE9' }}>
+    {/* Background Decorations */}
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Top Right Circle */}
+        <div 
+            className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-10"
+            style={{ backgroundColor: '#015023' }}
+        />
+        {/* Top Left Circle */}
+        <div 
+            className="absolute top-40 -left-32 w-96 h-96 rounded-full opacity-5"
+            style={{ backgroundColor: '#015023' }}
+        />
+        {/* Bottom Right Circle */}
+        <div 
+            className="absolute -bottom-32 right-20 w-80 h-80 rounded-full opacity-8"
+            style={{ backgroundColor: '#015023' }}
+        />
+        {/* Decorative dots pattern */}
+        <div className="absolute top-1/4 right-1/4 w-2 h-2 rounded-full opacity-20" style={{ backgroundColor: '#DABC4E' }} />
+        <div className="absolute top-1/3 right-1/3 w-3 h-3 rounded-full opacity-15" style={{ backgroundColor: '#DABC4E' }} />
+        <div className="absolute bottom-1/4 left-1/4 w-2 h-2 rounded-full opacity-20" style={{ backgroundColor: '#DABC4E' }} />
+        <div className="absolute bottom-1/3 left-1/3 w-3 h-3 rounded-full opacity-15" style={{ backgroundColor: '#DABC4E' }} />
+    </div>
+
     {/* Navbar */}
     <Navbar />
     
     {/* Main Content */}
-    <main className="flex-1">
+    <main className="flex-1 relative z-10">
     <Container className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Error Message */}
         {error && (
@@ -103,24 +129,39 @@ return (
                 <div className="text-center py-8 text-gray-500">
                     Gagal memuat data jadwal
                 </div>
-            ) : classes.length > 0 ? (
-                classes.map((classItem) => (
-                    <ScheduleItem
-                        key={classItem.id_class}
-                        matakuliah={classItem.name_subject || classItem.subject?.name_subject || '-'}
-                        waktu="Lihat jadwal lengkap di halaman kelas"
-                        kelas={`Kelas ${classItem.code_class}`}
-                        dosen={`Dosen: ${classItem.lecturers?.map(lec => lec.name).join(', ') || '-'}`}
-                        ruang="-"
-                        sks={`${classItem.sks || classItem.subject?.sks || 0} SKS`}
-                        kode={classItem.code_subject || classItem.subject?.code_subject || '-'}
-                    />
-                ))
-            ) : (
-                <div className="text-center py-8 text-gray-500">
-                    Tidak ada data kelas tersedia
-                </div>
-            )}
+            ) : (() => {
+                const todaySchedules = getTodaySchedules();
+                return todaySchedules.length > 0 ? (
+                    todaySchedules.map((classItem) => {
+                        // Get today's schedules for this class
+                        const today = new Date();
+                        const todayDateString = today.toISOString().split('T')[0];
+                        const todayClassSchedules = classItem.schedules?.filter(
+                            schedule => schedule.date === todayDateString
+                        ) || [];
+                        
+                        return todayClassSchedules.map((schedule, idx) => (
+                            <ScheduleItem
+                                key={`${classItem.id_class}-${idx}`}
+                                matakuliah={classItem.subject?.name_subject || '-'}
+                                waktu={classItem.start_time && classItem.end_time 
+                                    ? `${formatTime(classItem.start_time)} - ${formatTime(classItem.end_time)}`
+                                    : '-'
+                                }
+                                kelas={`Kelas ${classItem.code_class}`}
+                                dosen={`Dosen: ${classItem.dosen || '-'}`}
+                                sks={`${classItem.subject.sks || 0} SKS`}
+                                kode={classItem.subject.code_subject || '-'}
+                                pertemuan={`${schedule.pertemuan || 'Pertemuan Ke-'}`}
+                            />
+                        ));
+                    })
+                ) : (
+                    <div className="text-center py-8 text-gray-500">
+                        Tidak ada jadwal hari ini
+                    </div>
+                );
+            })()}
             </CardContent>
         </Card>
         </section>

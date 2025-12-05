@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Bell, User, UserCog, LogOut } from 'lucide-react'
+import { Bell, User, UserCog, LogOut, Menu, X } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { useAuth } from '@/lib/auth-context'
@@ -27,14 +27,14 @@ import { getEcho } from '@/lib/echo'
 import { useChatContext } from '@/lib/chat-context'
 import Cookies from 'js-cookie'
 
-const NavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
+const NavbarBrand = React.forwardRef(({ className, isScrolled, ...props }, ref) => (
   <Link
     href="/landingpage"
     ref={ref}
-    className={cn("flex items-center gap-2 sm:gap-3", className)}
+    className={cn("flex items-center gap-2 sm:gap-3 transition-all duration-300", className)}
     {...props}
   >
-    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center p-1 shrink-0">
+    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center p-1 shrink-0 transition-all duration-300">
       <Image
         src="/Logo.png"
         alt="UGN Logo"
@@ -43,23 +43,100 @@ const NavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
         className="rounded-full"
       />
     </div>
-    <span className="text-brand-yellow font-semibold text-sm sm:text-base md:text-lg tracking-wide hidden sm:inline" style={{ color: '#DABC4E' }}>
+    <span className="text-brand-yellow font-semibold text-sm sm:text-base md:text-lg tracking-wide hidden sm:inline transition-all duration-300" style={{ color: '#DABC4E' }}>
       Universitas Global Nusantara
     </span>
   </Link>
 ))
 
-const NavbarMenu = React.forwardRef(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("hidden md:flex items-center gap-4 lg:gap-6", className)}
-    {...props}
-  >
-    <NavbarMenuItem href="/akademik">Akademik</NavbarMenuItem>
-    <NavbarMenuItem href="/kehadiran">Kehadiran</NavbarMenuItem>
-    <NavbarMenuItem href="/hasil-studi">Hasil Studi</NavbarMenuItem>
-  </div>
+const NavbarMenu = React.forwardRef(({ className, isMobileMenuOpen, setIsMobileMenuOpen, ...props }, ref) => (
+  <>
+    {/* Desktop Menu */}
+    <div
+      ref={ref}
+      className={cn("hidden md:flex items-center gap-4 lg:gap-6", className)}
+      {...props}
+    >
+      <NavbarMenuItem href="/akademik">Akademik</NavbarMenuItem>
+      <NavbarMenuItem href="/kehadiran">Kehadiran</NavbarMenuItem>
+      <NavbarMenuItem href="/hasil-studi">Hasil Studi</NavbarMenuItem>
+    </div>
+
+    {/* Mobile Menu Overlay */}
+    {isMobileMenuOpen && (
+      <div 
+        className="fixed inset-0 z-40 md:hidden"
+        style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}
+        onClick={() => setIsMobileMenuOpen(false)}
+      />
+    )}
+
+    {/* Mobile Menu Sidebar */}
+    <div
+      className={cn(
+        "fixed top-0 left-0 h-full bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 md:hidden w-64",
+        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+      )}
+    >
+      {/* Mobile Menu Header */}
+      <div className="flex items-center justify-between p-4 border-b" style={{ backgroundColor: '#015023' }}>
+        <span className="text-white font-semibold text-lg">Menu</span>
+        <button
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="text-white hover:text-gray-200 transition-colors"
+        >
+          <X size={24} />
+        </button>
+      </div>
+
+      {/* Mobile Menu Items */}
+      <div className="flex flex-col p-4 gap-2">
+        <MobileNavMenuItem 
+          href="/akademik" 
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          Akademik
+        </MobileNavMenuItem>
+        <MobileNavMenuItem 
+          href="/kehadiran" 
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          Kehadiran
+        </MobileNavMenuItem>
+        <MobileNavMenuItem 
+          href="/hasil-studi" 
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          Hasil Studi
+        </MobileNavMenuItem>
+      </div>
+    </div>
+  </>
 ))
+
+const MobileNavMenuItem = React.forwardRef(({ className, href, children, onClick, ...props }, ref) => {
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const isActive = pathname === href;
+  
+  return (
+    <Link
+      href={href}
+      ref={ref}
+      onClick={onClick}
+      className={cn(
+        "px-4 py-3 rounded-lg font-medium text-base transition-colors duration-200",
+        isActive 
+          ? "bg-green-50 text-green-700" 
+          : "text-gray-700 hover:bg-gray-50",
+        className
+      )}
+      style={isActive ? { backgroundColor: '#E6F4EA', color: '#015023' } : {}}
+      {...props}
+    >
+      {children}
+    </Link>
+  );
+})
 
 const NavbarMenuItem = React.forwardRef(({ className, href, children, ...props }, ref) => {
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
@@ -90,7 +167,7 @@ const NavbarMenuItem = React.forwardRef(({ className, href, children, ...props }
   );
 })
 
-const NavbarActions = React.forwardRef(({ className, ...props }, ref) => {
+const NavbarActions = React.forwardRef(({ className, isScrolled, ...props }, ref) => {
   // Chat modal state - shared between NavbarNotification and other components
   const [isChatOpen, setIsChatOpen] = React.useState(false);
   const [chatUser, setChatUser] = React.useState({ id: '', name: '', nim: '', conversationId: '' });
@@ -103,7 +180,10 @@ const NavbarActions = React.forwardRef(({ className, ...props }, ref) => {
     <>
       <div
         ref={ref}
-        className={cn("flex items-center gap-4 sm:gap-6 lg:gap-10", className)}
+        className={cn(
+          "flex items-center gap-4 sm:gap-6 lg:gap-10 transition-all duration-300",
+          className
+        )}
         {...props}
       >
         <NavbarNotification 
@@ -111,8 +191,9 @@ const NavbarActions = React.forwardRef(({ className, ...props }, ref) => {
           chatUser={chatUser}
           setChatUser={setChatUser}
           setIsChatOpen={setIsChatOpen}
+          isScrolled={isScrolled}
         />
-        <NavbarProfile />
+        <NavbarProfile isScrolled={isScrolled} />
       </div>
       
       {/* Chat Modal */}
@@ -607,7 +688,7 @@ const NavbarNotification = React.forwardRef(({ className, isChatOpen, chatUser, 
   );
 })
 
-const NavbarProfile = React.forwardRef(({ className, userName, userImage, Name, ...props }, ref) => {
+const NavbarProfile = React.forwardRef(({ className, userName, userImage, Name, isScrolled, ...props }, ref) => {
   const router = useRouter()
   const { user, logoutLocal } = useAuth();
   const [showLogoutDialog, setShowLogoutDialog] = React.useState(false);
@@ -645,7 +726,7 @@ const NavbarProfile = React.forwardRef(({ className, userName, userImage, Name, 
             )}
             {...props}
           >
-            <Avatar className="size-9 sm:size-10">
+            <Avatar className="size-9 sm:size-10 transition-all duration-300">
               <AvatarImage src={displayImage} alt={displayuserName} />
               <AvatarFallback>
                 {displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
@@ -695,28 +776,89 @@ const NavbarProfile = React.forwardRef(({ className, userName, userImage, Name, 
   )
 })
 
-const Navbar = React.forwardRef(({ className, ...props }, ref) => (
-  <nav
-    ref={ref}
-    className={cn("bg-brand-green shadow-md rounded-b-[12px] sm:rounded-b-[18px]", className)}
-    style={{ backgroundColor: 'brand-green' }}
-    {...props}
-  >
-    <div className="container mx-auto px-4 sm:px-6">
-      <div className="flex justify-between items-center h-16 sm:h-20">
-        <NavbarBrand />
-        <div className="flex items-center gap-6 sm:gap-10 lg:gap-13">
-          <NavbarMenu />
-          <NavbarActions />
+const Navbar = React.forwardRef(({ className, ...props }, ref) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isScrolled, setIsScrolled] = React.useState(false);
+
+  // Handle scroll event for floating navbar
+  React.useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Close mobile menu on window resize
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return (
+    <div className={cn(
+      "w-full transition-all duration-300",
+      isScrolled ? "fixed top-0 left-0 right-0 z-50 py-3 sm:py-4" : "relative"
+    )}>
+      <nav
+        ref={ref}
+        className={cn(
+          "bg-brand-green transition-all duration-300 ease-in-out",
+          isScrolled 
+            ? "mx-4 sm:mx-6 lg:mx-8 rounded-[12px] sm:rounded-[18px]" 
+            : "shadow-md rounded-b-[12px] sm:rounded-b-[18px] rounded-t-none",
+          className
+        )}
+        style={{ 
+          backgroundColor: '#015023',
+          ...(isScrolled && {
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1)'
+          })
+        }}
+        {...props}
+      >
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="flex justify-between items-center h-16 sm:h-20 transition-all duration-300">
+            <div className="flex items-center gap-3">
+              {/* Hamburger Menu Button - Only visible on mobile/tablet (<800px) */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden text-white hover:text-gray-200 transition-colors p-2"
+              aria-label="Toggle menu"
+            >
+              <Menu size={24} className="transition-all duration-300" />
+            </button>
+            <NavbarBrand isScrolled={isScrolled} />
+          </div>
+          <div className="flex items-center gap-6 sm:gap-10 lg:gap-13">
+            <NavbarMenu 
+              isMobileMenuOpen={isMobileMenuOpen}
+              setIsMobileMenuOpen={setIsMobileMenuOpen}
+            />
+            <NavbarActions isScrolled={isScrolled} />
+          </div>
         </div>
       </div>
+    </nav>
     </div>
-  </nav>
-))
+  );
+})
 
 NavbarBrand.displayName = "NavbarBrand"
 NavbarMenu.displayName = "NavbarMenu"
 NavbarMenuItem.displayName = "NavbarMenuItem"
+MobileNavMenuItem.displayName = "MobileNavMenuItem"
 NavbarActions.displayName = "NavbarActions"
 NavbarNotification.displayName = "NavbarNotification"
 NavbarProfile.displayName = "NavbarProfile"
@@ -727,6 +869,7 @@ export {
   NavbarBrand,
   NavbarMenu,
   NavbarMenuItem,
+  MobileNavMenuItem,
   NavbarActions,
   NavbarNotification,
   NavbarProfile
