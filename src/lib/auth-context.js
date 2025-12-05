@@ -48,6 +48,10 @@ export const AuthProvider = ({ children }) => {
         Cookies.remove('token');
         Cookies.remove('roles');
         Cookies.remove('name');
+        Cookies.remove('user_id'); // Clear user ID from cookies
+        // PENTING: Clear localStorage user data untuk WebSocket
+        localStorage.removeItem('user');
+        console.log('[Logout] User data cleared from cookies and localStorage');
     setUser({ name: null, roles: [], image: null, loading: false });
     };
 

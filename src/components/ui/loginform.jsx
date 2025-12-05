@@ -59,11 +59,25 @@ const handleSubmit = async (e) => {
     const response = await sessionApi.login(email, password);
 
     if (response.status === 'success') {
-      // Simpan token dan roles ke cookies
+      // Simpan token, roles, dan user_id ke cookies
       const token = response.data.access_token;
       const roles = response.data.user.roles;
+      const userId = response.data.user.id;
+      
       Cookies.set('token', token, { expires: 3 }); // expires in 3 days
       Cookies.set('roles', roles, { expires: 3 });
+      Cookies.set('user_id', userId, { expires: 3 }); // PRIORITY: Save user ID to cookies
+      console.log('[Login] Token, roles, and user_id saved to cookies');
+
+      // FALLBACK: Simpan user data ke localStorage untuk WebSocket
+      const userData = {
+        id_user_si: userId,
+        name: response.data.user.name,
+        email: response.data.user.email,
+        roles: response.data.user.roles,
+      };
+      localStorage.setItem('user', JSON.stringify(userData));
+      console.log('[Login] User data saved to localStorage (fallback)');
 
       // Refresh data user di context
       await refreshUser();

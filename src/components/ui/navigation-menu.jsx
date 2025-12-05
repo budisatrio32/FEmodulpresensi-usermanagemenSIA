@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Bell, User, UserCog, LogOut } from 'lucide-react'
-import { cn, buildImageUrl } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { useAuth } from '@/lib/auth-context'
 import {
@@ -18,20 +18,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 import {
   AlertConfirmationDialog,
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button'
 import { logout } from '@/lib/sessionApi'
 import { getNotifications, markAsRead } from '@/lib/notificationApi'
 import { getConversationDetail } from '@/lib/chatApi'
 import ChatModal from '@/components/ui/chatmodal'
+import { getEcho } from '@/lib/echo'
+import Cookies from 'js-cookie'
 
 const NavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
   <Link
@@ -40,7 +33,7 @@ const NavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
     className={cn("flex items-center gap-2 sm:gap-3", className)}
     {...props}
   >
-    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center p-1 flex-shrink-0">
+    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center p-1 shrink-0">
       <Image
         src="/Logo.png"
         alt="UGN Logo"
@@ -130,17 +123,17 @@ const NavbarActions = React.forwardRef(({ className, ...props }, ref) => {
 
 const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChatOpen, ...props }, ref) => {
   const router = useRouter();
+
   const [notifications, setNotifications] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
 
-  // Fetch notifications
+  // Fetch notifications initial
   const fetchNotifications = React.useCallback(async () => {
     try {
       setLoading(true);
       const response = await getNotifications();
 
       if (response.status === 'success') {
-        // Transform and take only first 5 for dropdown
         const transformed = response.data.notifications.slice(0, 5).map(notif => ({
           id: notif.id_notification,
           type: notif.type,
@@ -150,7 +143,6 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
           isRead: notif.is_read,
           metadata: notif.metadata
         }));
-
         setNotifications(transformed);
       }
     } catch (err) {
@@ -160,24 +152,135 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
     }
   }, []);
 
-  // Fetch on mount and every 30 seconds
+  // Fetch on mount
   React.useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // 30 seconds
-    return () => clearInterval(interval);
   }, [fetchNotifications]);
+
+  // WebSocket Real-time Notification Listener
+  React.useEffect(() => {
+    const echo = getEcho();
+    if (!echo) {
+      console.warn('[NavbarNotification] Echo not initialized');
+      return;
+    }
+
+    // Get user ID - PRIORITY: Cookies, FALLBACK: localStorage
+    let userId = null;
+    
+    // Try cookies first (recommended)
+    const userIdFromCookie = Cookies.get('user_id');
+    if (userIdFromCookie) {
+      userId = userIdFromCookie;
+      console.log('[NavbarNotification] User ID from cookies:', userId);
+    } else {
+      // Fallback to localStorage
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          userId = user.id_user_si;
+          console.log('[NavbarNotification] User ID from localStorage (fallback):', userId);
+        } catch (err) {
+          console.error('[NavbarNotification] Failed to parse user data:', err);
+        }
+      }
+    }
+
+    if (!userId) {
+      console.warn('[NavbarNotification] No user ID found in cookies or localStorage');
+      return;
+    }
+
+    console.log('[NavbarNotification] Setting up subscription for user:', userId);
+
+    let channel = null;
+    let isSubscribed = false;
+
+    // Wait for connection to be established
+    const setupSubscription = () => {
+      const pusher = echo.connector?.pusher;
+      if (!pusher) {
+        console.error('[NavbarNotification] Pusher instance not found');
+        return;
+      }
+
+      const state = pusher.connection.state;
+      console.log('[NavbarNotification] Current connection state:', state);
+
+      if (state === 'connected') {
+        subscribeToChannel();
+      } else {
+        console.log('[NavbarNotification] Waiting for connection...');
+        pusher.connection.bind('connected', subscribeToChannel);
+      }
+    };
+
+    const subscribeToChannel = () => {
+      if (isSubscribed) {
+        console.log('[NavbarNotification] Already subscribed, skipping');
+        return;
+      }
+
+      console.log('[NavbarNotification] Subscribing to private channel: user.' + userId);
+      
+      try {
+        channel = echo.private(`user.${userId}`);
+        isSubscribed = true;
+
+        channel
+          .listen('.NewNotification', (event) => {
+            console.log('[NavbarNotification] ✅ New notification received:', event);
+            
+            setNotifications(prev => {
+              const newNotif = {
+                id: event.notification.id_notification || Date.now(),
+                type: event.notification.type,
+                title: event.notification.title,
+                message: event.notification.message,
+                date: event.notification.sentAt,
+                isRead: event.notification.isRead,
+                metadata: event.notification.metadata
+              };
+              
+              console.log('[NavbarNotification] Adding notification to list:', newNotif);
+              // Add to top and limit to 5 items
+              return [newNotif, ...prev].slice(0, 5);
+            })
+          })
+          .error((error) => {
+            console.error('[NavbarNotification] ❌ Channel subscription error:', error);
+            isSubscribed = false;
+          });
+
+        console.log('[NavbarNotification] ✅ Subscription setup complete');
+      } catch (err) {
+        console.error('[NavbarNotification] ❌ Failed to subscribe:', err);
+        isSubscribed = false;
+      }
+    };
+
+    setupSubscription();
+
+    return () => {
+      console.log('[NavbarNotification] Cleaning up subscription');
+      if (channel && userId) {
+        try {
+          echo.leave(`user.${userId}`);
+        } catch (err) {
+          console.error('[NavbarNotification] Error leaving channel:', err);
+        }
+      }
+    };
+  }, []); // Empty dependency - run once on mount 
 
   // Handle mark as read
   const handleMarkAsRead = async (notificationId) => {
     try {
       await markAsRead(notificationId);
-
-      // Update local state
       setNotifications(prev =>
         prev.map(notif =>
-          notif.id === notificationId
-            ? { ...notif, isRead: true }
-            : notif
+          notif.id === notificationId ? { ...notif, isRead: true } : notif
         )
       );
     } catch (err) {
@@ -254,19 +357,15 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
               <DropdownMenuItem
                 className="flex-col items-start p-3 cursor-pointer"
                 onClick={async () => {
-                  // Mark as read if unread
                   if (!notification.isRead) {
                     await handleMarkAsRead(notification.id);
                   }
                   
-                  // Handle redirect based on notification type
                   if (notification.type === 'chat' && notification.metadata?.id_conversation) {
                     try {
-                      // Fetch conversation detail to get participant info
                       const response = await getConversationDetail(notification.metadata.id_conversation);
                       const otherParticipant = response.data?.conversation?.other_participant;
                       
-                      // Open chat modal directly
                       setChatUser({
                         id: otherParticipant?.id_user_si?.toString() || '',
                         name: otherParticipant?.name || 'User',
@@ -278,7 +377,6 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
                       console.error('Error fetching conversation:', err);
                     }
                   } else {
-                    // Redirect to notif page with highlight parameter for announcement
                     router.push(`/notif?highlight=${notification.id}`);
                   }
                 }}
@@ -287,7 +385,7 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
                   <div className="flex items-start justify-between w-full mb-1">
                     <div className="flex items-center gap-2 flex-1">
                       <div
-                        className="px-2 py-0.5 rounded text-xs font-semibold flex-shrink-0"
+                        className="px-2 py-0.5 rounded text-xs font-semibold shrink-0"
                         style={{
                           backgroundColor: notification.type === 'chat' ? '#DABC4E' : '#015023',
                           color: 'white'
@@ -300,7 +398,7 @@ const NavbarNotification = React.forwardRef(({ className, setChatUser, setIsChat
                       </p>
                     </div>
                     {!notification.isRead && (
-                      <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5 ml-2" />
+                      <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0 mt-1.5 ml-2" />
                     )}
                   </div>
                   <p className="text-xs mb-2 line-clamp-2" style={{ color: '#015023', opacity: 0.7, fontFamily: 'Urbanist, sans-serif' }}>
@@ -403,7 +501,6 @@ const NavbarProfile = React.forwardRef(({ className, userName, userImage, Name, 
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Konfirmasi dialog */}
       <AlertConfirmationDialog
         open={showLogoutDialog}
         onOpenChange={setShowLogoutDialog}

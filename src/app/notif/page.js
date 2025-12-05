@@ -10,6 +10,8 @@ import { getNotifications, markAsRead, markAllAsRead, deleteNotification } from 
 import { getConversationDetail } from '@/lib/chatApi'
 import { AlertConfirmationDialog } from '@/components/ui/alert-dialog'
 import ChatModal from '@/components/ui/chatmodal'
+import { getEcho } from '@/lib/echo'
+import Cookies from 'js-cookie'
 
 export default function NotifikasiPage() {
   const router = useRouter()
@@ -23,6 +25,105 @@ export default function NotifikasiPage() {
   // Chat modal state
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [chatUser, setChatUser] = useState({ id: '', name: '', nim: '', conversationId: '' })
+
+  // WebSocket Real-time Notification Listener
+  useEffect(() => {
+    const echo = getEcho()
+    if (!echo) {
+      console.warn('[NotifPage] Echo not initialized')
+      return
+    }
+
+    // Get user ID - PRIORITY: Cookies, FALLBACK: localStorage
+    let userId = null
+    
+    // Try cookies first (recommended)
+    const userIdFromCookie = Cookies.get('user_id')
+    if (userIdFromCookie) {
+      userId = userIdFromCookie
+      console.log('[NotifPage] User ID from cookies:', userId)
+    } else {
+      // Fallback to localStorage
+      const userStr = localStorage.getItem('user')
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr)
+          userId = user.id_user_si
+          console.log('[NotifPage] User ID from localStorage (fallback):', userId)
+        } catch (err) {
+          console.error('[NotifPage] Failed to parse user data:', err)
+        }
+      }
+    }
+
+    if (!userId) {
+      console.warn('[NotifPage] No user ID found in cookies or localStorage')
+      return
+    }
+
+    console.log('[NotifPage] Setting up subscription for user:', userId)
+
+    // Wait for connection to be established
+    const setupSubscription = () => {
+      const pusher = echo.connector?.pusher
+      if (!pusher) {
+        console.error('[NotifPage] Pusher instance not found')
+        return
+      }
+
+      const state = pusher.connection.state
+      console.log('[NotifPage] Current connection state:', state)
+
+      if (state === 'connected') {
+        subscribeToChannel()
+      } else {
+        console.log('[NotifPage] Waiting for connection...')
+        pusher.connection.bind('connected', subscribeToChannel)
+      }
+    }
+
+    const subscribeToChannel = () => {
+      console.log('[NotifPage] Subscribing to user channel:', userId)
+      
+      const channel = echo.private(`user.${userId}`)
+
+      channel
+        .listen('.NewNotification', (event) => {
+          console.log('[NotifPage] ✅ New notification received:', event)
+          
+          // Add new notification to the list
+          const newNotif = {
+            id: event.notification.id_notification || Date.now(),
+            type: event.notification.type,
+            judul: event.notification.title,
+            isi: event.notification.message,
+            tanggal: event.notification.sentAt,
+            isRead: event.notification.isRead,
+            metadata: event.notification.metadata
+          }
+          
+          console.log('[NotifPage] Adding notification to list:', newNotif)
+          setAllNotifications(prev => [newNotif, ...prev])
+          
+          // Optionally fetch full list to sync with backend after 1 second
+          setTimeout(() => {
+            fetchNotifications()
+          }, 1000)
+        })
+        .error((error) => {
+          console.error('[NotifPage] ❌ Channel subscription error:', error)
+        })
+
+      console.log('[NotifPage] ✅ Subscription setup complete')
+    }
+
+    setupSubscription()
+
+    return () => {
+      console.log('[NotifPage] Cleaning up subscription')
+      echo.leave(`user.${userId}`)
+    }
+  }, [])
 
   // Fetch notifications on mount
   useEffect(() => {
