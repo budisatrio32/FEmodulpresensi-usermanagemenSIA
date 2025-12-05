@@ -62,10 +62,15 @@ export default function LandingPage() {
         }
     };
 
+    // Helper: get today's date (YYYY-MM-DD) in Asia/Jakarta timezone
+    const getTodayDateYMDInJakarta = () => {
+        return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+    };
+
     // Filter today's schedules
     const getTodaySchedules = () => {
-        const today = new Date();
-        const todayDateString = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+        // Use Asia/Jakarta (UTC+7) date for comparison
+        const todayDateString = getTodayDateYMDInJakarta(); // Format: YYYY-MM-DD
         
         // Filter schedules by today's date
         return schedules.filter(classItem => {
@@ -133,9 +138,8 @@ return (
                 const todaySchedules = getTodaySchedules();
                 return todaySchedules.length > 0 ? (
                     todaySchedules.map((classItem) => {
-                        // Get today's schedules for this class
-                        const today = new Date();
-                        const todayDateString = today.toISOString().split('T')[0];
+                        // Get today's schedules for this class (Asia/Jakarta)
+                        const todayDateString = getTodayDateYMDInJakarta();
                         const todayClassSchedules = classItem.schedules?.filter(
                             schedule => schedule.date === todayDateString
                         ) || [];
