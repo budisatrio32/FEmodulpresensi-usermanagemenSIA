@@ -579,6 +579,28 @@ export default function DetailKelas() {
     <div className="min-h-screen bg-brand-light-sage">
         <AdminNavbar title="Dashboard Admin - Detail Kelas" />
         
+        {/* Fixed Notification Container */}
+        <div className="fixed top-20 right-4 z-50 space-y-2" style={{ maxWidth: '400px' }}>
+            {assignSuccess.dosen && (
+                <SuccessMessageBox message={assignSuccess.dosen} />
+            )}
+            {removeSuccess.dosen && (
+                <SuccessMessageBox message={removeSuccess.dosen} />
+            )}
+            {removeErrors.dosen && (
+                <ErrorMessageBox message={removeErrors.dosen} />
+            )}
+            {assignSuccess.mahasiswa && (
+                <SuccessMessageBox message={assignSuccess.mahasiswa} />
+            )}
+            {removeSuccess.mahasiswa && (
+                <SuccessMessageBox message={removeSuccess.mahasiswa} />
+            )}
+            {removeErrors.mahasiswa && (
+                <ErrorMessageBox message={removeErrors.mahasiswa} />
+            )}
+        </div>
+        
         <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
@@ -682,9 +704,9 @@ export default function DetailKelas() {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left Column - Form Data Kelas */}
-            <div className="bg-white border-2 p-6 shadow-lg flex flex-col" style={{ borderColor: '#015023', borderRadius: '12px' }}>
+            <div className="bg-white border-2 p-6 shadow-lg" style={{ borderColor: '#015023', borderRadius: '12px', maxHeight: '900px' }}>
                 <h2 className="text-2xl font-bold mb-6" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                 Informasi Kelas
                 </h2>
@@ -945,7 +967,7 @@ export default function DetailKelas() {
             {/* Right Column - Dosen & Mahasiswa */}
             <div className="space-y-6">
                 {/* Dosen Section */}
-                <div className="bg-white border-2 p-6 shadow-lg" style={{ borderColor: '#015023', borderRadius: '12px', cursor: 'default' }}>
+                <div className="bg-white border-2 p-6 shadow-lg" style={{ borderColor: '#015023', borderRadius: '12px' }}>
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                     Dosen Pengampu
@@ -961,58 +983,45 @@ export default function DetailKelas() {
                     </button>
                 </div>
 
-                {/* Pesan sukses atau error */}
-                {assignSuccess.dosen && (
-                    <SuccessMessageBox message={assignSuccess.dosen} />
-                )}
-                {removeSuccess.dosen && (
-                    <SuccessMessageBox message={removeSuccess.dosen} />
-                )}
-                {removeErrors.dosen && (
-                    <ErrorMessageBox message={removeErrors.dosen} />
-                )}
-
-                <ScrollArea style={{ maxHeight: '280px' }}>
-                    <div className="space-y-2">
-                    {assignedDosen.length === 0 ? (
-                    <p className="text-gray-500 text-center py-4" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                        Belum ada dosen pengampu
-                    </p>
-                    ) : (
-                    dosenOptions.
-                    filter(d => assignedDosen.find(ad => (ad.id_user_si) === (d.id_user_si))
-                    ).map(dosen => (
-                        
-                        <div 
-                        key={dosen.id_user_si} 
-                        className="flex items-center justify-between p-3 border"
-                        style={{ borderRadius: '8px', borderColor: '#E5E7EB' }}
-                        >
-                        <div>
-                            <p className="font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                            {dosen.name}
-                            </p>
-                            <p className="text-sm text-gray-600" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                            {dosen.email}
-                            </p>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => handleRemoveDosen(dosen.id_user_si)}
-                            className="text-white p-2 hover:opacity-80 transition"
-                            style={{ backgroundColor: '#BE0414', borderRadius: '8px' }}
-                        >
-                            <Trash2 className="w-4 h-4" />
-						</button>
-						</div>
-					))
-					)}
-					</div>
-				</ScrollArea>
-				</div>
+                <div className="overflow-y-auto pr-2 space-y-2" style={{ maxHeight: '300px' }}>
+                        {assignedDosen.length === 0 ? (
+                        <p className="text-gray-500 text-center py-4" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                            Belum ada dosen pengampu
+                        </p>
+                        ) : (
+                        dosenOptions.
+                        filter(d => assignedDosen.find(ad => (ad.id_user_si) === (d.id_user_si))
+                        ).map(dosen => (
+                            
+                            <div 
+                            key={dosen.id_user_si} 
+                            className="flex items-center justify-between p-3 border"
+                            style={{ borderRadius: '8px', borderColor: '#E5E7EB' }}
+                            >
+                            <div className="flex-1 min-w-0">
+                                <p className="font-semibold truncate" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                                {dosen.name}
+                                </p>
+                                <p className="text-sm text-gray-600 truncate" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                                {dosen.email}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => handleRemoveDosen(dosen.id_user_si)}
+                                className="text-white p-2 hover:opacity-80 transition flex-shrink-0 ml-2"
+                                style={{ backgroundColor: '#BE0414', borderRadius: '8px' }}
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                            </div>
+                        ))
+                        )}
+                </div>
+                </div>
 
 			{/* Mahasiswa Section */}
-                <div className="bg-white border-2 p-6 shadow-lg" style={{ borderColor: '#015023', borderRadius: '12px', cursor: 'default' }}>
+                <div className="bg-white border-2 p-6 shadow-lg" style={{ borderColor: '#015023', borderRadius: '12px' }}>
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                     Daftar Mahasiswa
@@ -1029,58 +1038,46 @@ export default function DetailKelas() {
                     </button>
                 </div>
 
-                {assignSuccess.mahasiswa && (
-                    <SuccessMessageBox message={assignSuccess.mahasiswa} />
-                )}
-                {removeSuccess.mahasiswa && (
-                    <SuccessMessageBox message={removeSuccess.mahasiswa} />
-                )}
-                {removeErrors.mahasiswa && (
-                    <ErrorMessageBox message={removeErrors.mahasiswa} />
-                )}
-
-                <ScrollArea style={{ maxHeight: '280px' }}>
-                    <div className="space-y-2">
-                    {assignedMahasiswa.length === 0 ? (
-                    <p className="text-gray-500 text-center py-4" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                        Belum ada mahasiswa terdaftar
-                    </p>
-                    ) : (
-                    mahasiswaOptions
-                    .filter(m => assignedMahasiswa.find(am => am.id_user_si === m.id_user_si))
-                    .map(mahasiswa => (
-                        <div
-                        key={mahasiswa.id_user_si}
-                        className="flex items-center justify-between p-3 border"
-                        style={{ borderRadius: '8px', borderColor: '#E5E7EB' }}
-                        >
-                        <div>
-                            <p className="font-semibold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                            {mahasiswa.name}
-                            </p>
-                            <p className="text-sm text-gray-600" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                            NIM: {mahasiswa.nim} • {mahasiswa.email}
-                            </p>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => handleRemoveMahasiswa(mahasiswa.id_user_si)}
-                            className="text-white p-2 hover:opacity-80 transition"
-                            style={{ backgroundColor: '#BE0414', borderRadius: '8px' }}
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </button>
-                        </div>
-                    ))
-                    )}
-                    </div>
-                </ScrollArea>
+                <div className="overflow-y-auto pr-2 space-y-2" style={{ maxHeight: '300px' }}>
+                        {assignedMahasiswa.length === 0 ? (
+                        <p className="text-gray-500 text-center py-4" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                            Belum ada mahasiswa terdaftar
+                        </p>
+                        ) : (
+                        mahasiswaOptions
+                        .filter(m => assignedMahasiswa.find(am => am.id_user_si === m.id_user_si))
+                        .map(mahasiswa => (
+                            <div
+                            key={mahasiswa.id_user_si}
+                            className="flex items-center justify-between p-3 border"
+                            style={{ borderRadius: '8px', borderColor: '#E5E7EB' }}
+                            >
+                            <div className="flex-1 min-w-0">
+                                <p className="font-semibold truncate" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                                {mahasiswa.name}
+                                </p>
+                                <p className="text-sm text-gray-600 truncate" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                                NIM: {mahasiswa.nim} • {mahasiswa.email}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => handleRemoveMahasiswa(mahasiswa.id_user_si)}
+                                className="text-white p-2 hover:opacity-80 transition flex-shrink-0 ml-2"
+                                style={{ backgroundColor: '#BE0414', borderRadius: '8px' }}
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                            </div>
+                        ))
+                        )}
+                </div>
                 </div>
             </div>
         </div>
 
         {/* Jadwal Kelas Section - Full Width */}
-        <div className="bg-white border-2 p-6 shadow-lg mt-5" style={{ borderColor: '#015023', borderRadius: '12px', cursor: 'default' }}>
+        <div className="bg-white border-2 p-6 shadow-lg mt-6" style={{ borderColor: '#015023', borderRadius: '12px' }}>
             <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                 Daftar Jadwal Kelas
@@ -1202,9 +1199,8 @@ export default function DetailKelas() {
             )}
 
             {/* Dosen List */}
-            <ScrollArea className="flex-1 mb-4">
-                <div className="border-2 p-2" style={{ borderRadius: '12px', borderColor: '#E5E7EB' }}>
-                <div className="space-y-2">
+            <div className="mb-4 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 300px)', borderRadius: '12px' }}>
+                <div className="space-y-2 pr-2">
                 {dosenOptions
                     .filter(d => !assignedDosen.find(ad => (ad.id_user_si) === (d.id_user_si)))
                     .filter(d => 
@@ -1226,19 +1222,29 @@ export default function DetailKelas() {
                         backgroundColor: selectedDosenIds.includes(dosenId) ? '#F0F9F4' : 'white'
                         }}
                     >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-start gap-3">
                         <input
                             type="checkbox"
                             checked={selectedDosenIds.includes(dosenId)}
                             onChange={() => handleToggleDosen(dosenId)}
-                            className="w-5 h-5 cursor-pointer"
+                            className="w-5 h-5 cursor-pointer flex-shrink-0 mt-1"
                             style={{ accentColor: '#015023' }}
                         />
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
                             <p className="font-bold text-lg" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                             {dosen.name}
                             </p>
-                            <p className="text-sm text-gray-600" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                            {selectedDosenIds.includes(dosenId) && (
+                                <span 
+                                className="px-2 py-0.5 text-xs font-bold rounded-full text-white flex-shrink-0"
+                                style={{ backgroundColor: '#16874B' }}
+                                >
+                                ✓ Dipilih
+                                </span>
+                            )}
+                            </div>
+                            <p className="text-sm text-gray-600 truncate" style={{ fontFamily: 'Urbanist, sans-serif' }}>
                                 {dosen.email}
                             </p>
                         </div>
@@ -1261,8 +1267,7 @@ export default function DetailKelas() {
                     </p>
                 )}
                 </div>
-                </div>
-            </ScrollArea>
+            </div>
 
             {/* Error Messsage */}
             {assignErrors.dosen && (
@@ -1380,9 +1385,8 @@ export default function DetailKelas() {
             )}
 
             {/* Mahasiswa List */}
-            <ScrollArea className="flex-1 mb-4">
-                <div className="border-2 p-2" style={{ borderRadius: '12px', borderColor: '#E5E7EB' }}>
-                <div className="space-y-2">
+            <div className="mb-4 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 300px)', borderRadius: '12px' }}>
+                <div className="space-y-2 pr-2">
                 {mahasiswaOptions
                     .filter(m => !assignedMahasiswa.find(am => am.id_user_si === m.id_user_si))
                     .filter(m => 
@@ -1403,38 +1407,38 @@ export default function DetailKelas() {
                         backgroundColor: selectedMahasiswaIds.includes(mahasiswa.id_user_si) ? '#F0F9F4' : 'white'
                         }}
                     >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-start gap-3">
                         <input
                             type="checkbox"
                             checked={selectedMahasiswaIds.includes(mahasiswa.id_user_si)}
                             onChange={() => handleToggleMahasiswa(mahasiswa.id_user_si)}
-                            className="w-5 h-5 cursor-pointer"
+                            className="w-5 h-5 cursor-pointer flex-shrink-0 mt-1"
                             style={{ accentColor: '#015023' }}
                         />
-                        <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-1">
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <p className="font-bold text-lg" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                                 {mahasiswa.name}
                             </p>
                             <span 
-                                className="px-2 py-0.5 text-xs font-semibold rounded"
+                                className="px-2 py-0.5 text-xs font-semibold rounded flex-shrink-0"
                                 style={{ backgroundColor: '#DABC4E', color: '#015023' }}
                             >
                                 {mahasiswa.nim}
                             </span>
+                            {selectedMahasiswaIds.includes(mahasiswa.id_user_si) && (
+                                <span 
+                                className="px-2 py-0.5 text-xs font-bold rounded-full text-white flex-shrink-0"
+                                style={{ backgroundColor: '#16874B' }}
+                                >
+                                ✓ Dipilih
+                                </span>
+                            )}
                             </div>
-                            <p className="text-sm text-gray-600" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                            <p className="text-sm text-gray-600 truncate" style={{ fontFamily: 'Urbanist, sans-serif' }}>
                                 {mahasiswa.email}
                             </p>
                         </div>
-                        {selectedMahasiswaIds.includes(mahasiswa.id_user_si) && (
-                            <div 
-                            className="px-3 py-1 text-xs font-bold rounded-full text-white"
-                            style={{ backgroundColor: '#16874B' }}
-                            >
-                            ✓ Dipilih
-                            </div>
-                        )}
                         </div>
                     </div>
                     ))}
@@ -1454,8 +1458,7 @@ export default function DetailKelas() {
                     </p>
                 )}
                 </div>
-                </div>
-            </ScrollArea>
+            </div>
 
             {/* Error Messages */}
             {assignErrors.mahasiswa && (

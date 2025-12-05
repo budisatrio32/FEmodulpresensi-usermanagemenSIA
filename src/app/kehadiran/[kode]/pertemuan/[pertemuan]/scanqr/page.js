@@ -29,6 +29,7 @@ export default function ScanQRPage({ params }) {
     const [allStudents, setAllStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [echo, setEcho] = useState(null);
+    const [scanSuccessMessage, setScanSuccessMessage] = useState('');
 
     // Alert states
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -210,6 +211,14 @@ export default function ScanQRPage({ params }) {
                 console.log('[WebSocket] Student:', data.student_name);
                 console.log('[WebSocket] Full data:', data);
 
+                // Show success notification
+                setScanSuccessMessage(`${data.student_name} (${data.student_nim}) berhasil presensi!`);
+                
+                // Auto-hide notification after 5 seconds
+                setTimeout(() => {
+                    setScanSuccessMessage('');
+                }, 5000);
+
                 setScannedStudents(prev => {
                     // Check if student already exists
                     const exists = prev.some(s => s.id === data.student_id);
@@ -365,6 +374,25 @@ export default function ScanQRPage({ params }) {
     return (
         <div className="min-h-screen bg-brand-light-sage">
             <Navbar />
+            
+            {/* Fixed Success Notification */}
+            {scanSuccessMessage && (
+                <div className="fixed top-20 right-4 z-50 animate-slide-in-right" style={{ maxWidth: '400px' }}>
+                    <div className="bg-white border-2 p-4 shadow-lg flex items-start gap-3" 
+                        style={{ borderColor: '#16874B', borderRadius: '12px' }}>
+                        <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#16874B' }} />
+                        <div className="flex-1">
+                            <p className="font-semibold mb-1" style={{ color: '#16874B', fontFamily: 'Urbanist, sans-serif' }}>
+                                Berhasil!
+                            </p>
+                            <p className="text-sm" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                                {scanSuccessMessage}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
             <div className="container mx-auto px-4 py-8 max-w-7xl">
                 <button
                     onClick={() => router.back()}

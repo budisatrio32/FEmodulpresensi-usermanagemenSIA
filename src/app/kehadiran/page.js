@@ -9,7 +9,7 @@ import Navbar from '@/components/ui/navigation-menu';
 import DataTable from '@/components/ui/table';
 import Footer from '@/components/ui/footer';
 import LoadingEffect from '@/components/ui/loading-effect';
-import { getProfile } from '@/lib/profileApi';
+import Cookies from 'js-cookie';
 
 export default function KehadiranPage() {
 	const router = useRouter();
@@ -21,7 +21,7 @@ export default function KehadiranPage() {
 	const [errors, setErrors] = useState({});
 	const [userRole, setUserRole] = useState(null);
 
-	// Fetch all data on mount
+	// Fetch data on mount
 	useEffect(() => {
 		fetchAll();
 	}, []);
@@ -37,23 +37,11 @@ export default function KehadiranPage() {
 	const fetchAll = async () => {
 		setErrors(prev => ({...prev, fetch: null}));
 		setIsLoading(true);
-		await fetchUserProfile();
+		// Get role from cookie
+		const role = Cookies.get('roles');
+		setUserRole(role);
 		await fetchAcademicPeriods();
 		setIsLoading(false);
-	};
-
-	const fetchUserProfile = async () => {
-		try {
-			const data = await getProfile();
-			if (data.status === 'success') {
-				// Determine role from profile data
-				const role = data.data.role;
-				setUserRole(role);
-			}
-		} catch (err) {
-			console.error('Error fetching user profile:', err);
-			setErrors(prev => ({...prev, fetch: 'Gagal memuat profil pengguna: ' + err.message}));
-		}
 	};
 
 	const fetchClasses = async () => {
@@ -81,11 +69,11 @@ export default function KehadiranPage() {
 
 	const fetchAcademicPeriods = async () => {
 		try {
-			const data = await getAcademicPeriods();
+			const response = await getAcademicPeriods();
 
-			if (data.status === 'success') {
+			if (response.status === 'success') {
 				// Transform to dropdown options
-				const options = data.data.map(period => ({
+				const options = response.data.map(period => ({
 					value: period.id_academic_period.toString(),
 					label: period.name,
 					is_active: period.is_active
@@ -98,7 +86,7 @@ export default function KehadiranPage() {
 					setSelectedSemester(activePeriod.value);
 				}
 			} else {
-				setErrors(prev => ({...prev, fetch: 'Gagal memuat data: ' + data.message}));
+				setErrors(prev => ({...prev, fetch: 'Gagal memuat data: ' + response.message}));
 			}
 		} catch (err) {
 			setErrors(prev => ({...prev, fetch: 'Terjadi kesalahan saat memuat data: ' + err.message}));
@@ -119,11 +107,15 @@ export default function KehadiranPage() {
 		{ key: 'detail', label: 'Detail', width: '120px' },
 	];
 
+	const handleDetailClick = (item) => {
+		router.push(`/kehadiran/${item.id_class}`);
+	}
+
 	const customRender = {
 		detail: (_value, item) => (
 			<div className="flex items-center justify-center">
 				<button
-					onClick={() => router.push(`/kehadiran/${item.kode_matkul}?id_class=${item.id_class}&nama=${encodeURIComponent(item.nama_matkul)}&kelas=${encodeURIComponent(item.kelas)}&sks=${item.sks}&dosen=${encodeURIComponent(item.dosen)}`)}
+					onClick={() => handleDetailClick(item)}
 					className="flex items-center gap-2 text-white px-4 py-2 transition shadow-sm hover:opacity-90 font-semibold"
 					style={{ backgroundColor: '#015023', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
 				>
@@ -205,7 +197,7 @@ export default function KehadiranPage() {
 					</p>
 				</div>
 
-				{ /* Error Message */}
+				{/* Error Message */}
 				{errors.classes && (
 					<ErrorMessageBoxWithButton message={errors.classes} action={fetchClasses} />
 				)}

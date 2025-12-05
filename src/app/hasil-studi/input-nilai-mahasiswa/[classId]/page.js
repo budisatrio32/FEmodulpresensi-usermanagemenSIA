@@ -61,7 +61,9 @@ export default function InputNilaiMahasiswa() {
         // Check if permission is granted
         if (Response.data.permission === false) {
           setPermissionGranted(false);
+          setPermissionChecked(true);
         } else {
+          setPermissionGranted(true);
           setPermissionChecked(true);
         }
       } else {
@@ -75,10 +77,10 @@ export default function InputNilaiMahasiswa() {
   };
 
   useEffect(() => {
-    if (permissionChecked) {
-      fetchAllData();
-    }
-  }, [permissionChecked]);
+		if (permissionChecked && permissionGranted) {
+			fetchAllData();
+		}
+	}, [permissionChecked, permissionGranted]);
 
   // Countdown redirect effect ketika ada error permission atau permissionGranted false
   useEffect(() => {
