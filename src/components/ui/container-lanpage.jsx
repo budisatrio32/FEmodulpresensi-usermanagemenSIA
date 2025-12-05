@@ -84,7 +84,7 @@ matakuliah,
 waktu, 
 kelas, 
 dosen, 
-ruang, 
+pertemuan, 
 sks, 
 kode,
 className = '' 
@@ -102,10 +102,7 @@ return (
         <p>{waktu}</p>
         <p>{kelas}</p>
         <p>{dosen}</p>
-        <div className="flex items-center gap-2 mt-2">
-            <MapPin className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" style={{ color: '#015023' }} />
-            <p className="font-medium">{ruang}</p>
-        </div>
+        <p>{pertemuan}</p>
         </div>
     </div>
 

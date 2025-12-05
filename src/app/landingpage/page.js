@@ -65,12 +65,12 @@ export default function LandingPage() {
     // Filter today's schedules
     const getTodaySchedules = () => {
         const today = new Date();
-        const todayName = getDayName(today.getDay());
+        const todayDateString = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
         
-        // Filter schedules by today's day
+        // Filter schedules by today's date
         return schedules.filter(classItem => {
             if (!classItem.schedules || classItem.schedules.length === 0) return false;
-            return classItem.schedules.some(schedule => schedule.day_of_week === todayName);
+            return classItem.schedules.some(schedule => schedule.date === todayDateString);
         });
     };
 
@@ -110,24 +110,25 @@ return (
                 return todaySchedules.length > 0 ? (
                     todaySchedules.map((classItem) => {
                         // Get today's schedules for this class
-                        const todayName = getDayName(new Date().getDay());
+                        const today = new Date();
+                        const todayDateString = today.toISOString().split('T')[0];
                         const todayClassSchedules = classItem.schedules?.filter(
-                            schedule => schedule.day_of_week === todayName
+                            schedule => schedule.date === todayDateString
                         ) || [];
                         
                         return todayClassSchedules.map((schedule, idx) => (
                             <ScheduleItem
                                 key={`${classItem.id_class}-${idx}`}
-                                matakuliah={classItem.name_subject || classItem.subject?.name_subject || '-'}
-                                waktu={schedule.start_time && schedule.end_time 
-                                    ? `${formatTime(schedule.start_time)} - ${formatTime(schedule.end_time)}`
+                                matakuliah={classItem.subject?.name_subject || '-'}
+                                waktu={classItem.start_time && classItem.end_time 
+                                    ? `${formatTime(classItem.start_time)} - ${formatTime(classItem.end_time)}`
                                     : '-'
                                 }
                                 kelas={`Kelas ${classItem.code_class}`}
-                                dosen={`Dosen: ${classItem.lecturers?.map(lec => lec.name).join(', ') || '-'}`}
-                                ruang={schedule.room || '-'}
-                                sks={`${classItem.sks || classItem.subject?.sks || 0} SKS`}
-                                kode={classItem.code_subject || classItem.subject?.code_subject || '-'}
+                                dosen={`Dosen: ${classItem.dosen || '-'}`}
+                                sks={`${classItem.subject.sks || 0} SKS`}
+                                kode={classItem.subject.code_subject || '-'}
+                                pertemuan={`${schedule.pertemuan || 'Pertemuan Ke-'}`}
                             />
                         ));
                     })
