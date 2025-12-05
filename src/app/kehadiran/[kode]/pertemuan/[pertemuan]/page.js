@@ -1,125 +1,189 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { getClassDetail, sendManualAttendance, getPresencesBySchedule, deletePresence } from '@/lib/attendanceApi';
+import { getPermissionForAScheduleInAClass } from '@/lib/permissionApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 import { AlertConfirmationDialog, AlertSuccessDialog, AlertErrorDialog } from '@/components/ui/alert-dialog';
 import Navbar from '@/components/ui/navigation-menu';
 import DataTable from '@/components/ui/table';
 import { ArrowLeft, CalendarDays, Save, QrCode } from 'lucide-react';
-import { PrimaryButton, OutlineButton, WarningButton } from '@/components/ui/button';
+import { PrimaryButton, WarningButton } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import Footer from '@/components/ui/footer';
 import LoadingEffect from '@/components/ui/loading-effect';
 
-export default function InputPresensiPage({ params }) {
-const router = useRouter();
-const searchParams = useSearchParams();
-const { kode, pertemuan } = React.use(params);
-const id_schedule = searchParams.get('id_schedule') || '';
-const id_class = searchParams.get('id_class') || '';
-const nama = searchParams.get('nama') || '';
-const kelas = searchParams.get('kelas') || '';
-const tanggal = searchParams.get('tanggal') || '';
+export default function InputPresensiPage() {
+    const router = useRouter();
+    const params = useParams();
+    const id_schedule = params.pertemuan;
+    const id_class = params.kode;
 
-const [classInfo, setClassInfo] = useState(null);
-const [mahasiswaData, setMahasiswaData] = useState([]);
-const [originalAttendance, setOriginalAttendance] = useState([]); // Track original from DB
-const [selectedStudents, setSelectedStudents] = useState([]);
-const [isLoading, setIsLoading] = useState(false);
-const [isScanning, setIsScanning] = useState(false);
-const [loading, setLoading] = useState(true);
-const [error, setError] = useState(null);
+    // State management
+    const [mahasiswaData, setMahasiswaData] = useState([]);
+    const [originalAttendance, setOriginalAttendance] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isScanning, setIsScanning] = useState(false);
+    const [permissionChecked, setPermissionChecked] = useState(false);
+    const [permissionGranted, setPermissionGranted] = useState(null);
+    const [loadingPermission, setLoadingPermission] = useState(true);
+    const [countdown, setCountdown] = useState(5);
+    const [classInfo, setClassInfo] = useState({
+        code_subject: '-',
+        name_subject: '-',
+        code_class: '-',
+        dosen: '-'
+    });
+    const [scheduleInfo, setScheduleInfo] = useState({
+        pertemuanke: '-',
+        date: '',
+    });
+    const [statistics, setStatistics] = useState({
+        total_students: 0,
+        present_students: 0,
+        absent_students: 0
+    });
+    const [errors, setErrors] = useState({});
 
-// Alert states
-const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-const [showErrorDialog, setShowErrorDialog] = useState(false);
-const [alertMessage, setAlertMessage] = useState('');
-const [confirmAction, setConfirmAction] = useState(null);
+    // Alert states
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+    const [showErrorDialog, setShowErrorDialog] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [confirmAction, setConfirmAction] = useState(null);
 
-    // Fetch data on mount
+    // Check permission on mount
     useEffect(() => {
-        if (id_class && id_schedule) {
-            fetchClassDetail();
-        } else {
-            setLoading(false);
-            setError('ID kelas atau jadwal tidak ditemukan');
+        if (id_class) {
+            checkPermission();
         }
-    }, [id_class, id_schedule]);
+    }, [id_class]);
+
+    // Fetch data after permission is granted
+    useEffect(() => {
+        if (permissionChecked && permissionGranted) {
+            fetchAllData();
+        }
+    }, [permissionChecked, permissionGranted]);
+
+    // Countdown redirect effect when permission is denied
+    useEffect(() => {
+        let timer;
+        if (permissionGranted === false) {
+            if (countdown > 0) {
+                timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+            } else {
+                handleBack();
+            }
+        }
+        return () => clearTimeout(timer);
+    }, [permissionGranted, countdown]);
+
+    // Check Permission
+    const checkPermission = async () => {
+        setErrors(prev => ({...prev, permission: null}));
+        setLoadingPermission(true);
+        try {
+            const response = await getPermissionForAScheduleInAClass(id_class, id_schedule);
+            if (response.status === 'success') {
+                if (response.data.permission === false) {
+                    setPermissionGranted(false);
+                    setPermissionChecked(true);
+                } else {
+                    setPermissionGranted(true);
+                    setPermissionChecked(true);
+                }
+            } else {
+                setErrors(prev => ({...prev, permission: 'Gagal memeriksa izin akses: ' + response.message}));
+            }
+        } catch (error) {
+            setErrors(prev => ({...prev, permission: 'Gagal memeriksa izin akses: ' + error.message}));
+        } finally {
+            setLoadingPermission(false);
+        }
+    };
+
+    // Fetch All Data
+    const fetchAllData = async () => {
+        setErrors(prev => ({...prev, fetch: null}));
+        setIsLoading(true);
+        await Promise.all([
+            fetchClassDetail(),
+            fetchAttendanceData()
+        ]);
+        setIsLoading(false);
+    };
 
     // Fetch class detail with students list
     const fetchClassDetail = async () => {
-        setLoading(true);
+        setErrors(prev => ({...prev, fetch: null}));
         try {
-            setError(null);
-            console.log('Fetching class detail for id_class:', id_class);
-            console.log('Fetching attendance for id_schedule:', id_schedule);
+            const response = await getClassDetail(id_class);
+            
+            if (response.status === 'success') {
+                setClassInfo(response.data.class_info);
+            } else {
+                setErrors(prev => ({...prev, fetch: 'Gagal memuat data kelas: ' + response.message}));
+            }
+        } catch (error) {
+            setErrors(prev => ({...prev, fetch: 'Terjadi kesalahan saat memuat data kelas: ' + error.message}));
+        }
+    };
 
-            // Fetch class detail dan attendance secara paralel
-            const [classData, attendanceData] = await Promise.all([
-                getClassDetail(id_class),
-                getPresencesBySchedule(id_schedule)
-            ]);
+    // Fetch attendance data
+    const fetchAttendanceData = async () => {
+        setErrors(prev => ({...prev, fetch: null}));
+        try {
+            const response = await getPresencesBySchedule(id_schedule);
+            
+            if (response.status === 'success') {
+                // Set schedule info dari response
+                setScheduleInfo({
+                    pertemuanke: response.data.pertemuan || '-',
+                    date: response.data.tanggal || ''
+                });
 
-            console.log('Class API Response:', classData);
-            console.log('Attendance API Response:', attendanceData);
-
-            if (classData.status === 'success') {
-                setClassInfo(classData.data.class_info);
-                
                 // Ambil ID mahasiswa yang sudah hadir dari database
-                const attendedStudentIds = attendanceData.status === 'success' 
-                    ? attendanceData.data.students.map(s => s.id_user_si)
-                    : [];
-
+                const attendedStudentIds = response.data.students.map(s => s.id_user_si);
+                
                 // Simpan data asli dari database untuk comparison nanti
                 setOriginalAttendance(attendedStudentIds);
                 
-                console.log('Attended student IDs:', attendedStudentIds);
+                // Fetch class detail untuk mendapatkan daftar mahasiswa
+                const classData = await getClassDetail(response.data.id_class);
                 
-                // Format students data dengan status hadir berdasarkan data dari database
-                const formattedStudents = classData.data.students.map((student, index) => ({
-                    id: student.id_user_si,
-                    no: index + 1,
-                    nim: student.nim,
-                    nama: student.name,
-                    hadir: attendedStudentIds.includes(student.id_user_si), // Check dari database
-                }));
-                
-                setMahasiswaData(formattedStudents);
-                console.log('Students loaded:', formattedStudents.length, 'items');
-                console.log('Present students:', formattedStudents.filter(s => s.hadir).length);
+                if (classData.status === 'success') {
+                    // Transform data ke format yang sesuai dengan table
+                    const formattedData = classData.data.students.map(student => ({
+                        id: student.id_user_si,
+                        nim: student.nim,
+                        nama: student.name,
+                        hadir: attendedStudentIds.includes(student.id_user_si),
+                    }));
+                    
+                    setMahasiswaData(formattedData);
+
+                    // Update statistics
+                    setStatistics({
+                        total_students: formattedData.length,
+                        present_students: attendedStudentIds.length,
+                        absent_students: formattedData.length - attendedStudentIds.length
+                    });
+                }
             } else {
-                const errorMsg = classData.message || 'Gagal mengambil data kelas';
-                console.error('API Error:', errorMsg);
-                setError(errorMsg);
+                setErrors(prev => ({...prev, fetch: 'Gagal memuat data presensi: ' + response.message}));
             }
-        } catch (err) {
-        console.error('Error fetching class detail:', err);
-        
-        let errorMessage = 'Terjadi kesalahan saat mengambil data';
-        if (err.response) {
-            errorMessage = `Server Error (${err.response.status}): ${err.response.data?.message || err.response.statusText}`;
-        } else if (err.request) {
-            errorMessage = 'Tidak dapat terhubung ke server. Pastikan backend Laravel berjalan.';
-        } else if (err.message) {
-            errorMessage = err.message;
-        } else if (err.status === 'error') {
-            errorMessage = err.message || 'Gagal mengambil data kelas';
+        } catch (error) {
+            setErrors(prev => ({...prev, fetch: 'Terjadi kesalahan saat memuat data presensi: ' + error.message}));
         }
-        
-        setError(errorMessage);
-    } finally {
-        setLoading(false);
-    }
-};
+    };
 
 // Handle scan QR
 const handleScanQR = () => {
     setIsScanning(true);
-    router.push(`/kehadiran/${kode}/pertemuan/${pertemuan}/scanqr?id_schedule=${id_schedule}&id_class=${id_class}&nama=${encodeURIComponent(nama)}&kelas=${encodeURIComponent(kelas)}&tanggal=${tanggal}`);
+    router.push(`/kehadiran/${id_class}/pertemuan/${id_schedule}/scanqr?id_schedule=${id_schedule}&id_class=${id_class}&nama=${encodeURIComponent(classInfo.name_subject || '')}&kelas=${encodeURIComponent(classInfo.code_class || '')}&tanggal=${scheduleInfo.date}`);
 };
 
 // Format tanggal
@@ -182,7 +246,8 @@ const handleSaveAll = async () => {
 };
 
 const savePresences = async () => {
-    setIsLoading(true);
+    setIsSaving(true);
+    setErrors(prev => ({...prev, save: null}));
     try {
         // Current state: mahasiswa yang dicentang sekarang
         const currentAttendedIds = mahasiswaData
@@ -194,15 +259,9 @@ const savePresences = async () => {
         
         // Mahasiswa yang perlu dihapus (ada di DB tapi sekarang tidak dicentang)
         const toDelete = originalAttendance.filter(id => !currentAttendedIds.includes(id));
-        
-        console.log('Current attended:', currentAttendedIds);
-        console.log('Original attendance:', originalAttendance);
-        console.log('To add:', toAdd);
-        console.log('To delete:', toDelete);
 
         // Execute delete operations first
         if (toDelete.length > 0) {
-            console.log('Deleting presences for:', toDelete);
             await Promise.all(
                 toDelete.map(studentId => deletePresence(id_schedule, studentId))
             );
@@ -210,7 +269,6 @@ const savePresences = async () => {
 
         // Then save current attendance (will create new or update existing)
         if (currentAttendedIds.length > 0) {
-            console.log('Saving attendance for:', currentAttendedIds);
             await sendManualAttendance(id_schedule, currentAttendedIds);
         }
 
@@ -225,33 +283,16 @@ const savePresences = async () => {
                 router.back();
             }, 1500);
         } else {
-            setAlertMessage('Gagal menyimpan presensi: ' + (response.message || 'Unknown error'));
+            setErrors(prev => ({...prev, save: 'Gagal menyimpan presensi: ' + response.message}));
+            setAlertMessage('Gagal menyimpan presensi: ' + response.message);
             setShowErrorDialog(true);
         }
     } catch (error) {
-        console.error('Error saving attendance:', error);
-        
-        // Handle specific error messages from refactored backend
-        let errorMessage = 'Gagal menyimpan presensi';
-        
-        if (error.response?.data?.message) {
-            errorMessage = error.response.data.message;
-        } else if (error.response?.data?.errors?.id_schedule) {
-            const scheduleError = error.response.data.errors.id_schedule;
-            errorMessage = Array.isArray(scheduleError) ? scheduleError[0] : scheduleError;
-        } else if (error.message) {
-            errorMessage = error.message;
-        }
-        
-        // Show more helpful message for academic period validation
-        if (errorMessage.includes('periode akademik')) {
-            console.log('[Manual Attendance] Academic period validation failed');
-        }
-        
-        setAlertMessage(errorMessage);
+        setErrors(prev => ({...prev, save: 'Terjadi kesalahan saat menyimpan presensi: ' + error.message}));
+        setAlertMessage('Terjadi kesalahan saat menyimpan presensi: ' + error.message);
         setShowErrorDialog(true);
     } finally {
-        setIsLoading(false);
+        setIsSaving(false);
     }
 };
 
@@ -262,28 +303,73 @@ const columns = [
 ];
 
 const customRender = {
-hadir: (value, item) => {
-    return (
-    <div className="flex items-center justify-center">
-        <Checkbox
-        checked={item.hadir}
-        onCheckedChange={() => togglePresensi(item.id)}
-        />
-    </div>
-    );
-},
+    hadir: (value, item) => {
+        return (
+        <div className="flex items-center justify-center">
+            <Checkbox
+            checked={item.hadir}
+            onCheckedChange={() => togglePresensi(item.id)}
+            />
+        </div>
+        );
+    },
 };
 
-if (loading) {
-    return <LoadingEffect message="Memuat data mahasiswa..." />;
-}
+// Handle back navigation
+const handleBack = () => {
+    router.push('/kehadiran/' + id_class);
+};
 
-return (
+// Loading permission check
+if (loadingPermission) {
+    return <LoadingEffect message="Memeriksa izin akses..." />;
+  } else if (permissionGranted === false) {
+    return (
+        <div className="min-h-screen bg-brand-light-sage">
+            <Navbar />
+            <div className="container mx-auto px-4 py-8 max-w-7xl">
+                <ErrorMessageBoxWithButton
+                    message={'Anda tidak memiliki izin untuk mengakses kelas atau jadwal ini.' + `\n\nAkan dialihkan kembali dalam ${countdown} detik.`}
+                    action={handleBack}
+                    btntext={countdown > 0 ? `Kembali (${countdown})` : 'Kembali'}
+                />
+            </div>
+        </div>
+    );
+  } else if (errors.permission) {
+    return (
+        <div className="min-h-screen bg-brand-light-sage">
+            <Navbar />
+            <div className="container mx-auto px-4 py-8 max-w-7xl">
+                <ErrorMessageBoxWithButton
+                    message={errors.permission}
+                    action={checkPermission}
+                />
+            </div>
+        </div>
+    );
+  } else if (isLoading) {
+    return <LoadingEffect message="Memuat data mahasiswa..." />;
+  } else if (errors.fetch) {
+    return (
+        <div className="min-h-screen bg-brand-light-sage">
+            <Navbar />
+            <div className="container mx-auto px-4 py-8 max-w-7xl">
+                <ErrorMessageBoxWithButton
+                    message={errors.fetch}
+                    action={fetchAllData}
+                    back={true}
+                    actionback={handleBack}
+                />
+            </div>
+        </div>
+    );
+  }return (
 <div className="min-h-screen bg-brand-light-sage flex flex-col">
     <Navbar />
     <div className="container mx-auto px-4 py-8 max-w-7xl flex-grow">
     <button
-        onClick={() => router.back()}
+        onClick={handleBack}
         className="flex items-center gap-2 mb-6 font-medium hover:opacity-80 transition"
         style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}
     >
@@ -291,13 +377,7 @@ return (
         Kembali ke Detail Presensi
     </button>
 
-    {/* Error Message */}
-    {error && (
-        <ErrorMessageBoxWithButton message={error} action={fetchClassDetail} />
-    )}
-
     {/* Header */}
-    {(
     <div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ borderRadius: '16px' }}>
         <div className="flex items-start gap-4">
         <div className="p-4 rounded-xl" style={{ backgroundColor: '#015023' }}>
@@ -305,17 +385,17 @@ return (
         </div>
         <div className="flex-1">
             <h1 className="text-3xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-            Input Presensi - Pertemuan {pertemuan}
+            Input Presensi - Pertemuan {scheduleInfo.pertemuanke}
             </h1>
             <p className="mt-1 text-lg" style={{ color: '#015023', opacity: 0.75, fontFamily: 'Urbanist, sans-serif' }}>
-            {kode} - {nama}
+            {classInfo.code_subject} - {classInfo.name_subject}
             </p>
             <div className="mt-3 flex flex-wrap gap-3">
             <span className="px-3 py-1 rounded-lg font-medium" style={{ backgroundColor: '#f3f4f6', color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                Kelas: {kelas}
+                Kelas: {classInfo.code_class}
             </span>
             <span className="px-3 py-1 rounded-lg font-medium" style={{ backgroundColor: '#DABC4E', color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                {formatTanggal(tanggal)}
+                {formatTanggal(scheduleInfo.date)}
             </span>
             {classInfo?.dosen && (
                 <span className="px-3 py-1 rounded-lg font-medium" style={{ backgroundColor: '#DABC4E', color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
@@ -354,81 +434,70 @@ return (
         </div>
         </div>
     </div>
-    )}
-
     {/* Tabel Mahasiswa */}
-    {!loading && mahasiswaData.length > 0 && (
-    <div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ borderRadius: '16px' }}>
-        <div className="flex items-center justify-between mb-4">
-        <div>
-            <h2 className="text-xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-            Daftar Mahasiswa
-            </h2>
-            <p className="text-sm mt-1" style={{ color: '#6b7280', fontFamily: 'Urbanist, sans-serif' }}>
-            Centang checkbox untuk menandai mahasiswa hadir
-            </p>
+    {mahasiswaData.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ borderRadius: '16px' }}>
+            <div className="flex items-center justify-between mb-4">
+            <div>
+                <h2 className="text-xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                Daftar Mahasiswa
+                </h2>
+                <p className="text-sm mt-1" style={{ color: '#6b7280', fontFamily: 'Urbanist, sans-serif' }}>
+                Centang checkbox untuk menandai mahasiswa hadir
+                </p>
+            </div>
+            
+            <button
+                onClick={handleScanQR}
+                disabled={isScanning}
+                className="flex items-center gap-2 text-white px-6 py-3 transition shadow-sm hover:opacity-90 font-semibold disabled:opacity-50"
+                style={{ backgroundColor: '#015023', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
+            >
+                <QrCode className="w-5 h-5" />
+                {isScanning ? 'Memulai Scanner...' : 'Mulai Scan QR'}
+            </button>
+            </div>
+            
+            <DataTable
+            columns={columns}
+            data={mahasiswaData}
+            actions={[]}
+            pagination={false}
+            customRender={customRender}
+            />
         </div>
-        
-        <button
-            onClick={handleScanQR}
-            disabled={isScanning}
-            className="flex items-center gap-2 text-white px-6 py-3 transition shadow-sm hover:opacity-90 font-semibold disabled:opacity-50"
-            style={{ backgroundColor: '#015023', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
-        >
-            <QrCode className="w-5 h-5" />
-            {isScanning ? 'Memulai Scanner...' : 'Mulai Scan QR'}
-        </button>
-        </div>
-        
-        <DataTable
-        columns={columns}
-        data={mahasiswaData}
-        actions={[]}
-        pagination={false}
-        customRender={customRender}
-        />
-    </div>
     )}
 
     {/* Actions */}
-    {!loading && mahasiswaData.length > 0 && (
-    <div className="bg-white rounded-2xl shadow-lg p-6" style={{ borderRadius: '16px' }}>
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="text-sm" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-            <p className="font-medium">Keterangan:</p>
-            <p className="text-gray-600 mt-1">
-            • Centang checkbox untuk menandai mahasiswa hadir<br />
-            • Gunakan tombol "Mulai Scan QR" untuk presensi otomatis via QR Code
-            </p>
-        </div>
+    {mahasiswaData.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-lg p-6" style={{ borderRadius: '16px' }}>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="text-sm" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                <p className="font-medium">Keterangan:</p>
+                <p className="text-gray-600 mt-1">
+                • Centang checkbox untuk menandai mahasiswa hadir<br />
+                • Gunakan tombol "Mulai Scan QR" untuk presensi otomatis via QR Code
+                </p>
+            </div>
 
-        <div className="flex gap-3">
-            <WarningButton
-            onClick={() => router.back()}
-            disabled={isLoading}
-            >
-            Batal
-            </WarningButton>
-            
-            <PrimaryButton
-            onClick={handleSaveAll}
-            disabled={isLoading}
-            className="gap-2"
-            >
-            <Save className="w-4 h-4" />
-            {isLoading ? 'Menyimpan...' : 'Simpan Presensi'}
-            </PrimaryButton>
-        </div>
-        </div>
-    </div>
-    )}
-
-    {/* Empty State */}
-    {!loading && mahasiswaData.length === 0 && !error && (
-        <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-            <p className="text-lg" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
-                Belum ada data mahasiswa untuk kelas ini.
-            </p>
+            <div className="flex gap-3">
+                <WarningButton
+                onClick={handleBack}
+                disabled={isSaving}
+                >
+                Batal
+                </WarningButton>
+                
+                <PrimaryButton
+                onClick={handleSaveAll}
+                disabled={isSaving}
+                className="gap-2"
+                >
+                <Save className="w-4 h-4" />
+                {isSaving ? 'Menyimpan...' : 'Simpan Presensi'}
+                </PrimaryButton>
+            </div>
+            </div>
         </div>
     )}
     </div>

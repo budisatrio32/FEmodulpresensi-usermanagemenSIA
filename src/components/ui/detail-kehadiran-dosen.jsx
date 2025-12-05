@@ -135,6 +135,10 @@ export default function DetailKehadiranDosen() {
 		{ key: 'aksi', label: 'Aksi Presensi', width: '200px' },
 	];
 
+	const handleInputPresensi = (id_schedule) => {
+		router.push(`/kehadiran/${id_class}/pertemuan/${id_schedule}`);
+	};
+
 	// Custom render untuk dosen
 	const customRender = {
 		tanggal: (value, item) => formatTanggal(item.tanggal),
@@ -143,7 +147,7 @@ export default function DetailKehadiranDosen() {
 		aksi: (value, item) => (
 			<div className="flex items-center justify-center">
 				<button
-					onClick={() => router.push(`/kehadiran/${kode}/pertemuan/${item.pertemuan}?id_schedule=${item.id_schedule}&id_class=${id_class}&nama=${encodeURIComponent(nama)}&kelas=${encodeURIComponent(item.code_class)}&tanggal=${item.tanggal}`)}
+					onClick={() => handleInputPresensi(item.id_schedule)}
 					className="flex items-center gap-2 text-white px-4 py-2 transition shadow-sm hover:opacity-90 font-semibold"
 					style={{ backgroundColor: '#015023', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
 				>
