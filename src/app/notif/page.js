@@ -122,30 +122,32 @@ export default function NotifikasiPage() {
 
       channel
         .listen('.NewNotification', (event) => {
-          console.log('[NotifPage] ✅ New notification received:', event)
+          console.log('[NotifPage] 🔔 New notification received:', event)
 
-          // Generate ID unik agar tidak bentrok key React
-          const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-          
+          // Transform to match API response format (consistent with fetchNotifications)
           const newNotif = {
-            id: event.notification.id_notification || tempId,
+            id: event.notification.id_notification,
             type: event.notification.type,
             judul: event.notification.title,
             isi: event.notification.message,
-            tanggal: event.notification.sentAt,
-            isRead: event.notification.isRead,
-            metadata: event.notification.metadata
+            tanggal: event.notification.sent_at || new Date().toISOString(),
+            kelas: event.notification.metadata?.class_code || null,
+            pengumum: event.notification.sender || 'System',
+            isRead: event.notification.is_read || false,
+            metadata: event.notification.metadata || {}
           }
           
+          console.log('[NotifPage] ✅ Adding new notification to list:', newNotif)
+          
           setAllNotifications(prev => {
-            // Cek duplikat agar tidak muncul ganda
-            const isDuplicate = prev.some(n => 
-                n.judul === newNotif.judul && 
-                n.isi === newNotif.isi && 
-                (Date.now() - new Date(n.tanggal).getTime() < 5000)
-            )
-            if (isDuplicate) return prev
+            // Check for duplicates by notification ID
+            const exists = prev.some(n => n.id === newNotif.id)
+            if (exists) {
+              console.log('[NotifPage] ⚠️ Notification already exists, skipping')
+              return prev
+            }
 
+            // Add new notification at the beginning
             return [newNotif, ...prev]
           })
         })
@@ -637,6 +639,9 @@ export default function NotifikasiPage() {
                           borderRadius: '8px',
                           borderLeft: '4px solid #015023'
                         }}>
+                          <p style={{ fontSize: '14px', color: '#015023', margin: '0 0 4px 0' }}>
+                            <strong>Yth.</strong> {notif.metadata.student_name || 'Mahasiswa'} ({notif.metadata.student_nim || 'NIM'})
+                          </p>
                           <p style={{ fontSize: '14px', color: '#015023', margin: '0 0 4px 0' }}>
                             <strong>Matakuliah:</strong> {notif.metadata.subject_code} - {notif.metadata.subject_name}
                           </p>
