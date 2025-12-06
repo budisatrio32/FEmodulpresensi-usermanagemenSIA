@@ -45,7 +45,7 @@ export default function DetailKelasPage() {
 			const role = getUserRole();
 			if (role) {
 				setUserRole(role);
-				checkPermission();
+				checkPermission(role);
 			}
 		}
 	}, [classId]);
@@ -102,12 +102,16 @@ export default function DetailKelasPage() {
 	};
 
 	// Check Permission based on role
-	const checkPermission = async () => {
+	// Nanti terima parameter roleToCheck, defaultnya ambil dari state jika kosong
+	const checkPermission = async (roleToCheck = null) => {
+		// Kemudian pakai role yang dikirim (prioritas) atau dari state
+		const currentRole = roleToCheck || userRole;
+
 		setErrors(prev => ({...prev, permission: null}));
 		setLoadingPermission(true);
 		try {
 			// Use different permission check based on role
-			const response = userRole === 'mahasiswa' 
+			const response = currentRole === 'mahasiswa' 
 				? await getStudentPermissionForAClass(classId)
 				: await getPermissionForAClass(classId);
 				
