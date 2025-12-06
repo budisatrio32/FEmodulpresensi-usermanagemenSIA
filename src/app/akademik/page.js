@@ -5,46 +5,47 @@ import Navbar from '@/components/ui/navigation-menu';
 import Footer from '@/components/ui/footer';
 import DataTable from '@/components/ui/table';
 import LoadingEffect from '@/components/ui/loading-effect';
-import ChatModal from '@/components/ui/chatmodal';
+import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 import { Eye, GraduationCap, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getTeachingClasses, getStudentClasses } from '@/lib/ClassApi';
 import { getAcademicPeriods } from '@/lib/gradingApi';
-import { getProfile } from '@/lib/profileApi';
+import Cookies from 'js-cookie';
 
 export default function AkademikPage() {
 	const router = useRouter();
 	const [isLoading, setIsLoading] = useState(true);
+	const [loadingClass, setLoadingClass] = useState(false);
 	const [selectedSemester, setSelectedSemester] = useState('');
 	const [semesterOptions, setSemesterOptions] = useState([]);
 	const [data, setData] = useState([]);
 	const [userRole, setUserRole] = useState(null);
-
-	// Chat modal state
-	const [isChatOpen, setIsChatOpen] = useState(false);
-	const [chatUser, setChatUser] = useState({ id: '', name: '', nim: '' });
+	const [errors, setErrors] = useState({});
 
 	// Fetch initial data saat component mount
 	useEffect(() => {
-		fetchAllData();
+		fetchAll();
 	}, []);
 
 	// Fetch classes ketika semester berubah dan userRole sudah tersedia
 	useEffect(() => {
 		if (selectedSemester && userRole) {
-			fetchClassesData(selectedSemester);
+			fetchClassesData();
 		}
 	}, [selectedSemester, userRole]);
 
-	const fetchAllData = async () => {
+	const fetchAll = async () => {
+		setErrors(prev => ({...prev, fetch: null}));
 		setIsLoading(true);
-		try {
-			// Fetch user profile to detect role
-			const profileResponse = await getProfile();
-			if (profileResponse.status === 'success') {
-				setUserRole(profileResponse.data.role);
-			}
+		// Get role from cookie
+		const role = Cookies.get('roles');
+		setUserRole(role);
+		await fetchAcademicPeriods();
+		setIsLoading(false);
+	};
 
+	const fetchAcademicPeriods = async () => {
+		try {
 			const response = await getAcademicPeriods();
 			
 			if (response.status === 'success') {
@@ -63,21 +64,23 @@ export default function AkademikPage() {
 				} else if (options.length > 0) {
 					setSelectedSemester(options[0].value);
 				}
+			} else {
+				setErrors(prev => ({...prev, fetch: 'Gagal memuat data periode akademik: ' + response.message}));
 			}
 		} catch (error) {
 			console.error('Error fetching academic periods:', error);
-		} finally {
-			setIsLoading(false);
+			setErrors(prev => ({...prev, fetch: 'Terjadi kesalahan saat memuat data periode akademik: ' + error.message}));
 		}
 	};
 
-	const fetchClassesData = async (academicPeriodId) => {
-		setIsLoading(true);
+	const fetchClassesData = async () => {
+		setLoadingClass(true);
+		setErrors(prev => ({...prev, classes: null}));
 		try {
 			// Hit different endpoint based on user role
 			const response = userRole === 'mahasiswa' 
-				? await getStudentClasses(academicPeriodId)
-				: await getTeachingClasses(academicPeriodId);
+				? await getStudentClasses(selectedSemester)
+				: await getTeachingClasses(selectedSemester);
 			
 			if (response.status === 'success' && response.data) {
 				// Backend udah return formatted data, tinggal map ke table format
@@ -88,13 +91,21 @@ export default function AkademikPage() {
 					kode_matkul: item.code_subject,
 				}));
 				setData(formattedData);
+			} else {
+				setData([]);
+				setErrors(prev => ({...prev, classes: 'Gagal memuat data kelas: ' + response.message}));
 			}
 		} catch (error) {
 			console.error('Error fetching classes:', error);
 			setData([]);
+			setErrors(prev => ({...prev, classes: 'Terjadi kesalahan saat memuat data kelas: ' + error.message}));
 		} finally {
-			setIsLoading(false);
+			setLoadingClass(false);
 		}
+	};
+
+	const handleBack = () => {
+		router.back();
 	};
 
 	const columns = [
@@ -118,6 +129,25 @@ export default function AkademikPage() {
 			</div>
 		),
 	};
+
+	// Show loading
+	if (isLoading) {
+		return <LoadingEffect message="Memuat data periode akademik..." />;
+	} else if (errors.fetch) {
+		return (
+			<div className="min-h-screen bg-brand-light-sage">
+				<Navbar />
+				<div className="container mx-auto px-4 py-8 max-w-7xl">
+					<ErrorMessageBoxWithButton
+						message={errors.fetch}
+						action={fetchAll}
+						back={true}
+						actionback={handleBack}
+					/>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="min-h-screen bg-brand-light-sage flex flex-col">
@@ -173,25 +203,29 @@ export default function AkademikPage() {
 					</div>
 				</div>
 
-				{/* Tabel Daftar Kelas */}
-				<DataTable
-					columns={columns}
-					data={data}
-					actions={[]}
-					pagination={false}
-					customRender={customRender}
-					isLoading={isLoading}
-				/>
-			</div>
+				{/* Error Message */}
+				{errors.classes && (
+					<ErrorMessageBoxWithButton message={errors.classes} action={fetchClassesData} />
+				)}
 
-			{/* Chat Modal */}
-			<ChatModal
-				isOpen={isChatOpen}
-				onClose={() => setIsChatOpen(false)}
-				userId={chatUser.id}
-				userName={chatUser.name}
-				userNim={chatUser.nim}
-			/>
+				{/* Loading State */}
+				{loadingClass && (
+					<div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+						<p className="text-lg" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>Memuat data...</p>
+					</div>
+				)}
+
+				{/* Tabel Daftar Kelas */}
+				{!loadingClass && !errors.classes && (
+					<DataTable
+						columns={columns}
+						data={data}
+						actions={[]}
+						pagination={false}
+						customRender={customRender}
+					/>
+				)}
+			</div>
 
 			<Footer />
 		</div>
