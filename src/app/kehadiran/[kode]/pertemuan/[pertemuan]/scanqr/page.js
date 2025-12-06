@@ -471,13 +471,9 @@ export default function ScanQRPage() {
         ),
     };
 
-    // Loading permission check
     if (loadingPermission) {
         return <LoadingEffect message="Memeriksa izin akses..." />;
-    }
-
-    // Permission denied screen
-    if (permissionGranted === false) {
+    } else if (permissionGranted === false) {
         return (
             <div className="min-h-screen bg-brand-light-sage">
                 <Navbar />
@@ -490,10 +486,7 @@ export default function ScanQRPage() {
                 </div>
             </div>
         );
-    }
-
-    // Permission error screen
-    if (errors.permission) {
+    } else if (errors.permission) {
         return (
             <div className="min-h-screen bg-brand-light-sage">
                 <Navbar />
@@ -505,14 +498,9 @@ export default function ScanQRPage() {
                 </div>
             </div>
         );
-    }
-
-    if (loading) {
-        return <LoadingEffect message="Memuat data presensi..." />;
-    }
-
-    // Show error if fetch failed
-    if (errors.fetch) {
+    } else if (loading) {
+        return <LoadingEffect message="Memulai Presensi..." />;
+    } else if (errors.fetch) {
         return (
             <div className="min-h-screen bg-brand-light-sage">
                 <Navbar />
