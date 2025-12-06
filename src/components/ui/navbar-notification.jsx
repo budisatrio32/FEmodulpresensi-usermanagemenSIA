@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
+import { useState, useEffect, useRef, useCallback, Fragment, forwardRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Bell } from 'lucide-react';
@@ -19,7 +19,7 @@ import { getEcho } from '@/lib/echo';
 import { getNotifications, markAsRead } from '@/lib/notificationApi';
 import { getConversationDetail } from '@/lib/chatApi';
 
-const NavbarNotification = ({ className, isChatOpen, chatUser, setChatUser, setIsChatOpen, ...props }, ref) => {
+const NavbarNotification = forwardRef(({ className, isChatOpen, chatUser, setChatUser, setIsChatOpen }, ref) => {
   const router = useRouter();
   
   const { activeChatConversation, isChatOpen: isAnyChatOpenContext } = useChatContext();
@@ -381,7 +381,6 @@ const NavbarNotification = ({ className, isChatOpen, chatUser, setChatUser, setI
             className
           )}
           style={{ color: '#DABC4E' }}
-          {...props}
         >
           <Bell className="w-5 h-5 sm:w-6 sm:h-6 cursor-pointer" fill="currentColor" />
           {unreadCount > 0 && (
@@ -496,7 +495,7 @@ const NavbarNotification = ({ className, isChatOpen, chatUser, setChatUser, setI
       </DropdownMenuContent>
     </DropdownMenu>
   );
-};
+});
 
 NavbarNotification.displayName = "NavbarNotification";
 

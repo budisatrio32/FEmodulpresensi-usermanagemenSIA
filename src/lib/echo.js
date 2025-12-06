@@ -36,6 +36,14 @@ export const getEcho = () => {
      return echoInstance;
   }
 
+  // Ambil URL dari env, jangan hardcoded localhost
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+
+  /**
+   * Logic untuk bersihkan trailing slash kalau ada (biar ga double slash //)
+   * Entahlah ini saran dari gemini.
+   */
+  const cleanBaseUrl = apiBaseUrl.replace(/\/+$/, '');
 
   const config = {
     broadcaster: 'reverb',
@@ -46,7 +54,8 @@ export const getEcho = () => {
     forceTLS: false,
     enabledTransports: ['ws', 'wss'],
     disableStats: true,
-    authEndpoint: 'http://localhost:8000/api/broadcasting/auth',
+    // Dynamic URL untuk auth endpoint
+    authEndpoint: `${cleanBaseUrl}/broadcasting/auth`,
     auth: {
       headers: {
         Authorization: `Bearer ${token}`,
