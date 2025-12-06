@@ -1,96 +1,160 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/ui/navigation-menu';
 import Footer from '@/components/ui/footer';
 import DataTable from '@/components/ui/table';
+import LoadingEffect from '@/components/ui/loading-effect';
+import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 import { ArrowLeft, GraduationCap, Users, Mail, Phone, MessageCircle, Megaphone } from 'lucide-react';
 import { use, useMemo, useState, useEffect } from 'react';
 import { getClassDetail } from '@/lib/ClassApi';
 import { getProfile } from '@/lib/profileApi';
+import { getPermissionForAClass, getStudentPermissionForAClass } from '@/lib/permissionApi';
 import ChatModal from '@/components/ui/chatmodal';
+import Cookies from 'js-cookie';
 
-export default function DetailKelasPage({ params }) {
+export default function DetailKelasPage() {
 	const router = useRouter();
-	const searchParams = useSearchParams();
-	const unwrappedParams = use(params);
-	const { kode } = unwrappedParams;
+	const params = useParams();
 	
-	const classId = searchParams.get('id') || '';
+	const classId = params.kode || '';
 
 	// State for class data
 	const [classData, setClassData] = useState(null);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState(null);
+	const [isLoading, setIsLoading] = useState(false);
+	const [errors, setErrors] = useState({});
+
+	// Permission states
+	const [permissionChecked, setPermissionChecked] = useState(false);
+	const [permissionGranted, setPermissionGranted] = useState(null);
+	const [loadingPermission, setLoadingPermission] = useState(true);
+	const [countdown, setCountdown] = useState(5);
 
 	// Get user role
 	const [userRole, setUserRole] = useState(null);
 	const [currentUserId, setCurrentUserId] = useState(null);
 
-	useEffect(() => {
-		// Fetch current user profile to get user ID and role
-		const fetchUserProfile = async () => {
-			try {
-				const profileResponse = await getProfile();
-				if (profileResponse.status === 'success') {
-					setCurrentUserId(profileResponse.data.id_user_si);
-					setUserRole(profileResponse.data.role);
-					// Simpan ke localStorage untuk fallback (kalau diperlukan di halaman lain)
-					localStorage.setItem('userRole', profileResponse.data.role);
-				}
-			} catch (err) {
-				console.error('Error fetching user profile:', err);
-				// Fallback ke localStorage jika API gagal
-				const cachedRole = localStorage.getItem('userRole');
-				if (cachedRole) {
-					setUserRole(cachedRole);
-				} else {
-					setError('Gagal memuat profil pengguna');
-				}
-			}
-		};
-		
-		fetchUserProfile();
-	}, []);
-
-	// Fetch class detail data
-	useEffect(() => {
-		const fetchClassData = async () => {
-			if (!classId) {
-				setError('ID kelas tidak ditemukan');
-				setLoading(false);
-				return;
-			}
-
-			if (!userRole) {
-				// Wait for userRole to be set
-				return;
-			}
-
-			try {
-				setLoading(true);
-				// Pass userRole to API untuk hit endpoint yang sesuai
-				const response = await getClassDetail(classId, userRole);
-				
-				if (response.status === 'success') {
-					setClassData(response.data);
-				} else {
-					setError('Gagal memuat data kelas');
-				}
-			} catch (err) {
-				console.error('Error fetching class detail:', err);
-				setError(err.message || 'Terjadi kesalahan saat memuat data');
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		fetchClassData();
-	}, [classId, userRole]);
-
 	// Chat modal state
 	const [isChatOpen, setIsChatOpen] = useState(false);
 	const [chatUser, setChatUser] = useState({ id: '', name: '', nim: '' });
+
+	// Check permission on mount
+	useEffect(() => {
+		if (classId) {
+			const role = getUserRole();
+			if (role) {
+				setUserRole(role);
+				checkPermission();
+			}
+		}
+	}, [classId]);
+
+	// Fetch data after permission is granted
+	useEffect(() => {
+		if (permissionChecked && permissionGranted && userRole) {
+			fetchAll();
+		}
+	}, [permissionChecked, permissionGranted, userRole]);
+
+	// Countdown redirect effect when permission is denied
+	useEffect(() => {
+		let timer;
+		if (permissionGranted === false) {
+			if (countdown > 0) {
+				timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+			} else {
+				handleBack();
+			}
+		}
+		return () => clearTimeout(timer);
+	}, [permissionGranted, countdown]);
+
+	const getUserRole = () => {
+		const role = Cookies.get('roles');
+		return role;
+	};
+
+	const fetchAll = async () => {
+		setErrors(prev => ({...prev, fetch: null}));
+		setIsLoading(true);
+		
+		await Promise.all([
+			fetchUserProfile(),
+			fetchClassData()
+		]);
+		
+		setIsLoading(false);
+	};
+
+	const fetchUserProfile = async () => {
+		try {
+			const profileResponse = await getProfile();
+			if (profileResponse.status === 'success') {
+				setCurrentUserId(profileResponse.data.id_user_si);
+			} else {
+				setErrors(prev => ({...prev, fetch: 'Gagal memuat profil pengguna: ' + profileResponse.message}));
+			}
+		} catch (err) {
+			console.error('Error fetching user profile:', err);
+			setErrors(prev => ({...prev, fetch: 'Terjadi kesalahan saat memuat profil pengguna: ' + err.message}));
+		}
+	};
+
+	// Check Permission based on role
+	const checkPermission = async () => {
+		setErrors(prev => ({...prev, permission: null}));
+		setLoadingPermission(true);
+		try {
+			// Use different permission check based on role
+			const response = userRole === 'mahasiswa' 
+				? await getStudentPermissionForAClass(classId)
+				: await getPermissionForAClass(classId);
+				
+			if (response.status === 'success') {
+				// Check if permission is granted
+				if (response.data.permission === false) {
+					setPermissionGranted(false);
+					setPermissionChecked(true);
+				} else {
+					setPermissionGranted(true);
+					setPermissionChecked(true);
+				}
+			} else {
+				setErrors(prev => ({...prev, permission: 'Gagal memeriksa izin akses: ' + response.message}));
+			}
+		} catch (error) {
+			setErrors(prev => ({...prev, permission: 'Gagal memeriksa izin akses: ' + (error.message || 'Terjadi kesalahan')}));
+		} finally {
+			setLoadingPermission(false);
+		}
+	};
+
+	const fetchClassData = async () => {
+		setErrors(prev => ({...prev, class: null}));
+		
+		try {
+			// Pass userRole to API untuk hit endpoint yang sesuai
+			const response = await getClassDetail(classId, userRole);
+			
+			if (response.status === 'success') {
+				setClassData(response.data);
+			} else {
+				setErrors(prev => ({...prev, class: 'Gagal memuat data kelas: ' + response.message}));
+			}
+		} catch (err) {
+			console.error('Error fetching class detail:', err);
+			setErrors(prev => ({...prev, class: 'Terjadi kesalahan saat memuat data kelas: ' + (err.message || 'Terjadi kesalahan')}));
+		}
+	};
+
+	const handleBack = () => {
+		router.push('/akademik');
+	};
+
+	const handlePengumumanClick = () => {
+		router.push(`/akademik/detailkelas/${classId}/pengumuman`);
+	}
 
 	// Extract class info and students/lecturers from API response
 	const classInfo = classData?.class_info || {};
@@ -200,6 +264,52 @@ export default function DetailKelasPage({ params }) {
 		},
 	};
 
+	// Show loading permission
+	if (loadingPermission) {
+		return <LoadingEffect message="Memeriksa izin akses..." />;
+	} else if (permissionGranted === false) {
+		return (
+			<div className="min-h-screen bg-brand-light-sage">
+				<Navbar />
+				<div className="container mx-auto px-4 py-8 max-w-7xl">
+					<ErrorMessageBoxWithButton
+						message={`Anda tidak memiliki izin untuk mengakses kelas ini.\n\nAkan dialihkan kembali dalam ${countdown} detik.`}
+						action={handleBack}
+						btntext={countdown > 0 ? `Kembali (${countdown})` : 'Kembali'}
+					/>
+				</div>
+			</div>
+		);
+	} else if (errors.permission) {
+		return (
+			<div className="min-h-screen bg-brand-light-sage">
+				<Navbar />
+				<div className="container mx-auto px-4 py-8 max-w-7xl">
+					<ErrorMessageBoxWithButton
+						message={errors.permission}
+						action={() => checkPermission(userRole)}
+					/>
+				</div>
+			</div>
+		);
+	} else if (errors.fetch) {
+		return (
+			<div className="min-h-screen bg-brand-light-sage">
+				<Navbar />
+				<div className="container mx-auto px-4 py-8 max-w-7xl">
+					<ErrorMessageBoxWithButton
+						message={errors.fetch}
+						action={fetchAll}
+						back={true}
+						actionback={handleBack}
+					/>
+				</div>
+			</div>
+		);
+	} else if (isLoading) {
+		return <LoadingEffect message="Memuat data kelas..." />;
+	}
+
 	return (
 		<div className="min-h-screen bg-brand-light-sage flex flex-col">
 			<Navbar/>
@@ -207,7 +317,7 @@ export default function DetailKelasPage({ params }) {
 				
 				{/* Back Button */}
 				<button
-					onClick={() => router.back()}
+					onClick={handleBack}
 					className="flex items-center gap-2 mb-6 font-medium hover:opacity-80 transition"
 					style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}
 				>
@@ -215,22 +325,16 @@ export default function DetailKelasPage({ params }) {
 					Kembali ke Daftar Kelas
 				</button>
 
-				{/* Loading State */}
-				{loading && (
-					<div className="bg-white rounded-2xl shadow-lg p-6 mb-6 text-center" style={{ borderRadius: '16px' }}>
-						<p style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>Memuat data kelas...</p>
-					</div>
-				)}
-
 				{/* Error State */}
-				{error && (
-					<div className="bg-white rounded-2xl shadow-lg p-6 mb-6 text-center" style={{ borderRadius: '16px' }}>
-						<p style={{ color: '#dc2626', fontFamily: 'Urbanist, sans-serif' }}>{error}</p>
-					</div>
+				{errors.class && (
+					<ErrorMessageBoxWithButton
+						message={errors.class}
+						action={fetchClassData}
+					/>
 				)}
 
 				{/* Header */}
-				{!loading && !error && classData && (
+				{!errors.class && classData && (
 					<div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ borderRadius: '16px' }}>
 						<div className="flex items-start gap-4">
 							<div className="p-4 rounded-xl" style={{ backgroundColor: '#015023' }}>
@@ -245,7 +349,7 @@ export default function DetailKelasPage({ params }) {
 								</p>
 								<div className="mt-3 flex flex-wrap gap-3">
 									<span className="px-3 py-1 rounded-lg font-medium" style={{ backgroundColor: '#f3f4f6', color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-										Kode: {classInfo.code_subject || '-'}
+										Kelas: {classInfo.code_subject || '-'}
 									</span>
 									<span className="px-3 py-1 rounded-lg font-medium" style={{ backgroundColor: '#DABC4E', color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
 										{classInfo.academic_period || '-'}
@@ -254,44 +358,47 @@ export default function DetailKelasPage({ params }) {
 										{classInfo.sks || 0} SKS
 									</span>
 								</div>
-				</div>
-				</div>
-		</div>
-				)}			{/* Tabel Daftar Dosen Pengampu */}
-			{!loading && !error && classData && (
-				<div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ borderRadius: '16px' }}>
-					<div className="flex items-center justify-between mb-4">
-						<h2 className="text-xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-							Daftar Dosen Pengampu
-						</h2>
-						{userRole === 'dosen' && (
-							<button
-								onClick={() => router.push(`/akademik/detailkelas/${kode}/pengumuman?id=${classId}`)}
-								className="flex items-center gap-2 text-white px-4 py-2 transition shadow-sm hover:opacity-90 font-semibold"
-								style={{ backgroundColor: '#015023', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
-							>
-								<Megaphone className="w-4 h-4" />
-								Buat Pengumuman
-							</button>
-						)}
+							</div>
+						</div>
 					</div>
-					
-					<DataTable
-						columns={dosenColumns}
-						data={dosenData}
-						actions={[]}
-						pagination={false}
-						customRender={dosenCustomRender}
-					/>
-				</div>
-			)}
+				)}
 
-			{/* Tabel Daftar Mahasiswa */}
-			{!loading && !error && classData && (
-				<div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ borderRadius: '16px' }}>
-					<h2 className="text-xl font-bold mb-4" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-						Daftar Mahasiswa
-					</h2>					<DataTable
+				{/* Tabel Daftar Dosen Pengampu */}
+				{!errors.class && classData && (
+					<div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ borderRadius: '16px' }}>
+						<div className="flex items-center justify-between mb-4">
+							<h2 className="text-xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+								Daftar Dosen Pengampu
+							</h2>
+							{userRole === 'dosen' && (
+								<button
+									onClick={handlePengumumanClick}
+									className="flex items-center gap-2 text-white px-4 py-2 transition shadow-sm hover:opacity-90 font-semibold"
+									style={{ backgroundColor: '#015023', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
+								>
+									<Megaphone className="w-4 h-4" />
+									Buat Pengumuman
+								</button>
+							)}
+						</div>
+						
+						<DataTable
+							columns={dosenColumns}
+							data={dosenData}
+							actions={[]}
+							pagination={false}
+							customRender={dosenCustomRender}
+						/>
+					</div>
+				)}
+
+				{/* Tabel Daftar Mahasiswa */}
+				{!errors.class && classData && (
+					<div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ borderRadius: '16px' }}>
+						<h2 className="text-xl font-bold mb-4" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+							Daftar Mahasiswa
+						</h2>
+						<DataTable
 							columns={columns}
 							data={mahasiswaData}
 							actions={[]}
@@ -299,7 +406,7 @@ export default function DetailKelasPage({ params }) {
 							customRender={customRender}
 						/>
 					</div>
-			)}
+				)}
 			</div>
 
 			{/* Chat Modal */}

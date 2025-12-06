@@ -115,11 +115,15 @@ export default function AkademikPage() {
 		{ key: 'detail', label: 'Detail Kelas', width: '140px' },
 	];
 
+	const handleDetailClick = (item) => {
+		router.push(`/akademik/detailkelas/${item.id_class}`);
+	}
+
 	const customRender = {
 		detail: (_value, item) => (
 			<div className="flex items-center justify-center">
 				<button
-					onClick={() => router.push(`/akademik/detailkelas/${item.kode_kelas}?id=${item.id_class}`)}
+					onClick={() => handleDetailClick(item)}
 					className="flex items-center gap-2 text-white px-4 py-2 transition shadow-sm hover:opacity-90 font-semibold"
 					style={{ backgroundColor: '#015023', borderRadius: '12px', fontFamily: 'Urbanist, sans-serif' }}
 				>

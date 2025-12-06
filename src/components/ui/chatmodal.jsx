@@ -50,7 +50,7 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
                 // Fetch all unread chat notifications (use 'status: unread' not 'is_read')
                 const response = await getNotifications({ type: 'chat', status: 'unread' });
                 
-                if (response.status === 'success' && response.data?.notifications) {
+                if (response.status === 'success') {
                     // Filter notifications that belong to this conversation
                     const conversationNotifs = response.data.notifications.filter(
                         notif => notif.metadata?.id_conversation?.toString() === conversationId.toString()
