@@ -1710,7 +1710,7 @@ export default function DetailKelas() {
         <AlertConfirmationDialog 
             open={showConfirmBack}
             onOpenChange={setShowConfirmBack}
-            tittle="Kembali ke Daftar Kelas"
+            title="Kembali ke Daftar Kelas"
             description="Perubahan yang belum disimpan akan hilang. Apakah Anda yakin ingin kembali?"
             onConfirm={confirmback}
             confirmText="Ya, Kembali"
