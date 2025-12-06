@@ -30,13 +30,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { PrimaryButton, OutlineButton } from '@/components/ui/button';
 
-const AdminNavbarBrand = React.forwardRef(({ className, ...props }, ref) => (
-<div 
-ref={ref}
-className={cn("flex items-center gap-2 sm:gap-3", className)}
-{...props}
+const AdminNavbarBrand = React.forwardRef(({ className, isScrolled, ...props }, ref) => (
+<Link
+  href="/adminpage"
+  ref={ref}
+  className={cn("flex items-center gap-2 sm:gap-3 transition-all duration-300", className)}
+  {...props}
 >
-<div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center p-1 flex-shrink-0">
+<div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center p-1 shrink-0 transition-all duration-300">
     <Image 
     src="/Logo.png"
     alt="UGN Logo"
@@ -45,10 +46,10 @@ className={cn("flex items-center gap-2 sm:gap-3", className)}
     className="rounded-full"
     />
 </div>
-<span className="text-brand-yellow font-semibold text-sm sm:text-base md:text-lg tracking-wide hidden sm:inline" style={{color: '#DABC4E', fontFamily: 'Urbanist, sans-serif'}}>
+<span className="text-brand-yellow font-semibold text-sm sm:text-base md:text-lg tracking-wide hidden sm:inline transition-all duration-300" style={{color: '#DABC4E', fontFamily: 'Urbanist, sans-serif'}}>
     Universitas Global Nusantara
 </span>
-</div>
+</Link>
 ))
 
 const AdminNavbarTitle = React.forwardRef(({ className, title = "Dashboard Admin", ...props }, ref) => (
@@ -73,9 +74,24 @@ const AdminNavbar = React.forwardRef(({ className, title, userName, Name, ...pro
 const router = useRouter()
 const { user, logoutLocal } = useAuth();
 const [showLogoutDialog, setShowLogoutDialog] = React.useState(false);
+const [isScrolled, setIsScrolled] = React.useState(false);
 const displayuserName = (userName || user.username || '...');
 const displayName = (Name || user.name || '...');
 const displayImage = user.image;
+
+// Handle scroll event for floating navbar
+React.useEffect(() => {
+  const handleScroll = () => {
+    if (window.scrollY > 20) {
+      setIsScrolled(true);
+    } else {
+      setIsScrolled(false);
+    }
+  };
+
+  window.addEventListener('scroll', handleScroll);
+  return () => window.removeEventListener('scroll', handleScroll);
+}, []);
 
 const confirmLogout = async () => {
   setShowLogoutDialog(false);
@@ -97,15 +113,30 @@ const confirmLogout = async () => {
 
 return (
   <>
+  <div className={cn(
+    "w-full transition-all duration-300",
+    isScrolled ? "fixed top-0 left-0 right-0 z-50 py-3 sm:py-4" : "relative"
+  )}>
   <nav 
     ref={ref}
-    className={cn("bg-brand-green shadow-md rounded-b-[18px]", className)} 
-    style={{backgroundColor: '#015023'}}
+    className={cn(
+      "bg-brand-green transition-all duration-300 ease-in-out",
+      isScrolled 
+        ? "mx-4 sm:mx-6 lg:mx-8 rounded-[12px] sm:rounded-[18px]" 
+        : "shadow-md rounded-b-[12px] sm:rounded-b-[18px] rounded-t-none",
+      className
+    )} 
+    style={{
+      backgroundColor: '#015023',
+      ...(isScrolled && {
+        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1)'
+      })
+    }}
     {...props}
   >
     <div className="container mx-auto px-4 sm:px-6">
-      <div className="flex justify-between items-center h-16 sm:h-20">
-        <AdminNavbarBrand />
+      <div className="flex justify-between items-center h-16 sm:h-20 transition-all duration-300">
+        <AdminNavbarBrand isScrolled={isScrolled} />
         <div className="flex items-center gap-3 sm:gap-4">
           <AdminNavbarTitle title={title} />
           
@@ -115,7 +146,7 @@ return (
               <button 
                 className="transition-all duration-200 hover:scale-105 hover:opacity-90 cursor-pointer focus:outline-none"
               >
-                <Avatar className="size-10 sm:size-12">
+                <Avatar className="size-9 sm:size-10 transition-all duration-300">
                   <AvatarImage src={displayImage} alt={displayuserName} />
                   <AvatarFallback>
                     {displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
@@ -156,6 +187,7 @@ return (
       </div>
     </div>  
   </nav>
+  </div>
 
   {/* Konfirmasi dialog */}
   <AlertConfirmationDialog 
