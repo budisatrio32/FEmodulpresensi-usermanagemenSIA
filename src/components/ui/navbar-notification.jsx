@@ -22,67 +22,43 @@ import { getConversationDetail } from '@/lib/chatApi';
 const NavbarNotification = forwardRef(({ className, isChatOpen, chatUser, setChatUser, setIsChatOpen }, ref) => {
   const router = useRouter();
   
-  const { activeChatConversation, isChatOpen: isAnyChatOpenContext } = useChatContext();
+  const { activeChatConversation } = useChatContext();
 
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   
-  // Expose fetchNotifications untuk bisa dipanggil dari luar
+  const processedIdsRef = useRef(new Set());
   const fetchNotificationsRef = useRef(null);
-  
-  // Use refs to access latest chat state without re-subscribing
   const isChatOpenRef = useRef(isChatOpen);
-  const chatUserRef = useRef(chatUser);
   const activeChatConversationRef = useRef(activeChatConversation);
   
-  // Update refs when props or context change
   useEffect(() => {
     isChatOpenRef.current = isChatOpen;
-    chatUserRef.current = chatUser;
     activeChatConversationRef.current = activeChatConversation;
-    
-    console.log('[NavbarNotification] 🔄 State updated - isChatOpen:', isChatOpen, 'activeChatConv:', activeChatConversation);
-  }, [isChatOpen, chatUser, activeChatConversation]);
-  
-  // Listen to chat notifications dismissed event
+  }, [isChatOpen, activeChatConversation]);
   useEffect(() => {
     const handleNotificationsDismissed = (e) => {
-      const { notificationIds, conversationId } = e.detail || {};
+      const { notificationIds } = e.detail || {};
       
       if (notificationIds && notificationIds.length > 0) {
-        console.log('[NavbarNotification] 🗑️ Removing dismissed notifications:', notificationIds);
+        console.log('[NavbarNotification] Removing dismissed notifications:', notificationIds);
         
-        // Optimistic UI update: Remove notifications from list
-        setNotifications(prev => {
-          const filtered = prev.filter(n => !notificationIds.includes(n.id));
-          return filtered;
-        });
-        
-        // Decrement unread count
+        setNotifications(prev => prev.filter(n => !notificationIds.includes(n.id)));
         setUnreadCount(prev => Math.max(0, prev - notificationIds.length));
-        
-        console.log('[NavbarNotification] ✅ UI updated optimistically');
-        
-        // ❌ DON'T fetch immediately - trust optimistic update!
-        // Will fetch when chat closes or user manually refreshes
       } else {
-        // Fallback: Just refresh if no IDs provided
-        console.log('[NavbarNotification] 🔄 Refreshing notifications (no IDs provided)');
         if (fetchNotificationsRef.current) {
           fetchNotificationsRef.current();
         }
       }
     };
     
-    // Listen to chat closed event - NOW fetch fresh data
     const handleChatClosed = () => {
-      console.log('[NavbarNotification] 🔄 Chat closed, fetching fresh data');
       setTimeout(() => {
         if (fetchNotificationsRef.current) {
           fetchNotificationsRef.current();
         }
-      }, 2000); // Small delay to ensure backend processed
+      }, 2000); 
     };
     
     window.addEventListener('chatNotificationsDismissed', handleNotificationsDismissed);
@@ -101,12 +77,10 @@ const NavbarNotification = forwardRef(({ className, isChatOpen, chatUser, setCha
       const response = await getNotifications();
 
       if (response.status === 'success') {
-        // Set unread count dari backend
         setUnreadCount(response.data.unread_count || 0);
         
-        // Limit notifikasi ke 10 items
         const transformed = response.data.notifications.slice(0, 10).map(notif => ({
-          id: notif.id_notification,
+          id: String(notif.id_notification),
           type: notif.type,
           title: notif.title,
           message: notif.message,
@@ -115,6 +89,8 @@ const NavbarNotification = forwardRef(({ className, isChatOpen, chatUser, setCha
           metadata: notif.metadata
         }));
         setNotifications(transformed);
+
+        transformed.forEach(n => processedIdsRef.current.add(n.id));
       }
     } catch (err) {
       console.error('Error fetching notifications:', err);
@@ -123,12 +99,10 @@ const NavbarNotification = forwardRef(({ className, isChatOpen, chatUser, setCha
     }
   }, []);
   
-  // Store ref untuk bisa dipanggil dari custom event
   useEffect(() => {
     fetchNotificationsRef.current = fetchNotifications;
   }, [fetchNotifications]);
 
-  // Fetch on mount
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
@@ -141,64 +115,23 @@ const NavbarNotification = forwardRef(({ className, isChatOpen, chatUser, setCha
       return;
     }
 
-    // Get user ID - PRIORITY: Cookies, FALLBACK: localStorage
-    let userId = null;
-    
-    // Try cookies first (recommended)
-    const userIdFromCookie = Cookies.get('user_id');
-    if (userIdFromCookie) {
-      userId = userIdFromCookie;
-      console.log('[NavbarNotification] User ID from cookies:', userId);
-    } else {
-      // Fallback to localStorage
+    let userId = Cookies.get('user_id');
+    if (!userId) {
       const userStr = localStorage.getItem('user');
       if (userStr) {
         try {
-          const user = JSON.parse(userStr);
-          userId = user.id_user_si;
-          console.log('[NavbarNotification] User ID from localStorage (fallback):', userId);
-        } catch (err) {
-          console.error('[NavbarNotification] Failed to parse user data:', err);
-        }
+          userId = JSON.parse(userStr).id_user_si;
+        } catch (err) { console.error(err); }
       }
     }
 
-    if (!userId) {
-      console.warn('[NavbarNotification] No user ID found in cookies or localStorage');
-      return;
-    }
-
-    console.log('[NavbarNotification] Setting up subscription for user:', userId);
+    if (!userId) return;
 
     let channel = null;
     let isSubscribed = false;
 
-    // Wait for connection to be established
-    const setupSubscription = () => {
-      const pusher = echo.connector?.pusher;
-      if (!pusher) {
-        console.error('[NavbarNotification] Pusher instance not found');
-        return;
-      }
-
-      const state = pusher.connection.state;
-      console.log('[NavbarNotification] Current connection state:', state);
-
-      if (state === 'connected') {
-        subscribeToChannel();
-      } else {
-        console.log('[NavbarNotification] Waiting for connection...');
-        pusher.connection.bind('connected', subscribeToChannel);
-      }
-    };
-
     const subscribeToChannel = () => {
-      if (isSubscribed) {
-        console.log('[NavbarNotification] Already subscribed, skipping');
-        return;
-      }
-
-      console.log('[NavbarNotification] Subscribing to private channel: user.' + userId);
+      if (isSubscribed) return;
       
       try {
         channel = echo.private(`user.${userId}`);
@@ -206,153 +139,102 @@ const NavbarNotification = forwardRef(({ className, isChatOpen, chatUser, setCha
 
         channel
           .listen('.NewNotification', (event) => {
-            console.log('[NavbarNotification] ✅ New notification received:', event);
+            console.log('[NavbarNotification] New notification received:', event);
             
-            // Jangan tampilkan notifikasi chat jika modal terbuka untuk conversation yang sama
+            const rawId = event.notification?.id_notification || event.id_notification;
+            const stringId = rawId ? String(rawId) : null;
+
+            if (stringId && processedIdsRef.current.has(stringId)) {
+                console.log(`[NavbarNotification] Duplicate event blocked: ${stringId}`);
+                return;
+            }
+
+            if (stringId) {
+                processedIdsRef.current.add(stringId);
+            }
+
             const notifType = event.notification?.type || event.type;
             const notifMetadata = event.notification?.metadata || event.metadata;
-            
-            console.log('[NavbarNotification] 🔍 Debug - Type:', notifType, 'Metadata:', notifMetadata);
-            
-            // Use context ref to get latest active conversation
             const activeConvId = activeChatConversationRef.current;
-            
-            console.log('[NavbarNotification] 🔍 Active conversation from context:', activeConvId);
             
             if (notifType === 'chat' && activeConvId && notifMetadata?.id_conversation) {
               if (String(notifMetadata.id_conversation) === String(activeConvId)) {
-                  
-                console.log('Sedang chatting, notifikasi disembunyikan dari UI');
-
-                // Kita harus lapor ke Backend bahwa notifikasi ini sudah "auto-read"
-                // karena user sedang melihat layarnya.
-                const notifId = event.notification?.id_notification || event.id_notification;
-                
-                if (notifId) {
-                    // Panggil API markAsRead secara background (tanpa await biar ga blocking)
-                    markAsRead(notifId).catch(err => console.error('Gagal auto-read:', err));
+                console.log('Chat notification suppressed - conversation is active');
+                if (rawId) {
+                    markAsRead(rawId).catch(err => console.error('Failed to auto-read:', err));
                 }
-
-                return; // Stop, jangan lanjut update state unreadCount
+                return; 
               }
             }
             
+            const newNotif = {
+                id: stringId || `temp-${Date.now()}`,
+                type: notifType,
+                title: event.notification?.title || event.title,
+                message: event.notification?.message || event.message,
+                date: event.notification?.sentAt || new Date().toISOString(),
+                isRead: event.notification?.isRead || false,
+                metadata: notifMetadata
+            };
+
             setNotifications(prev => {
-              // Generate id yg unik dengan Math.random() biar Key ngga tabrakan
-              // Backend ngirim id_notification: null, jadi butuh tempID yang bagus dan kuat
-              const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-              const rawNotifId = event.notification?.id_notification;
-              // Convert ke string untuk konsistensi
-              const notifId = rawNotifId ? String(rawNotifId) : tempId;
-              
-              // Cek duplikat berdasarkan ID (jika ada) atau title+message+type dalam 5 detik terakhir
-              const isDuplicate = prev.some(n => {
-                // Convert n.id juga ke string untuk comparison
-                const nId = String(n.id);
-                // Jika ada ID yang sama dan bukan temp ID, pasti duplikat
-                if (nId === notifId && !notifId.startsWith('temp-')) {
-                  console.log('[NavbarNotification] ⚠️ Duplicate by ID:', notifId);
-                  return true;
+                if (prev.some(n => String(n.id) === String(newNotif.id))) {
+                    return prev;
                 }
-                // Cek duplikat konten (title + message + type) dalam 5 detik terakhir
-                const isSameContent = n.type === event.notification.type &&
-                                     n.title === event.notification.title && 
-                                     n.message === event.notification.message;
-                const timeDiff = Date.now() - new Date(n.date).getTime();
-                const isRecent = timeDiff < 5000; // 5 seconds
-                
-                if (isSameContent && isRecent) {
-                  console.log('[NavbarNotification] ⚠️ Duplicate by content (age:', timeDiff, 'ms)');
-                  return true;
-                }
-                
-                return false;
-              });
+                return [newNotif, ...prev].slice(0, 10);
+            });
 
-              if (isDuplicate) {
-                console.log('[NavbarNotification] ⚠️ Duplicate notification ignored:', event.notification.title);
-                return prev;
-              }
-
-              const newNotif = {
-                id: notifId,
-                type: event.notification.type,
-                title: event.notification.title,
-                message: event.notification.message,
-                date: event.notification.sentAt,
-                isRead: event.notification.isRead,
-                metadata: event.notification.metadata
-              };
-              
-              console.log('[NavbarNotification] Adding notification to list:', newNotif);
-              
-              // Increment unread count jika notifikasi baru belum dibaca
-              if (!newNotif.isRead) {
-                setUnreadCount(prevCount => prevCount + 1);
-              }
-              
-              // Add to top and limit to 10 items
-              return [newNotif, ...prev].slice(0, 10);
-            })
+            if (!newNotif.isRead) {
+                setUnreadCount(prev => prev + 1);
+            }
           })
           .error((error) => {
             console.error('[NavbarNotification] ❌ Channel subscription error:', error);
             isSubscribed = false;
           });
-
-        console.log('[NavbarNotification] ✅ Subscription setup complete');
       } catch (err) {
         console.error('[NavbarNotification] ❌ Failed to subscribe:', err);
         isSubscribed = false;
       }
     };
 
-    setupSubscription();
+    const pusher = echo.connector?.pusher;
+    if (pusher) {
+        if (pusher.connection.state === 'connected') {
+            subscribeToChannel();
+        } else {
+            pusher.connection.bind('connected', subscribeToChannel);
+        }
+    }
 
     return () => {
-      console.log('[NavbarNotification] Cleaning up subscription');
       if (channel && userId) {
-        try {
-          echo.leave(`user.${userId}`);
-        } catch (err) {
-          console.error('[NavbarNotification] Error leaving channel:', err);
-        }
+        echo.leave(`user.${userId}`);
       }
     };
-  }, []); // Empty dependency - subscribe once, use refs for latest state 
+  }, []); 
 
-  // Handle mark as read
   const handleMarkAsRead = async (notificationId) => {
-    // Cek apakah ini ID sementara (string)?
     const isTempId = typeof notificationId === 'string' && notificationId.startsWith('temp-');
-
-    // Cek apakah notifikasi ini belum dibaca sebelumnya
     const notification = notifications.find(n => n.id === notificationId);
     const wasUnread = notification && !notification.isRead;
 
-    // Update UI dulu (Optimistic UI)
     setNotifications(prev =>
       prev.map(notif =>
         notif.id === notificationId ? { ...notif, isRead: true } : notif
       )
     );
     
-    // Decrement unread count jika notifikasi sebelumnya unread
     if (wasUnread) {
       setUnreadCount(prev => Math.max(0, prev - 1));
     }
 
-    // Jika ID sementara, JANGAN panggil API (karena belum ada di DB atau backend belum sync)
-    if (isTempId) {
-      console.log('[Navbar] Skipping API call for temporary ID:', notificationId);
-      return;
-    }
+    if (isTempId) return;
 
     try {
       await markAsRead(notificationId);
     } catch (err) {
       console.error('Error marking as read:', err);
-      // Opsional: Revert UI jika gagal (tapi biasanya tidak perlu untuk UX 'read')
     }
   };
 
@@ -422,7 +304,6 @@ const NavbarNotification = forwardRef(({ className, isChatOpen, chatUser, setCha
               <DropdownMenuItem
                 className="flex-col items-start p-3 cursor-pointer"
                 onClick={async () => {
-                  // Mark as read first
                   if (!notification.isRead) {
                     await handleMarkAsRead(notification.id);
                   }
@@ -443,7 +324,6 @@ const NavbarNotification = forwardRef(({ className, isChatOpen, chatUser, setCha
                       // Remove chat notification immediately
                       setTimeout(() => {
                         setNotifications(prev => prev.filter(n => n.id !== notification.id));
-                        console.log('[NavbarNotification] 🗑️ Removed chat notification from UI:', notification.id);
                       }, 100);
                     } catch (err) {
                       console.error('Error fetching conversation:', err);
