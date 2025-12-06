@@ -183,7 +183,7 @@ export default function InputPresensiPage() {
 // Handle scan QR
 const handleScanQR = () => {
     setIsScanning(true);
-    router.push(`/kehadiran/${id_class}/pertemuan/${id_schedule}/scanqr?id_schedule=${id_schedule}&id_class=${id_class}&nama=${encodeURIComponent(classInfo.name_subject || '')}&kelas=${encodeURIComponent(classInfo.code_class || '')}&tanggal=${scheduleInfo.date}`);
+    router.push(`/kehadiran/${id_class}/pertemuan/${id_schedule}/scanqr`);
 };
 
 // Format tanggal

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/ui/navigation-menu';
 import DataTable from '@/components/ui/table';
 import { ArrowLeft, QrCode, CheckCircle, Clock, Users } from 'lucide-react';
@@ -9,27 +9,43 @@ import { PrimaryButton, OutlineButton } from '@/components/ui/button';
 import { QRCodeCanvas } from 'qrcode.react';
 import LoadingEffect from '@/components/ui/loading-effect';
 import { AlertConfirmationDialog, AlertSuccessDialog, AlertErrorDialog } from '@/components/ui/alert-dialog';
+import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 import { openQRSession, getPresencesBySchedule, closeAttendanceSession, getClassDetail } from '@/lib/attendanceApi';
+import { getPermissionForAScheduleInAClass } from '@/lib/permissionApi';
+import { getEcho, disconnectEcho } from '@/lib/echo';
 
-export default function ScanQRPage({ params }) {
+export default function ScanQRPage() {
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const { kode, pertemuan } = React.use(params);
-
-    // Get params from previous page
-    const id_schedule = searchParams.get('id_schedule') || '';
-    const id_class = searchParams.get('id_class') || '';
-    const nama = searchParams.get('nama') || '';
-    const kelas = searchParams.get('kelas') || '';
-    const tanggal = searchParams.get('tanggal') || '';
+    const params = useParams();
+    const id_schedule = params.pertemuan;
+    const id_class = params.kode;
 
     // States
     const [qrCode, setQrCode] = useState('');
     const [scannedStudents, setScannedStudents] = useState([]);
     const [allStudents, setAllStudents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [echo, setEcho] = useState(null);
-    const [scanSuccessMessage, setScanSuccessMessage] = useState('');
+    const [scanSuccessMessages, setScanSuccessMessages] = useState([]);
+    const [permissionChecked, setPermissionChecked] = useState(false);
+    const [permissionGranted, setPermissionGranted] = useState(null);
+    const [loadingPermission, setLoadingPermission] = useState(true);
+    const [countdown, setCountdown] = useState(5);
+    const [successCountdown, setSuccessCountdown] = useState(3);
+    const [errors, setErrors] = useState({});
+
+    // Class and schedule info
+    const [classInfo, setClassInfo] = useState({
+        code_subject: '-',
+        name_subject: '-',
+        code_class: '-',
+        dosen: '-'
+    });
+    const [scheduleInfo, setScheduleInfo] = useState({
+        pertemuanke: '-',
+        date: '',
+    });
 
     // Alert states
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -38,15 +54,50 @@ export default function ScanQRPage({ params }) {
     const [alertMessage, setAlertMessage] = useState('');
     const [confirmAction, setConfirmAction] = useState(null);
 
-    // Initialize QR session and WebSocket
+    // Check permission on mount
     useEffect(() => {
-        if (!id_schedule) {
-            setAlertMessage('ID Schedule tidak ditemukan!');
-            setShowErrorDialog(true);
-            return;
+        if (id_class) {
+            checkPermission();
         }
+    }, [id_class]);
 
-        initializeQRSession();
+    // Initialize QR session after permission is granted
+    useEffect(() => {
+        if (permissionChecked && permissionGranted) {
+            initializeQRSession();
+        }
+    }, [permissionChecked, permissionGranted]);
+
+    // Countdown redirect effect when permission is denied
+    useEffect(() => {
+        let timer;
+        if (permissionGranted === false) {
+            if (countdown > 0) {
+                timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+            } else {
+                router.push(`/kehadiran/${id_class}/pertemuan/${id_schedule}`);
+            }
+        }
+        return () => clearTimeout(timer);
+    }, [permissionGranted, countdown]);
+
+    // Countdown redirect effect when close session success
+    useEffect(() => {
+        let timer;
+        if (showSuccessDialog) {
+            if (successCountdown > 0) {
+                timer = setTimeout(() => setSuccessCountdown(prev => prev - 1), 1000);
+            } else {
+                handleBack();
+            }
+        }
+        return () => clearTimeout(timer);
+    }, [showSuccessDialog, successCountdown]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+
+        if (!id_schedule) return;
 
         return () => {
             // Cleanup: Sesi auto close dan disconnect WebSocket.
@@ -69,7 +120,6 @@ export default function ScanQRPage({ params }) {
                     if (echo) {
                         console.log('[Cleanup] Disconnecting WebSocket...');
                         echo.leave(`attendance.${id_schedule}`);
-                        const { disconnectEcho } = await import('@/lib/echo');
                         disconnectEcho();
                         console.log('[Cleanup] ✅ WebSocket disconnected');
                     }
@@ -88,9 +138,34 @@ export default function ScanQRPage({ params }) {
         }
     }, [qrCode]);
 
+    // Check Permission
+    const checkPermission = async () => {
+        setErrors(prev => ({...prev, permission: null}));
+        setLoadingPermission(true);
+        try {
+            const response = await getPermissionForAScheduleInAClass(id_class, id_schedule);
+            if (response.status === 'success') {
+                if (response.data.permission === false) {
+                    setPermissionGranted(false);
+                    setPermissionChecked(true);
+                } else {
+                    setPermissionGranted(true);
+                    setPermissionChecked(true);
+                }
+            } else {
+                setErrors(prev => ({...prev, permission: 'Gagal memeriksa izin akses: ' + response.message}));
+            }
+        } catch (error) {
+            setErrors(prev => ({...prev, permission: 'Gagal memeriksa izin akses: ' + (error.message || 'Terjadi kesalahan')}));
+        } finally {
+            setLoadingPermission(false);
+        }
+    };
+
     const initializeQRSession = async () => {
         try {
             setLoading(true);
+            setErrors(prev => ({...prev, fetch: null}));
 
             console.log('[QR Init] Initializing QR session with:', { id_schedule, id_class });
 
@@ -99,13 +174,21 @@ export default function ScanQRPage({ params }) {
                 throw new Error('ID Schedule atau ID Class tidak ditemukan!');
             }
 
-            // 1. Fetch class detail to get total students
+            // 1. Fetch class detail to get total students and class info
             console.log('[QR Init] Fetching class detail...');
             const classDetailResponse = await getClassDetail(id_class);
             console.log('[QR Init] Class detail response:', classDetailResponse);
 
             if (classDetailResponse.status === 'success') {
                 setAllStudents(classDetailResponse.data.students || []);
+                setClassInfo(classDetailResponse.data.class_info || {
+                    code_subject: '-',
+                    name_subject: '-',
+                    code_class: '-',
+                    dosen: '-'
+                });
+            } else {
+                setErrors(prev => ({...prev, fetch: 'Gagal memuat data kelas: ' + classDetailResponse.message}));
             }
 
             // 2. Always try to open NEW session
@@ -146,6 +229,7 @@ export default function ScanQRPage({ params }) {
             
             console.log('[QR Init] Final error message:', errorMessage);
 
+            setErrors(prev => ({...prev, fetch: errorMessage}));
             setAlertMessage(errorMessage);
             setShowErrorDialog(true);
         } finally {
@@ -153,12 +237,13 @@ export default function ScanQRPage({ params }) {
         }
     };
 
+    // Handle back navigation
+    const handleBack = () => {
+        router.push(`/kehadiran/${id_class}/pertemuan/${id_schedule}`);
+    };
     const setupWebSocket = async () => {
         try {
             console.log('[WebSocket] Setting up WebSocket for schedule:', id_schedule);
-
-            // Dynamically import Echo only on client-side
-            const { getEcho, disconnectEcho: disconnect } = await import('@/lib/echo');
 
             const echoInstance = getEcho();
             console.log('[WebSocket] Echo instance created:', echoInstance);
@@ -211,12 +296,18 @@ export default function ScanQRPage({ params }) {
                 console.log('[WebSocket] Student:', data.student_name);
                 console.log('[WebSocket] Full data:', data);
 
-                // Show success notification
-                setScanSuccessMessage(`${data.student_name} (${data.student_nim}) berhasil presensi!`);
+                // Add new success notification with unique ID
+                const messageId = Date.now();
+                const newMessage = {
+                    id: messageId,
+                    text: `${data.student_name} (${data.student_nim}) berhasil presensi!`
+                };
                 
-                // Auto-hide notification after 5 seconds
+                setScanSuccessMessages(prev => [...prev, newMessage]);
+                
+                // Auto-hide this specific notification after 5 seconds
                 setTimeout(() => {
-                    setScanSuccessMessage('');
+                    setScanSuccessMessages(prev => prev.filter(msg => msg.id !== messageId));
                 }, 5000);
 
                 setScannedStudents(prev => {
@@ -258,6 +349,12 @@ export default function ScanQRPage({ params }) {
             console.log('Fetch presences response:', response);
 
             if (response.status === 'success' && response.data) {
+                // Set schedule info
+                setScheduleInfo({
+                    pertemuanke: response.data.pertemuan || '-',
+                    date: response.data.tanggal || ''
+                });
+
                 // Check if data is array or if it's nested in response.data.students
                 const presenceList = Array.isArray(response.data)
                     ? response.data
@@ -274,9 +371,12 @@ export default function ScanQRPage({ params }) {
                 }));
 
                 setScannedStudents(students);
+            } else {
+                setErrors(prev => ({...prev, fetch: 'Gagal memuat data presensi: ' + response.message}));
             }
         } catch (error) {
             console.error('Error fetching presences:', error);
+            setErrors(prev => ({...prev, fetch: 'Terjadi kesalahan saat memuat data presensi: ' + (error.message || 'Terjadi kesalahan')}));
             // Don't fail initialization if presences fetch fails
         }
     };
@@ -308,38 +408,42 @@ export default function ScanQRPage({ params }) {
 
     const handleSelesai = () => {
         setAlertMessage('Apakah Anda yakin ingin menutup sesi presensi QR ini?');
-        setConfirmAction(() => closeSession);
+        setConfirmAction(() => async () => {
+            setShowConfirmDialog(false);
+            await closeSession();
+        });
         setShowConfirmDialog(true);
     };
 
     const closeSession = async () => {
+        setIsSaving(true);
+        setErrors(prev => ({...prev, close: null}));
         try {
-            setShowConfirmDialog(false);
-            setLoading(true);
-
             const response = await closeAttendanceSession(id_schedule);
 
             if (response.status === 'success') {
                 // Disconnect WebSocket
                 if (echo) {
                     echo.leave(`attendance.${id_schedule}`);
-                    const { disconnectEcho } = await import('@/lib/echo');
                     disconnectEcho();
                 }
 
+                setSuccessCountdown(5); // Reset countdown
                 setAlertMessage('Sesi presensi berhasil ditutup!');
                 setShowSuccessDialog(true);
-
-                setTimeout(() => {
-                    router.back();
-                }, 1500);
+            } else {
+                setErrors(prev => ({...prev, close: 'Gagal menutup sesi: ' + response.message}));
+                setAlertMessage(response.message || 'Gagal menutup sesi presensi');
+                setShowErrorDialog(true);
             }
         } catch (error) {
             console.error('Error closing session:', error);
-            setAlertMessage(error.response?.data?.message || 'Gagal menutup sesi presensi');
+            const errorMessage = error.response?.data?.message || error.message || 'Gagal menutup sesi presensi';
+            setErrors(prev => ({...prev, close: errorMessage}));
+            setAlertMessage(errorMessage);
             setShowErrorDialog(true);
         } finally {
-            setLoading(false);
+            setIsSaving(false);
         }
     };
 
@@ -367,31 +471,90 @@ export default function ScanQRPage({ params }) {
         ),
     };
 
+    // Loading permission check
+    if (loadingPermission) {
+        return <LoadingEffect message="Memeriksa izin akses..." />;
+    }
+
+    // Permission denied screen
+    if (permissionGranted === false) {
+        return (
+            <div className="min-h-screen bg-brand-light-sage">
+                <Navbar />
+                <div className="container mx-auto px-4 py-8 max-w-7xl">
+                    <ErrorMessageBoxWithButton
+                        message={`Anda tidak memiliki izin untuk mengakses kelas atau jadwal ini.\n\nAkan dialihkan kembali dalam ${countdown} detik.`}
+                        action={handleBack}
+                        btntext={countdown > 0 ? `Kembali (${countdown})` : 'Kembali'}
+                    />
+                </div>
+            </div>
+        );
+    }
+
+    // Permission error screen
+    if (errors.permission) {
+        return (
+            <div className="min-h-screen bg-brand-light-sage">
+                <Navbar />
+                <div className="container mx-auto px-4 py-8 max-w-7xl">
+                    <ErrorMessageBoxWithButton
+                        message={errors.permission}
+                        action={checkPermission}
+                    />
+                </div>
+            </div>
+        );
+    }
+
     if (loading) {
-        return <LoadingEffect />;
+        return <LoadingEffect message="Memuat data presensi..." />;
+    }
+
+    // Show error if fetch failed
+    if (errors.fetch) {
+        return (
+            <div className="min-h-screen bg-brand-light-sage">
+                <Navbar />
+                <div className="container mx-auto px-4 py-8 max-w-7xl">
+                    <ErrorMessageBoxWithButton
+                        message={errors.fetch}
+                        action={initializeQRSession}
+                        back={true}
+                        actionback={handleBack}
+                    />
+                </div>
+            </div>
+        );
     }
 
     return (
         <div className="min-h-screen bg-brand-light-sage">
             <Navbar />
             
-            {/* Fixed Success Notification */}
-            {scanSuccessMessage && (
-                <div className="fixed top-20 right-4 z-50 animate-slide-in-right" style={{ maxWidth: '400px' }}>
-                    <div className="bg-white border-2 p-4 shadow-lg flex items-start gap-3" 
-                        style={{ borderColor: '#16874B', borderRadius: '12px' }}>
-                        <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#16874B' }} />
-                        <div className="flex-1">
-                            <p className="font-semibold mb-1" style={{ color: '#16874B', fontFamily: 'Urbanist, sans-serif' }}>
-                                Berhasil!
-                            </p>
-                            <p className="text-sm" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                                {scanSuccessMessage}
-                            </p>
+            {/* Fixed Success Notifications - Stacked */}
+            <div className="fixed top-20 right-4 z-50 flex flex-col gap-3" style={{ maxWidth: '400px' }}>
+                {scanSuccessMessages.map((message, index) => (
+                    <div 
+                        key={message.id}
+                        className="animate-slide-in-right"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                        <div className="bg-white border-2 p-4 shadow-lg flex items-start gap-3" 
+                            style={{ borderColor: '#16874B', borderRadius: '12px' }}>
+                            <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#16874B' }} />
+                            <div className="flex-1">
+                                <p className="font-semibold mb-1" style={{ color: '#16874B', fontFamily: 'Urbanist, sans-serif' }}>
+                                    Berhasil!
+                                </p>
+                                <p className="text-sm" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
+                                    {message.text}
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                ))}
+            </div>
             
             <div className="container mx-auto px-4 py-8 max-w-7xl">
                 <button
@@ -450,10 +613,13 @@ export default function ScanQRPage({ params }) {
                                 Informasi Pertemuan:
                             </p>
                             <div className="space-y-2 text-sm" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                                <p><span className="font-semibold">Mata Kuliah:</span> {kode} - {nama}</p>
-                                <p><span className="font-semibold">Kelas:</span> {kelas}</p>
-                                <p><span className="font-semibold">Pertemuan:</span> {pertemuan}</p>
-                                <p><span className="font-semibold">Tanggal:</span> {formatTanggal(tanggal)}</p>
+                                <p><span className="font-semibold">Mata Kuliah:</span> {classInfo.code_subject} - {classInfo.name_subject}</p>
+                                <p><span className="font-semibold">Kelas:</span> {classInfo.code_class}</p>
+                                <p><span className="font-semibold">Pertemuan:</span> {scheduleInfo.pertemuanke}</p>
+                                <p><span className="font-semibold">Tanggal:</span> {formatTanggal(scheduleInfo.date)}</p>
+                                {classInfo.dosen && (
+                                    <p><span className="font-semibold">Dosen:</span> {classInfo.dosen}</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -564,16 +730,20 @@ export default function ScanQRPage({ params }) {
                         </div>
 
                         <div className="flex gap-3">
-                            <OutlineButton onClick={() => router.back()}>
+                            <OutlineButton 
+                                onClick={handleBack}
+                                disabled={isSaving}
+                            >
                                 Kembali
                             </OutlineButton>
 
                             <PrimaryButton
                                 onClick={handleSelesai}
+                                disabled={isSaving}
                                 className="gap-2"
                             >
                                 <CheckCircle className="w-4 h-4" />
-                                Akhiri Presensi
+                                {isSaving ? 'Menutup Sesi...' : 'Akhiri Presensi'}
                             </PrimaryButton>
                         </div>
                     </div>
@@ -584,19 +754,19 @@ export default function ScanQRPage({ params }) {
             <AlertConfirmationDialog
                 open={showConfirmDialog}
                 onOpenChange={setShowConfirmDialog}
-                onConfirm={confirmAction}
                 title="Konfirmasi"
                 description={alertMessage}
-                confirmText="Ya, Tutup"
+                confirmText="Ya, Lanjutkan"
                 cancelText="Batal"
+                onConfirm={confirmAction}
             />
 
             <AlertSuccessDialog
                 open={showSuccessDialog}
                 onOpenChange={setShowSuccessDialog}
                 title="Berhasil"
-                description={alertMessage}
-                closeText="OK"
+                description={`${alertMessage}\n\nAkan dialihkan kembali dalam ${successCountdown} detik.`}
+                closeText={successCountdown > 0 ? `OK (${successCountdown})` : 'OK'}
             />
 
             <AlertErrorDialog
