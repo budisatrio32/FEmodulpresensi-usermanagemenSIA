@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Navbar from '@/components/ui/navigation-menu'
 import Footer from '@/components/ui/footer'
 import LoadingEffect from '@/components/ui/loading-effect'
+import { ErrorMessageBoxWithButton, SuccessMessageBox } from '@/components/ui/message-box' 
 import { ArrowLeft, Bell, MessageCircle, Check, X } from 'lucide-react'
 import { getNotifications, markAsRead, markAllAsRead, deleteNotification } from '@/lib/notificationApi'
 import { getConversationDetail } from '@/lib/chatApi'
@@ -15,21 +16,31 @@ import Cookies from 'js-cookie'
 
 export default function NotifikasiPage() {
   const router = useRouter()
-  // Gunakan searchParams untuk menangkap ?highlight=...
   const searchParams = useSearchParams()
   
-  const [filter, setFilter] = useState('all') // all, announcement, chat
+  // State management
+  const [filter, setFilter] = useState('all')
   const [allNotifications, setAllNotifications] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [successMessage, setSuccessMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false)
   
-  // Ambil ID highlight dari URL saat pertama load
   const [highlightId, setHighlightId] = useState(searchParams.get('highlight'))
 
   // Chat modal state
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [chatUser, setChatUser] = useState({ id: '', name: '', nim: '', conversationId: '' })
+
+  // Auto-hide success message
+  useEffect(() => {
+    if (!successMessage) return
+    const timer = setTimeout(() => {
+      setSuccessMessage('')
+    }, 5000)
+    return () => clearTimeout(timer)
+  }, [successMessage])
 
   const fetchNotifications = async () => {
     try {
@@ -52,6 +63,8 @@ export default function NotifikasiPage() {
         }))
 
         setAllNotifications(transformedNotifications)
+      } else {
+        setError(response.message || 'Gagal mengambil notifikasi')
       }
     } catch (err) {
       console.error('Error fetching notifications:', err)
@@ -187,53 +200,82 @@ export default function NotifikasiPage() {
 
 
   const handleMarkAsRead = async (notificationId) => {
-    // Cek ID sementara (realtime)
     const isTempId = typeof notificationId === 'string' && notificationId.startsWith('temp-')
 
+    // Optimistic update
     setAllNotifications(prev =>
       prev.map(notif =>
         notif.id === notificationId ? { ...notif, isRead: true } : notif
       )
     )
 
-    // Jangan panggil API jika ID-nya temp
     if (isTempId) return
 
     try {
-      await markAsRead(notificationId)
+      const response = await markAsRead(notificationId)
+      if (response.status !== 'success') {
+        setError(response.message || 'Gagal menandai notifikasi')
+      }
     } catch (err) {
       console.error('Error marking as read:', err)
+      // Revert on error
+      setAllNotifications(prev =>
+        prev.map(notif =>
+          notif.id === notificationId ? { ...notif, isRead: false } : notif
+        )
+      )
+      setError('Gagal menandai notifikasi sebagai dibaca')
     }
   }
 
   const handleMarkAllAsRead = async () => {
+    if (isSubmitting) return
+    
     try {
-      setAllNotifications(prev =>
-        prev.map(notif => ({ ...notif, isRead: true }))
-      )
-      await markAllAsRead()
+      setIsSubmitting(true)
+      setError(null)
+      
+      const response = await markAllAsRead()
+      
+      if (response.status === 'success') {
+        setAllNotifications(prev =>
+          prev.map(notif => ({ ...notif, isRead: true }))
+        )
+        setSuccessMessage('Semua notifikasi telah ditandai sebagai dibaca')
+      } else {
+        setError(response.message || 'Gagal menandai semua notifikasi')
+      }
     } catch (err) {
       console.error('Error marking all as read:', err)
+      setError(err.message || 'Gagal menandai semua notifikasi sebagai dibaca')
       fetchNotifications()
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   const handleDeleteNotification = async (notificationId) => {
     try {
-      // Cek ID sementara
       const isTempId = typeof notificationId === 'string' && notificationId.startsWith('temp-')
       
-      // Update UI optimis
+      // Optimistic update
       setAllNotifications(prev =>
         prev.filter(notif => notif.id !== notificationId)
       )
 
       if (isTempId) return
 
-      await deleteNotification(notificationId)
+      const response = await deleteNotification(notificationId)
+      
+      if (response.status === 'success') {
+        setSuccessMessage('Notifikasi berhasil dihapus')
+      } else {
+        setError(response.message || 'Gagal menghapus notifikasi')
+      }
     } catch (err) {
       console.error('Error deleting notification:', err)
-      fetchNotifications() 
+      setError('Gagal menghapus notifikasi')
+      fetchNotifications()
     }
   }
 
@@ -265,25 +307,36 @@ export default function NotifikasiPage() {
   }
 
   const confirmDeleteAll = async () => {
+    if (isSubmitting) return
+    
     try {
       setShowDeleteAllDialog(false)
-      setLoading(true)
+      setIsSubmitting(true)
+      setError(null)
       
-      // Filter yang punya ID asli saja untuk request ke server
       const realIds = allNotifications
         .filter(n => !(typeof n.id === 'string' && n.id.startsWith('temp-')))
         .map(n => n.id)
 
-      // Delete request
       const deletePromises = realIds.map(id => deleteNotification(id))
-      await Promise.all(deletePromises)
+      const results = await Promise.allSettled(deletePromises)
+      
+      const failedCount = results.filter(r => r.status === 'rejected').length
+      
+      if (failedCount > 0) {
+        setError(`Gagal menghapus ${failedCount} notifikasi`)
+        fetchNotifications()
+        return
+      }
 
       setAllNotifications([])
+      setSuccessMessage('Semua notifikasi berhasil dihapus')
     } catch (err) {
       console.error('Error deleting all notifications:', err)
-      fetchNotifications() 
+      setError(err.message || 'Gagal menghapus semua notifikasi')
+      fetchNotifications()
     } finally {
-      setLoading(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -305,6 +358,21 @@ export default function NotifikasiPage() {
 
   if (loading) {
     return <LoadingEffect message="Memuat notifikasi..." />
+  } else if (error && allNotifications.length === 0) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: 'Urbanist, sans-serif' }}>
+        <Navbar />
+        <main style={{ flex: 1, backgroundColor: '#E6EEE9', padding: '32px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ maxWidth: '600px', width: '100%', padding: '0 24px' }}>
+            <ErrorMessageBoxWithButton 
+              message={error}
+              onRetry={fetchNotifications}
+            />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
   }
 
   return (
@@ -313,6 +381,19 @@ export default function NotifikasiPage() {
 
       <main style={{ flex: 1, backgroundColor: '#E6EEE9', padding: '32px 0' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
+          {/* Success/Error Messages */}
+          <div className="fixed top-20 right-4 z-50 space-y-2" style={{ maxWidth: '400px' }}>
+            {successMessage && (
+              <SuccessMessageBox message={successMessage} />
+            )}
+            {error && allNotifications.length > 0 && (
+              <ErrorMessageBoxWithButton 
+                message={error}
+                onRetry={fetchNotifications}
+              />
+            )}
+          </div>
+
           {/* Header */}
           <div style={{ marginBottom: '32px' }}>
             <button
@@ -349,6 +430,7 @@ export default function NotifikasiPage() {
                 {unreadCount > 0 && (
                   <button
                     onClick={handleMarkAllAsRead}
+                    disabled={isSubmitting}
                     style={{
                       padding: '12px 24px',
                       backgroundColor: '#015023',
@@ -357,20 +439,22 @@ export default function NotifikasiPage() {
                       borderRadius: '12px',
                       fontSize: '14px',
                       fontWeight: '600',
-                      cursor: 'pointer',
+                      cursor: isSubmitting ? 'not-allowed' : 'pointer',
                       fontFamily: 'Urbanist, sans-serif',
-                      transition: 'opacity 0.2s'
+                      transition: 'opacity 0.2s',
+                      opacity: isSubmitting ? '0.6' : '1'
                     }}
-                    onMouseEnter={(e) => e.target.style.opacity = '0.9'}
-                    onMouseLeave={(e) => e.target.style.opacity = '1'}
+                    onMouseEnter={(e) => !isSubmitting && (e.target.style.opacity = '0.9')}
+                    onMouseLeave={(e) => !isSubmitting && (e.target.style.opacity = '1')}
                   >
-                    Tandai Semua Dibaca
+                    {isSubmitting ? 'Memproses...' : 'Tandai Semua Dibaca'}
                   </button>
                 )}
 
                 {allNotifications.length > 0 && (
                   <button
                     onClick={handleDeleteAll}
+                    disabled={isSubmitting}
                     style={{
                       padding: '12px 24px',
                       backgroundColor: '#BE0414', 
@@ -379,14 +463,15 @@ export default function NotifikasiPage() {
                       borderRadius: '12px',
                       fontSize: '14px',
                       fontWeight: '600',
-                      cursor: 'pointer',
+                      cursor: isSubmitting ? 'not-allowed' : 'pointer',
                       fontFamily: 'Urbanist, sans-serif',
-                      transition: 'opacity 0.2s'
+                      transition: 'opacity 0.2s',
+                      opacity: isSubmitting ? '0.6' : '1'
                     }}
-                    onMouseEnter={(e) => e.target.style.opacity = '0.9'}
-                    onMouseLeave={(e) => e.target.style.opacity = '1'}
+                    onMouseEnter={(e) => !isSubmitting && (e.target.style.opacity = '0.9')}
+                    onMouseLeave={(e) => !isSubmitting && (e.target.style.opacity = '1')}
                   >
-                    Hapus Semua
+                    {isSubmitting ? 'Menghapus...' : 'Hapus Semua'}
                   </button>
                 )}
               </div>
@@ -645,7 +730,7 @@ export default function NotifikasiPage() {
         open={showDeleteAllDialog}
         onOpenChange={setShowDeleteAllDialog}
         onConfirm={confirmDeleteAll}
-        title="Hapus Semua Notifikasi"
+        tittle="Hapus Semua Notifikasi"
         description="Apakah Anda yakin ingin menghapus SEMUA notifikasi? Tindakan ini tidak dapat dibatalkan."
         confirmText="Ya, Hapus Semua"
         cancelText="Batal"
