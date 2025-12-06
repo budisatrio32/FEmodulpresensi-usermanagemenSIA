@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { ArrowRight, Bell, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
+import { getEcho } from '@/lib/echo';
 
 export default function LandingPage() {
     const router = useRouter();
@@ -32,6 +33,129 @@ export default function LandingPage() {
         
         fetchData(role);
     }, []);
+
+    // WebSocket Real-time Notification Listener for Announcements
+    useEffect(() => {
+        const echo = getEcho();
+        if (!echo) {
+            console.warn('[LandingPage] Echo not initialized');
+            return;
+        }
+
+        // Get user ID - PRIORITY: Cookies, FALLBACK: localStorage
+        let userId = null;
+        
+        const userIdFromCookie = Cookies.get('user_id');
+        if (userIdFromCookie) {
+            userId = userIdFromCookie;
+        } else {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    userId = user.id_user_si;
+                } catch (err) {
+                    console.error('[LandingPage] Failed to parse user data:', err);
+                }
+            }
+        }
+
+        if (!userId) {
+            console.warn('[LandingPage] No user ID found');
+            return;
+        }
+
+        console.log('[LandingPage] Setting up WebSocket subscription for user:', userId);
+
+        let channel = null;
+        let isSubscribed = false;
+
+        const setupSubscription = () => {
+            const pusher = echo.connector?.pusher;
+            if (!pusher) {
+                console.error('[LandingPage] Pusher instance not found');
+                return;
+            }
+
+            const state = pusher.connection.state;
+            console.log('[LandingPage] Current connection state:', state);
+
+            if (state === 'connected') {
+                subscribeToChannel();
+            } else {
+                console.log('[LandingPage] Waiting for connection...');
+                pusher.connection.bind('connected', subscribeToChannel);
+            }
+        };
+
+        const subscribeToChannel = () => {
+            if (isSubscribed) {
+                console.log('[LandingPage] Already subscribed, skipping');
+                return;
+            }
+
+            console.log('[LandingPage] Subscribing to private channel: user.' + userId);
+            
+            try {
+                channel = echo.private(`user.${userId}`);
+
+                channel.listen('.NewNotification', (event) => {
+                    console.log('[LandingPage] 🔔 New notification received:', event);
+
+                    // Only add if it's an announcement type
+                    if (event.notification?.type === 'announcement') {
+                        // Transform to match API response format (same structure as fetchData)
+                        const newAnnouncement = {
+                            id_notification: event.notification.id_notification,
+                            type: event.notification.type,
+                            title: event.notification.title,
+                            message: event.notification.message,
+                            sent_at: event.notification.sent_at || new Date().toISOString(),
+                            created_at: event.notification.sent_at || new Date().toISOString(),
+                            read_at: event.notification.read_at || null,
+                            is_read: event.notification.is_read || false,
+                            sender: event.notification.sender || 'System',
+                            metadata: event.notification.metadata || {}
+                        };
+
+                        console.log('[LandingPage] ✅ Adding new announcement to list:', newAnnouncement);
+
+                        setAnnouncements(prev => {
+                            // Check if notification already exists
+                            const exists = prev.some(n => n.id_notification === newAnnouncement.id_notification);
+                            if (exists) {
+                                console.log('[LandingPage] ⚠️ Announcement already exists, skipping');
+                                return prev;
+                            }
+                            // Add new announcement at the beginning
+                            return [newAnnouncement, ...prev];
+                        });
+                    } else {
+                        console.log('[LandingPage] ℹ️ Notification is not announcement type, ignoring');
+                    }
+                });
+
+                isSubscribed = true;
+                console.log('[LandingPage] ✅ Successfully subscribed to user.' + userId);
+            } catch (error) {
+                console.error('[LandingPage] ❌ Error subscribing to channel:', error);
+            }
+        };
+
+        setupSubscription();
+
+        // Cleanup
+        return () => {
+            if (channel) {
+                try {
+                    console.log('[LandingPage] 🧹 Leaving channel: user.' + userId);
+                    echo.leave(`user.${userId}`);
+                } catch (error) {
+                    console.error('[LandingPage] Error leaving channel:', error);
+                }
+            }
+        };
+    }, []); // Run once on mount
 
     const fetchData = async (role) => {
         setIsLoading(true);
@@ -213,8 +337,8 @@ return (
                         tag={notif.metadata?.class_code || 'Pengumuman Umum'}
                         title={notif.title || 'Pengumuman'}
                         content={notif.message}
-                        date={notif.created_at}
-                        pengumum={notif.pengumum || 'System'}
+                        date={notif.sent_at || notif.created_at}
+                        pengumum={notif.sender || 'System'}
                         metadata={notif.metadata}
                         onClick={async () => {
                             // Mark as read
