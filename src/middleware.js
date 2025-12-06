@@ -8,7 +8,7 @@ export function middleware(req) {
   const protectedRoutes = {
     '/adminpage': ['admin', 'manager'],
     '/adminpage/tambahmanager': ['admin'],
-    '/landingpage': ['mahasiswa', 'dosen'],
+    '/dashboard': ['mahasiswa', 'dosen'],
     '/hasil-studi': ['mahasiswa', 'dosen'],
     '/hasil-studi/input-nilai-mahasiswa': ['dosen'],
     '/akademik': ['mahasiswa', 'dosen'],

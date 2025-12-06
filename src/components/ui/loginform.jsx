@@ -34,7 +34,7 @@ const checkLoggedIn = async () => {
       if (roles == 'admin' || roles == 'manager') {
       router.push('/adminpage');
       } else if (roles == 'mahasiswa' || roles == 'dosen') {
-        router.push('/landingpage');
+        router.push('/dashboard');
       }
     }
   } finally {
@@ -88,7 +88,7 @@ const handleSubmit = async (e) => {
       if (roles == 'admin' || roles == 'manager') {
         router.push('/adminpage');
       } else if (roles == 'mahasiswa' || roles == 'dosen') {
-        router.push('/landingpage');
+        router.push('/dashboard');
       }
     } else {
       setError(response.message);

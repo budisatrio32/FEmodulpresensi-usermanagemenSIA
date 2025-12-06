@@ -37,7 +37,7 @@ export default function UnauthorizedPage() {
     if (roles.includes('admin') || roles.includes('manager')) {
       router.push('/adminpage');
     } else if (roles.includes('dosen') || roles.includes('mahasiswa')) {
-      router.push('/landingpage');
+      router.push('/dashboard');
     } else {
       router.push('/loginpage');
     }

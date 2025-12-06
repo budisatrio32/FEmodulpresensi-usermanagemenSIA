@@ -179,7 +179,7 @@ export default function Dashboard() {
                 throw new Error(notificationsRes.message || 'Gagal mengambil data pengumuman');
             }
         } catch (error) {
-            console.error('Error fetching landing page data:', error);
+            console.error('Error fetching dashboard data:', error);
             setError(error.response?.data?.message || error.message || 'Terjadi kesalahan saat memuat data');
         } finally {
             setIsLoading(false);

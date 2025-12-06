@@ -154,7 +154,7 @@ className = ''
             {title}
         </h4>
         
-        {/* Sender info only (no date shown in landing page) */}
+        {/* Sender info only (no date shown in dashboard) */}
         <div style={{
             display: 'flex',
             gap: '12px',

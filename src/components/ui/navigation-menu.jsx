@@ -23,7 +23,7 @@ import { logout } from '@/lib/sessionApi'
 
 const NavbarBrand = forwardRef(({ className, isScrolled, ...props }, ref) => (
   <Link
-    href="/landingpage"
+    href="/dashboard"
     ref={ref}
     className={cn("flex items-center gap-2 sm:gap-3 transition-all duration-300", className)}
     {...props}
