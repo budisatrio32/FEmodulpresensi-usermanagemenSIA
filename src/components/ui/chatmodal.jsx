@@ -86,11 +86,28 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
 
     // Find or create conversation and load messages
     useEffect(() => {
-        if (!isOpen || !userId || !currentUserId) return;
+        // Early return jika modal tertutup
+        if (!isOpen) {
+            // Reset state ketika modal ditutup
+            setMessages([]);
+            setLoading(false);
+            setConversationId(propConversationId);
+            return;
+        }
 
+        // Early return jika data belum lengkap
+        if (!userId || !currentUserId) {
+            console.log('[ChatModal] Waiting for userId and currentUserId...', { userId, currentUserId });
+            return;
+        }
+
+        // Set loading IMMEDIATELY sebelum async operation
+        setLoading(true);
+        setMessages([]); // Clear messages dari conversation sebelumnya
+        
         const initializeChat = async () => {
             try {
-                setLoading(true);
+                console.log('[ChatModal] Initializing chat with userId:', userId);
                 
                 // Find or create private conversation
                 const conversationResponse = await findOrCreatePrivateConversation(userId);
@@ -197,7 +214,7 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
             }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, userId]);
+    }, [isOpen, userId, currentUserId]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
