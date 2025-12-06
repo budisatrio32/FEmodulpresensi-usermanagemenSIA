@@ -14,6 +14,7 @@ export function middleware(req) {
     '/akademik': ['mahasiswa', 'dosen'],
     '/akademik/detailkelas/[kode]/pengumuman': ['dosen'],
     '/kehadiran': ['mahasiswa', 'dosen'],
+    '/kehadiran/[kode]/pertemuan': ['dosen'],
     '/notif': ['mahasiswa', 'dosen'],
     '/profilpage': ['mahasiswa', 'dosen', 'admin', 'manager']
   };
