@@ -4,14 +4,15 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Navbar from '@/components/ui/navigation-menu';
 import Footer from '@/components/ui/footer';
-import { ArrowLeft, Send, Megaphone } from 'lucide-react';
-import { WarningButton } from '@/components/ui/button';
+import LoadingEffect from '@/components/ui/loading-effect';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
+import { AlertSuccessDialog, AlertErrorDialog } from '@/components/ui/alert-dialog';
+import { WarningButton } from '@/components/ui/button';
+import { Send, Megaphone } from 'lucide-react';
 import { getPermissionForAClass } from '@/lib/permissionApi';
 import { getClassDetail } from '@/lib/ClassApi';
 import { createAnnouncement } from '@/lib/notificationApi';
-import LoadingEffect from '@/components/ui/loading-effect';
-import { AlertSuccessDialog, AlertErrorDialog } from '@/components/ui/alert-dialog';
+import { ArrowLeft } from 'lucide-react';
 
 export default function BuatPengumumanPage() {
 	const router = useRouter();
@@ -45,6 +46,32 @@ export default function BuatPengumumanPage() {
 	const [showErrorAlert, setShowErrorAlert] = useState(false);
 	const [errorMessage, setErrorMessage] = useState('');
 
+	// Check permission on mount
+	useEffect(() => {
+		if (classId) {
+			checkPermission();
+		}
+	}, [classId]);
+
+	// Fetch data after permission granted
+	useEffect(() => {
+		if (permissionChecked && permissionGranted) {
+			fetchClassDetail();
+		}
+	}, [permissionChecked, permissionGranted]);
+
+	// Countdown redirect effect when permission is denied
+	useEffect(() => {
+		let timer;
+		if (permissionGranted === false) {
+			if (countdown > 0) {
+				timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+			} else {
+				router.back();
+			}
+		}
+		return () => clearTimeout(timer);
+	}, [permissionGranted, countdown]);
 
 	const handleChange = (e) => {
 		const { name, value } = e.target;
@@ -124,33 +151,6 @@ export default function BuatPengumumanPage() {
 			setIsLoading(false);
 		}
 	};
-
-	// ketika cek permission selesai
-	useEffect(() => {
-		if (permissionChecked && permissionGranted) {
-			fetchClassDetail();
-		}
-	}, [permissionChecked, permissionGranted]);
-
-	// Check permission on mount
-	useEffect(() => {
-		if (classId) {
-			checkPermission();
-		}
-	}, [classId]);
-
-	// Countdown redirect effect when permission is denied
-	useEffect(() => {
-		let timer;
-		if (permissionGranted === false) {
-			if (countdown > 0) {
-				timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
-			} else {
-				router.back();
-			}
-		}
-		return () => clearTimeout(timer);
-	}, [permissionGranted, countdown]);
 
 	// Check Permission
 	const checkPermission = async () => {
