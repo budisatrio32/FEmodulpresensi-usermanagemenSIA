@@ -695,7 +695,7 @@ export default function DetailKelas() {
                 Jadwal
             </h3>
             <p className="text-lg font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                {hariOptions.find(h => h.key === currentJadwalKelas.hari).label}
+                {hariOptions.find(h => h.key === Number(currentJadwalKelas.hari)).label}
             </p>
             <p className="text-sm text-gray-600" style={{ fontFamily: 'Urbanist, sans-serif' }}>
                 {`${currentJadwalKelas.jam_mulai?.slice(0,5)} - ${currentJadwalKelas.jam_selesai?.slice(0,5)}`}
