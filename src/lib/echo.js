@@ -45,29 +45,55 @@ export const getEcho = () => {
    */
   const cleanBaseUrl = apiBaseUrl.replace(/\/+$/, '');
 
-  const config = {
-    broadcaster: 'reverb',
-    key: process.env.NEXT_PUBLIC_REVERB_APP_KEY || 'rfmp9pmudhfkb6dvdybr',
-    wsHost: process.env.NEXT_PUBLIC_REVERB_HOST || 'localhost',
-    wsPort: process.env.NEXT_PUBLIC_REVERB_PORT || 9090,
-    wssPort: process.env.NEXT_PUBLIC_REVERB_PORT || 9090,
-    forceTLS: false,
-    enabledTransports: ['ws', 'wss'],
-    disableStats: true,
-    // Dynamic URL untuk auth endpoint
-    authEndpoint: `${cleanBaseUrl}/broadcasting/auth`,
-    auth: {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+  const provider = process.env.NEXT_PUBLIC_BROADCAST_PROVIDER || 'reverb';
+
+  let config;
+  if (provider === 'pusher') {
+    // Pusher (cloud) configuration
+    config = {
+      broadcaster: 'pusher',
+      key: process.env.NEXT_PUBLIC_PUSHER_KEY,
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'mt1',
+      wsHost: process.env.NEXT_PUBLIC_PUSHER_HOST || 'ws.pusherapp.com',
+      wsPort: Number(process.env.NEXT_PUBLIC_PUSHER_PORT || 443),
+      wssPort: Number(process.env.NEXT_PUBLIC_PUSHER_PORT || 443),
+      forceTLS: (process.env.NEXT_PUBLIC_PUSHER_TLS || 'true') === 'true',
+      enabledTransports: ['ws', 'wss'],
+      disableStats: true,
+      authEndpoint: `${cleanBaseUrl}/broadcasting/auth`,
+      auth: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
       },
-    },
-  };
+    };
+  } else {
+    // Reverb (self-hosted) configuration
+    config = {
+      broadcaster: 'reverb',
+      key: process.env.NEXT_PUBLIC_REVERB_APP_KEY || process.env.NEXT_PUBLIC_REVERB_KEY || 'rfmp9pmudhfkb6dvdybr',
+      wsHost: process.env.NEXT_PUBLIC_REVERB_HOST || 'localhost',
+      wsPort: Number(process.env.NEXT_PUBLIC_REVERB_PORT || 9090),
+      wssPort: Number(process.env.NEXT_PUBLIC_REVERB_PORT || 9090),
+      forceTLS: (process.env.NEXT_PUBLIC_REVERB_TLS || 'false') === 'true',
+      enabledTransports: ['ws', 'wss'],
+      disableStats: true,
+      authEndpoint: `${cleanBaseUrl}/broadcasting/auth`,
+      auth: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+      },
+    };
+  }
 
   console.log('[Echo] Initializing with config:', {
+    provider,
     wsHost: config.wsHost,
     wsPort: config.wsPort,
-    key: config.key.substring(0, 8) + '...',
+    key: (config.key || '').substring(0, 8) + '...',
     hasToken: !!token,
   });
 
