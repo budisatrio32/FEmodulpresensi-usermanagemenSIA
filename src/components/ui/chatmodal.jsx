@@ -31,7 +31,7 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
                 const profileResponse = await getProfile();
                 
                 if (profileResponse.status === 'success' && profileResponse.data.id_user_si) {
-                    setCurrentUserId(profileResponse.data.id_user_si);
+                    setCurrentUserId(Number(profileResponse.data.id_user_si));
                 }
             } catch (error) {
                 console.error('Error getting current user:', error);
@@ -376,7 +376,7 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
 
                                 {/* Messages List */}
                                 {msgs.map((msg) => {
-                                    const isMe = msg.id_user_si === currentUserId;
+                                    const isMe = Number(msg.id_user_si) === Number(currentUserId);
                                     const isRead = msg.read_status?.read_by_count > 0;
                                     
                                     return (
