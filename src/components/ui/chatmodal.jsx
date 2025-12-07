@@ -14,7 +14,7 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
     // State
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [conversationId, setConversationId] = useState(propConversationId);
     const [currentUserId, setCurrentUserId] = useState(null);
     const [displayNim, setDisplayNim] = useState(userNim);
