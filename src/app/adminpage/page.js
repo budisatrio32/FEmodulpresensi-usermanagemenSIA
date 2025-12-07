@@ -10,6 +10,7 @@ import Footer from '@/components/ui/footer'
 import { getDashboardStatistics } from '@/lib/adminApi'
 import Cookies from 'js-cookie'
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box'
+import { Megaphone } from 'lucide-react'
 
 // Icons - using icons from /public/icon folder
 const PlusIcon = () => (
@@ -140,19 +141,19 @@ const handleCardClick = (actionType) => {
   console.log(`Clicked: ${actionType}`)
   // Navigate to respective CRUD pages
   switch(actionType) {
-    case 'add-course':
+    case 'manage-course':
       router.push('/adminpage/tambahmatkul');
       break;
-    case 'add-class':
+    case 'manage-class':
       router.push('/adminpage/tambahkelas');
       break;
-    case 'add-student':
+    case 'manage-student':
       router.push('/adminpage/tambahmahasiswa');
       break;
-    case 'add-manager':
+    case 'manage-manager':
       router.push('/adminpage/tambahakun');
       break;
-    case 'add-teacher':
+    case 'manage-teacher':
       router.push('/adminpage/tambahdosen');
       break;
     case 'manage-period':
@@ -161,6 +162,9 @@ const handleCardClick = (actionType) => {
     case 'manage-grade':
       router.push('/adminpage/konversinilai');
       break;
+    case 'create-broadcast':
+      router.push('/adminpage/pengumuman');
+      break;
     default:
       console.log('Unknown action type');
   }
@@ -168,40 +172,40 @@ const handleCardClick = (actionType) => {
 
 const managementCards = [
   {
-    id: 'add-course',
+    id: 'manage-course',
     title: 'Manajemen Mata Kuliah',
     description: 'Tambahkan mata kuliah baru ke dalam sistem',
     icon: <BookIcon />,
-    action: () => handleCardClick('add-course')
+    action: () => handleCardClick('manage-course')
   },
   {
-    id: 'add-class',
+    id: 'manage-class',
     title: 'Manajemen Kelas',
     description: 'Buat kelas baru untuk semester ini',
     icon: <ClassIcon />,
-    action: () => handleCardClick('add-class')
+    action: () => handleCardClick('manage-class')
   },
   {
-    id: 'add-student',
+    id: 'manage-student',
     title: 'Manajemen Mahasiswa',
     description: 'Daftarkan mahasiswa baru ke sistem',
     icon: <StudentIcon />,
-    action: () => handleCardClick('add-student')
+    action: () => handleCardClick('manage-student')
   },
   // Card Tambah Akun Manajer hanya untuk admin
   ...(Cookies.get('roles') === 'admin' ? [{
-    id: 'add-manager',
+    id: 'manage-manager',
     title: 'Manajemen Akun Manajer',
     description: 'Buat akun manajer untuk administrasi',
     icon: <ManagerIcon />,
-    action: () => handleCardClick('add-manager')
+    action: () => handleCardClick('manage-manager')
   }] : []),
   {
-    id: 'add-teacher',
+    id: 'manage-teacher',
     title: 'Manajemen Dosen',
     description: 'Tambahkan dosen baru ke dalam sistem',
     icon: <TeacherIcon />,
-    action: () => handleCardClick('add-teacher')
+    action: () => handleCardClick('manage-teacher')
   },
   {
     id: 'manage-period',
@@ -216,6 +220,13 @@ const managementCards = [
     description: 'Atur konversi nilai angka ke huruf',
     icon: <GradeIcon />,
     action: () => handleCardClick('manage-grade')
+  },
+  {
+    id: 'create-broadcast',
+    title: 'Buat Pengumuman Baru',
+    description: 'Buat pengumuman untuk seluruh pengguna',
+    icon: <Megaphone />,
+    action: () => handleCardClick('create-broadcast')
   }
 ];
 
@@ -340,11 +351,8 @@ return (
               </>
             ) : (
               <>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-                Kelola
+                <PlusIcon />
+                Buat Pengumuman
               </>
             )}
         </PrimaryButton>

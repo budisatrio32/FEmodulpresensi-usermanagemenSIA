@@ -53,13 +53,8 @@ export const getEcho = () => {
     config = {
       broadcaster: 'pusher',
       key: process.env.NEXT_PUBLIC_PUSHER_KEY,
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'mt1',
-      wsHost: process.env.NEXT_PUBLIC_PUSHER_HOST || 'ws.pusherapp.com',
-      wsPort: Number(process.env.NEXT_PUBLIC_PUSHER_PORT || 443),
-      wssPort: Number(process.env.NEXT_PUBLIC_PUSHER_PORT || 443),
-      forceTLS: (process.env.NEXT_PUBLIC_PUSHER_TLS || 'true') === 'true',
-      enabledTransports: ['ws', 'wss'],
-      disableStats: true,
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER, // let Pusher pick the correct host per cluster
+      forceTLS: true,
       authEndpoint: `${cleanBaseUrl}/broadcasting/auth`,
       auth: {
         headers: {
