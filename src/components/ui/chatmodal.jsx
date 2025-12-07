@@ -86,6 +86,7 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
 
     // Find or create conversation and load messages
     useEffect(() => {
+        setLoading(true);
         // Early return jika modal tertutup
         if (!isOpen) {
             // Reset state ketika modal ditutup
@@ -102,7 +103,6 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
         }
 
         // Set loading IMMEDIATELY sebelum async operation
-        setLoading(true);
         setMessages([]); // Clear messages dari conversation sebelumnya
         
         const initializeChat = async () => {
