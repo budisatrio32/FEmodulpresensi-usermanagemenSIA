@@ -160,7 +160,7 @@ useEffect(() => {
 
 return (
   <>
-<div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+<div className="min-h-screen bg-brand-light-sage" style={{ fontFamily: 'Urbanist, sans-serif' }}>
     {/* Admin Navbar */}
     <AdminNavbar title="Dashboard Admin - Mahasiswa" />
 
