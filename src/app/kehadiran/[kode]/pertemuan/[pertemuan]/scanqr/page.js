@@ -10,7 +10,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import LoadingEffect from '@/components/ui/loading-effect';
 import { AlertConfirmationRedDialog, AlertSuccessDialog, AlertErrorDialog } from '@/components/ui/alert-dialog';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
-import { openQRSession, getPresencesBySchedule, closeAttendanceSession, getClassDetail } from '@/lib/attendanceApi';
+import { openQRSession, getPresencesBySchedule, closeAttendanceSession, getClassDetail, getActiveQR } from '@/lib/attendanceApi';
 import { getPermissionForAScheduleInAClass } from '@/lib/permissionApi';
 import { getEcho, disconnectEcho } from '@/lib/echo';
 
