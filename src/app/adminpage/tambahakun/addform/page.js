@@ -14,7 +14,7 @@ import AdminNavbar from "@/components/ui/admin-navbar";
 import { ArrowLeft, Save, X, Info } from "lucide-react";
 import { storeManager } from "@/lib/adminApi";
 import { SuccessMessageBoxWithButton, ErrorMessageBox } from "@/components/ui/message-box";
-import { AlertConfirmationDialog } from "@/components/ui/alert-dialog";
+import { AlertConfirmationRedDialog } from "@/components/ui/alert-dialog";
 
 export default function AddManagerForm() {
   const router = useRouter();
@@ -578,7 +578,7 @@ export default function AddManagerForm() {
         </div>
       </div>
       {/* Cancel Confirmation Dialog */}
-      <AlertConfirmationDialog 
+      <AlertConfirmationRedDialog 
         open={showCancelDialog}
         onOpenChange={setShowCancelDialog}
         title="Konfirmasi Pembatalan"

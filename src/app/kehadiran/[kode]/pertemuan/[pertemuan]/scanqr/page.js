@@ -8,7 +8,7 @@ import { ArrowLeft, QrCode, CheckCircle, Clock, Users } from 'lucide-react';
 import { PrimaryButton, OutlineButton } from '@/components/ui/button';
 import { QRCodeCanvas } from 'qrcode.react';
 import LoadingEffect from '@/components/ui/loading-effect';
-import { AlertConfirmationDialog, AlertSuccessDialog, AlertErrorDialog } from '@/components/ui/alert-dialog';
+import { AlertConfirmationRedDialog, AlertSuccessDialog, AlertErrorDialog } from '@/components/ui/alert-dialog';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 import { openQRSession, getPresencesBySchedule, closeAttendanceSession, getClassDetail } from '@/lib/attendanceApi';
 import { getPermissionForAScheduleInAClass } from '@/lib/permissionApi';
@@ -739,7 +739,7 @@ export default function ScanQRPage() {
             </div>
 
             {/* Alert Dialogs */}
-            <AlertConfirmationDialog
+            <AlertConfirmationRedDialog
                 open={showConfirmDialog}
                 onOpenChange={setShowConfirmDialog}
                 title="Konfirmasi"

@@ -13,6 +13,7 @@ import { ErrorMessageBox, SuccessMessageBox, ErrorMessageBoxWithButton } from '.
 import { useAuth } from '@/lib/auth-context';
 import {
   AlertConfirmationDialog,
+  AlertConfirmationRedDialog,
 } from '@/components/ui/alert-dialog';
 
 export default function ProfileMahasiswa() {
@@ -1867,7 +1868,7 @@ return (
     />
 
     {/* Cancel Confirmation Dialog */}
-    <AlertConfirmationDialog 
+    <AlertConfirmationRedDialog 
         open={showCancelDialog}
         onOpenChange={setShowCancelDialog}
         title="Konfirmasi Pembatalan"

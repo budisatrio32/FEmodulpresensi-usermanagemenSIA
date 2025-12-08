@@ -15,7 +15,7 @@ import { ArrowLeft, Save, X, Info } from "lucide-react";
 import { getSubjectById, updateSubject } from "@/lib/adminApi";
 import LoadingEffect from "@/components/ui/loading-effect";
 import { ErrorMessageBox, SuccessMessageBoxWithButton, ErrorMessageBoxWithButton } from "@/components/ui/message-box";
-import { AlertConfirmationDialog } from "@/components/ui/alert-dialog";
+import { AlertConfirmationRedDialog } from "@/components/ui/alert-dialog";
 
 export default function EditMatkulForm() {
   const router = useRouter();
@@ -486,7 +486,7 @@ export default function EditMatkulForm() {
         </div>
       </div>
       {/* Cancel Confirmation Dialog */}
-      <AlertConfirmationDialog
+      <AlertConfirmationRedDialog
         open={showCancelDialog}
         onOpenChange={setShowCancelDialog}
         onConfirm={confirmCancel}

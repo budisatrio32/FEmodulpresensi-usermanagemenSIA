@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import AdminNavbar from '@/components/ui/admin-navbar';
 import { ArrowLeft, Save, X, Info } from 'lucide-react';
 import { ErrorMessageBox, SuccessMessageBoxWithButton } from '@/components/ui/message-box';
-import { AlertConfirmationDialog } from '@/components/ui/alert-dialog';
+import { AlertConfirmationRedDialog } from '@/components/ui/alert-dialog';
 import { createGradeConversion } from '@/lib/gradeConv';
 
 export default function AddKonversiNilaiForm() {
@@ -520,7 +520,7 @@ export default function AddKonversiNilaiForm() {
         </div>
       </div>
       {/* Cancel Confirmation Dialog */}
-      <AlertConfirmationDialog 
+      <AlertConfirmationRedDialog 
         open={showCancelDialog}
         onOpenChange={setShowCancelDialog}
         title="Konfirmasi Pembatalan"

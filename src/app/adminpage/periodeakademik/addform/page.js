@@ -14,7 +14,7 @@ import AdminNavbar from '@/components/ui/admin-navbar';
 import { ArrowLeft, Save, X, Info } from 'lucide-react';
 import { ErrorMessageBox, SuccessMessageBoxWithButton } from '@/components/ui/message-box';
 import {
-  AlertConfirmationDialog,
+  AlertConfirmationRedDialog,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -502,7 +502,7 @@ export default function AddPeriodeForm() {
         </div>
       </div>
       {/* Cancel Confirmation Dialog */}
-      <AlertConfirmationDialog 
+      <AlertConfirmationRedDialog 
         open={showCancelDialog}
         onOpenChange={setShowCancelDialog}
         title="Konfirmasi Pembatalan"

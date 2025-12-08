@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { AlertConfirmationDialog } from '@/components/ui/alert-dialog'
+import { AlertConfirmationRedDialog } from '@/components/ui/alert-dialog'
 import ChatModal from '@/components/ui/chatmodal'
 import NavbarNotification from '@/components/ui/navbar-notification'
 import { useAuth } from '@/lib/auth-context'
@@ -279,7 +279,7 @@ const NavbarProfile = forwardRef(({ className, userName, userImage, Name, isScro
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <AlertConfirmationDialog
+      <AlertConfirmationRedDialog
         open={showLogoutDialog}
         onOpenChange={setShowLogoutDialog}
         title='Konfirmasi Logout'

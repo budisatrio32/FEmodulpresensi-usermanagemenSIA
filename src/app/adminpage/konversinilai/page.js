@@ -7,7 +7,7 @@ import AdminNavbar from '@/components/ui/admin-navbar';
 import { Search, X, ArrowLeft, FileText } from 'lucide-react';
 import { deleteGradeConversion, getGradeConversions } from '@/lib/gradeConv';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
-import { AlertConfirmationDialog, AlertErrorDialog, AlertSuccessDialog } from '@/components/ui/alert-dialog';
+import { AlertConfirmationRedDialog, AlertErrorDialog, AlertSuccessDialog } from '@/components/ui/alert-dialog';
 
 export default function KonversiNilaiPage() {
   const router = useRouter();
@@ -241,7 +241,7 @@ export default function KonversiNilaiPage() {
           />
         )}
       </div>
-      <AlertConfirmationDialog 
+      <AlertConfirmationRedDialog 
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
         title="Konfirmasi Hapus Konversi Nilai"

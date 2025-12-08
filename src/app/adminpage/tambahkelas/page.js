@@ -7,7 +7,7 @@ import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
 import { getAllClasses, toggleClassStatus } from '@/lib/ClassApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
-import { AlertConfirmationDialog, AlertSuccessDialog } from '@/components/ui/alert-dialog';
+import { AlertConfirmationDialog, AlertSuccessDialog, AlertErrorDialog } from '@/components/ui/alert-dialog';
 
 export default function KelasDashboard() {
   const router = useRouter();
@@ -304,7 +304,7 @@ export default function KelasDashboard() {
       />
 
       {/* Activate Error Dialog */}
-      <AlertConfirmationDialog
+      <AlertErrorDialog
         open={showActivateErrorDialog}
         onOpenChange={setShowActivateErrorDialog}
         description={activateError}

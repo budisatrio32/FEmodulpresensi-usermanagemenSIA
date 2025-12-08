@@ -180,6 +180,38 @@ function AlertConfirmationDialog({
             <OutlineButton>{cancelText || "Batal"}</OutlineButton>
           </AlertDialogCancel>
           <AlertDialogAction asChild>
+            <PrimaryButton onClick={onConfirm}>{confirmText || "Lanjutkan"}</PrimaryButton>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+function AlertConfirmationRedDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmText,
+  cancelText,
+  onConfirm,
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {title || "Konfirmasikan"}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {description || "Apakah Anda yakin ingin melanjutkan?"}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel asChild>
+            <OutlineButton>{cancelText || "Batal"}</OutlineButton>
+          </AlertDialogCancel>
+          <AlertDialogAction asChild>
             <WarningButton onClick={onConfirm}>{confirmText || "Lanjutkan"}</WarningButton>
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -217,7 +249,7 @@ function AlertConfirmationDialogTwoOption({
             <WarningButton onClick={onCancel}>{cancelText || "Lanjutkan"}</WarningButton>
           </AlertDialogAction>
           <AlertDialogAction asChild>
-            <WarningButton onClick={onConfirm}>{confirmText || "Lanjutkan"}</WarningButton>
+            <PrimaryButton onClick={onConfirm}>{confirmText || "Lanjutkan"}</PrimaryButton>
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -343,6 +375,7 @@ export {
   AlertDialogAction,
   AlertDialogCancel,
   AlertConfirmationDialog,
+  AlertConfirmationRedDialog,
   AlertErrorDialog,
   AlertSuccessDialog,
   AlertInfoDialog,

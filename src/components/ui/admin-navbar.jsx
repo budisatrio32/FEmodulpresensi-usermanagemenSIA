@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  AlertConfirmationDialog,
+  AlertConfirmationRedDialog,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -190,7 +190,7 @@ return (
   </div>
 
   {/* Konfirmasi dialog */}
-  <AlertConfirmationDialog 
+  <AlertConfirmationRedDialog 
     open={showLogoutDialog}
     onOpenChange={setShowLogoutDialog}
     title='Konfirmasi Logout'

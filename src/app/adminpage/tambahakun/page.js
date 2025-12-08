@@ -7,7 +7,7 @@ import DataTable from '@/components/ui/table';
 import AdminNavbar from '@/components/ui/admin-navbar';
 import { getManagers, toggleManagerStatus } from '@/lib/adminApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
-import { AlertConfirmationDialog, AlertSuccessDialog } from '@/components/ui/alert-dialog';
+import { AlertConfirmationDialog, AlertSuccessDialog, AlertErrorDialog } from '@/components/ui/alert-dialog';
 
 export default function AkunManagerDashboard() {
   const router = useRouter();
@@ -271,7 +271,7 @@ export default function AkunManagerDashboard() {
       />
 
       {/* Error dialog */}
-      <AlertConfirmationDialog
+      <AlertErrorDialog
         open={showErrorDialog}
         onOpenChange={setShowErrorDialog}
         description={errorActivate}

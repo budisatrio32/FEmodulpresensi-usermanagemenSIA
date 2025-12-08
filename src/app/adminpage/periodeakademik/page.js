@@ -8,6 +8,7 @@ import AdminNavbar from '@/components/ui/admin-navbar';
 import {
   AlertConfirmationDialog,
   AlertConfirmationDialogTwoOption,
+  AlertConfirmationRedDialog,
   AlertErrorDialog,
   AlertSuccessDialog,
   AlertWarningDialog,
@@ -335,7 +336,7 @@ export default function PeriodeAkademikDashboard() {
           description="Tidak dapat menghapus periode yang sedang aktif!"
         />
       ) : (
-        <AlertConfirmationDialog 
+        <AlertConfirmationRedDialog 
           open={showDeleteDialog} 
           onOpenChange={setShowDeleteDialog}
           title={'Konfirmasi Hapus'}

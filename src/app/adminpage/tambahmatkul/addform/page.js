@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import AdminNavbar from "@/components/ui/admin-navbar";
 import { ArrowLeft, Save, X, Info } from "lucide-react";
 import { ErrorMessageBox, SuccessMessageBoxWithButton } from "@/components/ui/message-box";
-import { AlertConfirmationDialog } from "@/components/ui/alert-dialog";
+import { AlertConfirmationRedDialog } from "@/components/ui/alert-dialog";
 
 export default function AddMatkulForm() {
   const router = useRouter();
@@ -426,7 +426,7 @@ export default function AddMatkulForm() {
         </div>
       </div>
       {/* Cancel Confirmation Dialog */}
-      <AlertConfirmationDialog
+      <AlertConfirmationRedDialog
         open={showCancelDialog}
         onOpenChange={setShowCancelDialog}
         onConfirm={confirmCancel}

@@ -8,7 +8,7 @@ import AdminNavbar from '@/components/ui/admin-navbar';
 import { getSubjects, deleteSubject } from '@/lib/adminApi';
 import { ErrorMessageBoxWithButton } from '@/components/ui/message-box';
 import {
-  AlertConfirmationDialog,
+  AlertConfirmationRedDialog,
   AlertErrorDialog,
   AlertSuccessDialog,
 } from '@/components/ui/alert-dialog';
@@ -250,7 +250,7 @@ export default function MatkulDashboard() {
       </div>
 
       {/* Delete Confirmation Dialog */}
-      <AlertConfirmationDialog 
+      <AlertConfirmationRedDialog 
         open={showDeleteDialog} 
         onOpenChange={setShowDeleteDialog}
         title={'Konfirmasi Hapus'}

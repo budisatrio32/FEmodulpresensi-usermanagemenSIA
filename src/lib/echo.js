@@ -61,7 +61,31 @@ export const getEcho = () => {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json',
         },
+        withCredentials: true,
       },
+      authorizer: (channel) => ({
+        authorize: (socketId, callback) => {
+          fetch(`${cleanBaseUrl}/broadcasting/auth`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ socket_id: socketId, channel_name: channel.name })
+          })
+          .then(async (res) => {
+            if (!res.ok) {
+              const text = await res.text();
+              return callback(true, { status: res.status, error: text || 'Auth failed' });
+            }
+            const data = await res.json();
+            callback(false, data);
+          })
+          .catch((err) => callback(true, err));
+        }
+      }),
     };
   } else {
     // Reverb (self-hosted) configuration
@@ -80,7 +104,31 @@ export const getEcho = () => {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json',
         },
+        withCredentials: true,
       },
+      authorizer: (channel) => ({
+        authorize: (socketId, callback) => {
+          fetch(`${cleanBaseUrl}/broadcasting/auth`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ socket_id: socketId, channel_name: channel.name })
+          })
+          .then(async (res) => {
+            if (!res.ok) {
+              const text = await res.text();
+              return callback(true, { status: res.status, error: text || 'Auth failed' });
+            }
+            const data = await res.json();
+            callback(false, data);
+          })
+          .catch((err) => callback(true, err));
+        }
+      }),
     };
   }
 

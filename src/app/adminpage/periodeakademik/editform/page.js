@@ -14,7 +14,7 @@ import AdminNavbar from '@/components/ui/admin-navbar';
 import { ArrowLeft, Save, X, Info } from 'lucide-react';
 import { ErrorMessageBox, ErrorMessageBoxWithButton, SuccessMessageBoxWithButton } from '@/components/ui/message-box';
 import LoadingEffect from '@/components/ui/loading-effect';
-import { AlertConfirmationDialog } from '@/components/ui/alert-dialog';
+import { AlertConfirmationRedDialog } from '@/components/ui/alert-dialog';
 import { getAcademicPeriodById, updateAcademicPeriod } from '@/lib/adminApi';
 
 export default function EditPeriodeForm() {
@@ -598,7 +598,7 @@ export default function EditPeriodeForm() {
       </div>
       
       {/* Cancel Confirmation Dialog */}
-      <AlertConfirmationDialog 
+      <AlertConfirmationRedDialog 
         open={showCancelDialog}
         onOpenChange={setShowCancelDialog}
         title="Konfirmasi Pembatalan"

@@ -19,7 +19,7 @@ import LoadingEffect from "@/components/ui/loading-effect";
 import { getClassById, getAcademicPeriods, getSubjects, getMahasiswa, getDosen, updateClass } from "@/lib/adminApi";
 import { ErrorMessageBoxWithButton, SuccessMessageBox, ErrorMessageBox } from "@/components/ui/message-box";
 import { assignStudentsToClass, assignLecturersToClass, removeLecturerFromClass, removeStudentFromClass, generateSchedule } from "@/lib/adminApi";
-import { AlertConfirmationDialog } from "@/components/ui/alert-dialog";
+import { AlertConfirmationRedDialog } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function DetailKelas() {
@@ -1707,7 +1707,7 @@ export default function DetailKelas() {
         )}
 
         {/* confirm back */}
-        <AlertConfirmationDialog 
+        <AlertConfirmationRedDialog 
             open={showConfirmBack}
             onOpenChange={setShowConfirmBack}
             title="Kembali ke Daftar Kelas"

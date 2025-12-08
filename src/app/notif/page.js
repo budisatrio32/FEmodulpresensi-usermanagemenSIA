@@ -9,7 +9,7 @@ import { ErrorMessageBoxWithButton, SuccessMessageBox } from '@/components/ui/me
 import { ArrowLeft, Bell, MessageCircle, Check, X } from 'lucide-react'
 import { getNotifications, markAsRead, markAllAsRead, deleteNotification } from '@/lib/notificationApi'
 import { getConversationDetail } from '@/lib/chatApi'
-import { AlertConfirmationDialog } from '@/components/ui/alert-dialog'
+import { AlertConfirmationRedDialog } from '@/components/ui/alert-dialog'
 import ChatModal from '@/components/ui/chatmodal'
 import { getEcho } from '@/lib/echo'
 import Cookies from 'js-cookie'
@@ -785,7 +785,7 @@ export default function NotifikasiPage() {
 
       <Footer />
 
-      <AlertConfirmationDialog
+      <AlertConfirmationRedDialog
         open={showDeleteAllDialog}
         onOpenChange={setShowDeleteAllDialog}
         onConfirm={confirmDeleteAll}

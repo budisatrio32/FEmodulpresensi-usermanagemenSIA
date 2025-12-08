@@ -18,7 +18,7 @@ import { SuccessMessageBoxWithButton,
   ErrorMessageBoxWithButton 
 } from "@/components/ui/message-box";
 import LoadingEffect from "@/components/ui/loading-effect";
-import { AlertConfirmationDialog } from "@/components/ui/alert-dialog";
+import { AlertConfirmationRedDialog } from "@/components/ui/alert-dialog";
 
 export default function AddDosenForm() {
   const router = useRouter();
@@ -648,7 +648,7 @@ export default function AddDosenForm() {
         </div>
       </div>
       {/* Cancel Confirmation Dialog */}
-      <AlertConfirmationDialog 
+      <AlertConfirmationRedDialog 
         open={showCancelDialog}
         onOpenChange={setShowCancelDialog}
         title="Konfirmasi Pembatalan"
