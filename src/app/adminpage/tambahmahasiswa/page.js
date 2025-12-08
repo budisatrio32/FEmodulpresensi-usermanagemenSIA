@@ -139,7 +139,6 @@ const confirmToggleStatus = async () => {
     setErrorActivate('Gagal mengubah status mahasiswa: ' + error.message);
     setShowErrorDialog(true);
   } finally {
-    setIsTogglingStatus(null);
     setSelectedStudent(null);
   }
 };
