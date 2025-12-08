@@ -348,16 +348,33 @@ export default function ScanQRPage() {
         const provider = process.env.NEXT_PUBLIC_BROADCAST_PROVIDER;
         if (provider === 'pusher' && permissionChecked && permissionGranted && id_schedule && !loading) {
             let stopped = false;
-            const intervalMs = parseInt(process.env.NEXT_PUBLIC_QR_POLLING_INTERVAL || '5000', 10);
+            const defaultInterval = parseInt(process.env.NEXT_PUBLIC_QR_POLLING_INTERVAL || '5000', 10);
+            
             const poll = async () => {
                 try {
-                    await getActiveQR(id_schedule); // triger tok
+                    const response = await getActiveQR(id_schedule);
+                    
+                    if (response.status === 'success') {
+                        // Use expires_in_seconds from API to schedule next poll
+                        // Add 1 second buffer to ensure key is actually expired
+                        const nextPollDelay = (response.data.expires_in_seconds || 0) * 1000 + 1000;
+                        
+                        if (!stopped) {
+                            // Use API's expiry time, or fallback to default interval
+                            const delay = nextPollDelay > 0 ? nextPollDelay : defaultInterval;
+                            timer = setTimeout(poll, delay);
+                        }
+                    } else {
+                        // If failed, retry with default interval
+                        if (!stopped) {
+                            timer = setTimeout(poll, defaultInterval);
+                        }
+                    }
                 } catch (error) {
-                    // Transient errors can be ignored or logged
-                    console.error('[Poll] Error fetching active QR:', error);
-                }
-                if (!stopped) {
-                    timer = setTimeout(poll, intervalMs);
+                    // On error, retry with default interval
+                    if (!stopped) {
+                        timer = setTimeout(poll, defaultInterval);
+                    }
                 }
             };
 
