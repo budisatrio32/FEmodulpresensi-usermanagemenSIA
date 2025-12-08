@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/ui/navigation-menu';
 import Footer from '@/components/ui/footer';
@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { findOrCreatePrivateConversation, getMessages, sendMessage as sendChatMessage, markMessagesAsRead } from '@/lib/chatApi';
 import { getEcho } from '@/lib/echo';
 
-export default function ChatPage() {
+function ChatPage() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const messagesEndRef = useRef(null);
@@ -375,5 +375,13 @@ export default function ChatPage() {
 			</div>
 			<Footer />
 		</div>
+	);
+}
+
+export default function Page() {
+	return (
+		<Suspense fallback={<LoadingEffect message="Memuat chat..." />}>
+			<ChatPage />
+		</Suspense>
 	);
 }

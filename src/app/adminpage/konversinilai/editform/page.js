@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
 Field, 
@@ -18,7 +18,7 @@ import { AlertConfirmationRedDialog } from '@/components/ui/alert-dialog';
 import { rule } from 'postcss/lib/postcss';
 import { getGradeConversionById, updateGradeConversion } from '@/lib/gradeConv';
 
-export default function EditKonversiNilaiForm() {
+function EditKonversiNilaiForm() {
 const router = useRouter();
 const searchParams = useSearchParams();
 const ruleId = searchParams.get('id');
@@ -601,4 +601,12 @@ return (
     />
 </div>
 );
+}
+
+export default function Page() {
+    return (
+        <Suspense fallback={<LoadingEffect message="Memuat data nilai konversi..." />}> 
+            <EditKonversiNilaiForm />
+        </Suspense>
+    );
 }

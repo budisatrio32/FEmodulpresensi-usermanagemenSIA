@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
   Field, 
@@ -17,7 +17,7 @@ import LoadingEffect from "@/components/ui/loading-effect";
 import { ErrorMessageBox, SuccessMessageBoxWithButton, ErrorMessageBoxWithButton } from "@/components/ui/message-box";
 import { AlertConfirmationRedDialog } from "@/components/ui/alert-dialog";
 
-export default function EditMatkulForm() {
+function EditMatkulForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const matkulId = searchParams.get('id');
@@ -496,5 +496,13 @@ export default function EditMatkulForm() {
         cancelText="Lanjutkan Mengisi"
       />
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<LoadingEffect message="Memuat data mata kuliah..." />}>
+      <EditMatkulForm />
+    </Suspense>
   );
 }

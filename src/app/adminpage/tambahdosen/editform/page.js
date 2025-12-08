@@ -1,6 +1,6 @@
     "use client";
 
-    import { useState, useEffect } from "react";
+    import { useState, useEffect, Suspense } from "react";
     import { useRouter, useSearchParams } from "next/navigation";
     import { 
     Field, 
@@ -14,7 +14,7 @@
     import { ArrowLeft, Save, X, Info } from "lucide-react";
 import LoadingEffect from "@/components/ui/loading-effect";
 
-    export default function EditDosenForm() {
+    function EditDosenForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const dosenId = searchParams.get('id');
@@ -569,5 +569,13 @@ import LoadingEffect from "@/components/ui/loading-effect";
         </div>
         </div>
     </div>
+    );
+}
+
+export default function Page() {
+    return (
+        <Suspense fallback={<LoadingEffect message="Memuat data dosen..." />}>
+            <EditDosenForm />
+        </Suspense>
     );
 }

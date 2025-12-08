@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
   Field, 
@@ -14,7 +14,7 @@ import AdminNavbar from "@/components/ui/admin-navbar";
 import { ArrowLeft, Save, X, Info } from "lucide-react";
 import LoadingEffect from "@/components/ui/loading-effect";
 
-export default function EditManagerForm() {
+function EditManagerForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const managerId = searchParams.get('id');
@@ -549,5 +549,13 @@ export default function EditManagerForm() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<LoadingEffect message="Memuat data akun..." />}>
+      <EditManagerForm />
+    </Suspense>
   );
 }

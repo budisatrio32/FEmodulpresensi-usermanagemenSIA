@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
 ArrowLeft, 
@@ -22,7 +22,7 @@ import { assignStudentsToClass, assignLecturersToClass, removeLecturerFromClass,
 import { AlertConfirmationRedDialog } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-export default function DetailKelas() {
+function DetailKelas() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const kelasId = searchParams.get('id');
@@ -1718,5 +1718,13 @@ export default function DetailKelas() {
         />
         </div>
     </div>
+    );
+}
+
+export default function Page() {
+    return (
+        <Suspense fallback={<LoadingEffect message="Memuat detail kelas..." />}>
+            <DetailKelas />
+        </Suspense>
     );
 }

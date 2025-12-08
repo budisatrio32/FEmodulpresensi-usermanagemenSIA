@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Navbar from '@/components/ui/navigation-menu'
 import Footer from '@/components/ui/footer'
@@ -14,7 +14,7 @@ import ChatModal from '@/components/ui/chatmodal'
 import { getEcho } from '@/lib/echo'
 import Cookies from 'js-cookie'
 
-export default function NotifikasiPage() {
+function NotifikasiPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   
@@ -807,5 +807,13 @@ export default function NotifikasiPage() {
         conversationId={chatUser.conversationId}
       />
     </div>
+  )
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<LoadingEffect message="Memuat notifikasi..." />}>
+      <NotifikasiPage />
+    </Suspense>
   )
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   Field, 
@@ -17,7 +17,7 @@ import LoadingEffect from '@/components/ui/loading-effect';
 import { AlertConfirmationRedDialog } from '@/components/ui/alert-dialog';
 import { getAcademicPeriodById, updateAcademicPeriod } from '@/lib/adminApi';
 
-export default function EditPeriodeForm() {
+function EditPeriodeForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const periodId = searchParams.get('id');
@@ -608,5 +608,13 @@ export default function EditPeriodeForm() {
         cancelText="Lanjutkan Mengisi"
       />
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<LoadingEffect message="Memuat data periode akademik..." />}>
+      <EditPeriodeForm />
+    </Suspense>
   );
 }
