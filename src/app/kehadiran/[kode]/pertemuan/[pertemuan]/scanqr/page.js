@@ -348,8 +348,7 @@ export default function ScanQRPage() {
         const provider = process.env.NEXT_PUBLIC_BROADCAST_PROVIDER;
         if (provider === 'pusher' && permissionChecked && permissionGranted && id_schedule && !loading) {
             let stopped = false;
-            const intervalMs = 3000; // poll every 3 seconds
-
+            const intervalMs = parseInt(process.env.NEXT_PUBLIC_QR_POLLING_INTERVAL || '5000', 10);
             const poll = async () => {
                 try {
                     await getActiveQR(id_schedule); // triger tok
