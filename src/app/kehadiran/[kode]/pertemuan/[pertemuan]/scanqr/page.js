@@ -343,6 +343,33 @@ export default function ScanQRPage() {
         }
     };
 
+    // Poll active QR when using Pusher (no scheduler needed)
+    useEffect(() => {
+        const provider = process.env.NEXT_PUBLIC_BROADCAST_PROVIDER;
+        if (provider === 'pusher' && permissionChecked && permissionGranted && id_schedule && !loading) {
+            let stopped = false;
+            const intervalMs = 3000; // poll every 3 seconds
+
+            const poll = async () => {
+                try {
+                    await getActiveQR(id_schedule); // triger tok
+                } catch (error) {
+                    // Transient errors can be ignored or logged
+                    console.error('[Poll] Error fetching active QR:', error);
+                }
+                if (!stopped) {
+                    timer = setTimeout(poll, intervalMs);
+                }
+            };
+
+            let timer = setTimeout(poll, 0);
+            return () => {
+                stopped = true;
+                clearTimeout(timer);
+            };
+        }
+    }, [permissionChecked, permissionGranted, id_schedule, loading]);
+
     const fetchPresences = async () => {
         try {
             const response = await getPresencesBySchedule(id_schedule);

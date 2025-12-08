@@ -228,6 +228,19 @@ export const scanQRAttendance = async (key, studentId) => {
         throw (error.response?.data ?? error);
     }
 };
+/**
+ * Get active QR code for a schedule
+ * @param {number} scheduleId - The schedule ID
+ * @returns {Promise} - Active QR data
+ */
+export const getStudentActiveQR = async (scheduleId) => {
+    try {
+        const response = await api.get(`/student/schedules/${scheduleId}/active-qr`);
+        return response.data;
+    } catch (error) {
+        throw (error.response?.data ?? error);
+    }
+};
 
 // ========================================
 // ACADEMIC PERIODS API
