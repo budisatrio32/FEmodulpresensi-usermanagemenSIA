@@ -7,6 +7,7 @@ import Footer from '@/components/ui/footer';
 import { ArrowLeft, Send, User, MessageCircle, Check } from 'lucide-react';
 import { PrimaryButton } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import LoadingEffect from '@/components/ui/loading-effect';
 import { findOrCreatePrivateConversation, getMessages, sendMessage as sendChatMessage, markMessagesAsRead } from '@/lib/chatApi';
 import { getEcho } from '@/lib/echo';
 
