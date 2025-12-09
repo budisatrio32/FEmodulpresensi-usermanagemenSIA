@@ -162,7 +162,7 @@ export default function DetailKehadiranMahasiswa() {
 		{ key: 'tanggal', label: 'Tanggal', className: 'text-left', cellClassName: 'text-left' },
 		{ key: 'jam', label: 'Jam Mulai - Selesai', width: '180px', cellClassName: 'text-center' },
 		{ key: 'jam_presensi', label: 'Jam Presensi', width: '130px', cellClassName: 'text-center' },
-		{ key: 'status', label: 'Status', width: '200px' },
+		{ key: 'status', label: 'Status', width: '250px' },
 	];
 
 	// Custom render untuk mahasiswa

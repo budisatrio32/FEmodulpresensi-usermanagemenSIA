@@ -96,7 +96,7 @@ export default function MatkulDashboard() {
           borderRadius: '12px'
         }}
       >
-        {value} SKS
+        {value}-SKS
       </span>
     ),
   };

@@ -409,7 +409,7 @@ return (
         Ringkasan
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-6">
             <div className="bg-gray-50 rounded-xl p-4">
                 <p className="text-sm font-medium mb-1" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
                 SKS Semester
