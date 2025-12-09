@@ -1518,7 +1518,7 @@ function DetailKelas() {
         {/* Modal Generate Jadwal */}
         {showGenerateJadwalModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-            <div className="bg-white p-6 max-w-md w-full shadow-2xl" style={{ borderRadius: '12px' }}>
+            <div className="bg-white p-6 max-w-md w-full max-h-[80vh] flex flex-col shadow-2xl overflow-y-auto" style={{ borderRadius: '12px' }}>
             <div className="flex items-center justify-between mb-4">
                 <div>
                 <h3 className="text-2xl font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>

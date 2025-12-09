@@ -303,13 +303,15 @@ return (
                 style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
+                    gap: '4px',
                     color: '#015023',
                     fontSize: '16px',
                     fontWeight: '600',
                     fontFamily: 'Urbanist, sans-serif',
                     textDecoration: 'none',
-                    transition: 'opacity 0.2s'
+                    transition: 'opacity 0.2s',
+                    justifyContent: 'flex-end',
+                    textAlign: 'right'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
                 onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}

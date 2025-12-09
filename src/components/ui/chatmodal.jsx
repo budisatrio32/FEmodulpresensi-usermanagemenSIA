@@ -6,6 +6,7 @@ import { findOrCreatePrivateConversation, getMessages, sendMessage, markMessages
 import { getNotifications, markAsRead } from '@/lib/notificationApi';
 import { getEcho } from '@/lib/echo';
 import { useChatContext } from '@/lib/chat-context';
+import { getProfile } from '@/lib/profileApi';
 
 export default function ChatModal({ isOpen, onClose, userName, userNim = '', userId = '', conversationId: propConversationId = null }) {
     // Chat Context for global state
@@ -22,230 +23,236 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
     // Refs
     const messagesEndRef = useRef(null);
 
+    // Fetch current user
+    const fetchCurrentUser = async () => {
+        try {
+            const profileResponse = await getProfile();
+            
+            if (profileResponse?.status === 'success' && profileResponse.data?.id_user_si) {
+                setCurrentUserId(Number(profileResponse.data.id_user_si));
+            }
+        } catch (error) {
+            console.error('Error getting current user:', error);
+        }
+    };
+
     // Get current user ID from profile API
     useEffect(() => {
-        const fetchCurrentUser = async () => {
-            try {
-                // Dynamic import to avoid circular dependencies if any
-                const { getProfile } = await import('@/lib/profileApi');
-                const profileResponse = await getProfile();
-                
-                if (profileResponse.status === 'success' && profileResponse.data.id_user_si) {
-                    setCurrentUserId(Number(profileResponse.data.id_user_si));
-                }
-            } catch (error) {
-                console.error('Error getting current user:', error);
-            }
-        };
-
         fetchCurrentUser();
     }, []);
 
-    useEffect(() => {
-        // Only run when modal is open AND conversationId is available
-        if (!isOpen || !conversationId) return;
-
-        const dismissConversationNotifications = async () => {
-            try {
-                // Fetch all unread chat notifications (use 'status: unread' not 'is_read')
-                const response = await getNotifications({ type: 'chat', status: 'unread' });
+    // Dismiss conversation notifications
+    const dismissConversationNotifications = async () => {
+        try {
+            const response = await getNotifications({ type: 'chat', status: 'unread' });
+            
+            if (response.status === 'success' && response.data?.notifications) {
+                const conversationNotifs = response.data.notifications.filter(
+                    notif => notif.metadata?.id_conversation?.toString() === conversationId.toString()
+                );
                 
-                if (response.status === 'success') {
-                    // Filter notifications that belong to this conversation
-                    const conversationNotifs = response.data.notifications.filter(
-                        notif => notif.metadata?.id_conversation?.toString() === conversationId.toString()
+                if (conversationNotifs.length > 0) {
+                    console.log('[ChatModal] 📧 Dismissing', conversationNotifs.length, 'notifications for conversation', conversationId);
+                    
+                    const markPromises = conversationNotifs.map(notif => 
+                        markAsRead(notif.id_notification).catch(err => 
+                            console.error(`Failed to mark notification ${notif.id_notification}:`, err)
+                        )
                     );
                     
-                    if (conversationNotifs.length > 0) {
-                        console.log('[ChatModal] 📧 Dismissing', conversationNotifs.length, 'notifications for conversation', conversationId);
-                        
-                        // Mark each notification as read (bulk operation)
-                        const markPromises = conversationNotifs.map(notif => 
-                            markAsRead(notif.id_notification).catch(err => 
-                                console.error(`Failed to mark notification ${notif.id_notification}:`, err)
-                            )
-                        );
-                        
-                        await Promise.all(markPromises);
-                        
-                        // Notify navbar to update UI (with notification IDs to remove)
-                        const notifIds = conversationNotifs.map(n => n.id_notification);
-                        window.dispatchEvent(new CustomEvent('chatNotificationsDismissed', {
-                            detail: { notificationIds: notifIds, conversationId }
-                        }));
-                        console.log('[ChatModal] ✅ Notifications dismissed and event dispatched with IDs:', notifIds);
-                    }
+                    await Promise.all(markPromises);
+                    
+                    const notifIds = conversationNotifs.map(n => n.id_notification);
+                    window.dispatchEvent(new CustomEvent('chatNotificationsDismissed', {
+                        detail: { notificationIds: notifIds, conversationId }
+                    }));
+                    console.log('[ChatModal] ✅ Notifications dismissed and event dispatched with IDs:', notifIds);
                 }
-            } catch (error) {
-                console.error('Error dismissing conversation notifications:', error);
             }
-        };
+        } catch (error) {
+            console.error('Error dismissing conversation notifications:', error);
+        }
+    };
 
+    useEffect(() => {
+        if (!isOpen || !conversationId) return;
         dismissConversationNotifications();
     }, [isOpen, conversationId]);
+
+    // Setup WebSocket subscription
+    const setupWebSocket = (convId) => {
+        const echo = getEcho();
+        if (!echo) {
+            console.warn('[ChatModal] Echo not initialized yet');
+            return;
+        }
+
+        try {
+            console.log('[ChatModal] Subscribing to chat.' + convId);
+            
+            echo.private(`chat.${convId}`)
+                .listen('.NewChatMessage', (e) => {
+                    console.log('[ChatModal] New message received:', e);
+                    if (e.message.id_user_si !== currentUserId) {
+                        setMessages(prev => {
+                            const exists = prev.some(msg => msg.id_message === e.message.id_message);
+                            if (exists) {
+                                console.log('[ChatModal] Message already exists, skipping');
+                                return prev;
+                            }
+                            console.log('[ChatModal] Adding new message to state');
+                            return [...prev, e.message];
+                        });
+                        
+                        setTimeout(async () => {
+                            await markMessagesAsRead(convId, [e.message.id_message])
+                                .catch(err => console.error('Error auto-marking as read:', err));
+                        }, 1000);
+                    }
+                })
+                .listen('.MessageRead', (e) => {
+                    console.log('[ChatModal] Message read event:', e);
+                    setMessages(prev => prev.map(msg => {
+                        if (msg.id_message === e.message_id) {
+                            return {
+                                ...msg,
+                                read_status: {
+                                    ...msg.read_status,
+                                    read_by_count: (msg.read_status?.read_by_count || 0) + 1,
+                                    read_by_users: [...(msg.read_status?.read_by_users || []), e.user_id],
+                                }
+                            };
+                        }
+                        return msg;
+                    }));
+                });
+            
+            console.log('[ChatModal] WebSocket subscribed successfully');
+        } catch (wsError) {
+            console.error('[ChatModal] WebSocket subscription error:', wsError);
+        }
+    };
+
+    // Initialize chat
+    const initializeChat = async () => {
+        try {
+            console.log('[ChatModal] Initializing chat with userId:', userId);
+            
+            const conversationResponse = await findOrCreatePrivateConversation(userId);
+
+            if (conversationResponse.status === 'success' && conversationResponse.data?.id_conversation) {
+                const convId = conversationResponse.data.id_conversation;
+                setConversationId(convId);
+                
+                openChat(String(convId));
+
+                const messagesResponse = await getMessages(convId);
+
+                if (messagesResponse.status === 'success' && messagesResponse.data) {
+                    const messagesList = messagesResponse.data.messages || messagesResponse.data;
+                    setMessages(messagesList);
+                    
+                    if (messagesResponse.data.conversation?.other_participant?.nim) {
+                        setDisplayNim(messagesResponse.data.conversation.other_participant.nim);
+                    }
+                }
+
+                setupWebSocket(convId);
+            }
+        } catch (error) {
+            console.error('Error initializing chat:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Cleanup WebSocket and chat
+    const cleanupChat = () => {
+        if (conversationId) {
+            const echo = getEcho();
+            if (echo) {
+                console.log('[ChatModal] Leaving channel chat.' + conversationId);
+                echo.leave(`chat.${conversationId}`);
+            }
+            
+            closeChat();
+            
+            console.log('[ChatModal] 📤 Dispatching chatModalClosed event');
+            window.dispatchEvent(new Event('chatModalClosed'));
+        }
+    };
+
+    // Scroll to bottom of messages
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    // Auto mark unread messages as read
+    const autoMarkMessagesAsRead = async () => {
+        if (!isOpen || !conversationId || messages.length === 0 || !currentUserId) {
+            return;
+        }
+
+        const unreadMessageIds = messages
+            .filter(msg => 
+                msg.id_user_si !== currentUserId && // Bukan pesan sendiri
+                !msg.read_status?.is_read_by_me // Belum dibaca
+            )
+            .map(msg => msg.id_message);
+        
+        if (unreadMessageIds.length > 0) {
+            // Delay sedikit biar user sempet liat message dulu
+            setTimeout(async () => {
+                await markMessagesAsRead(conversationId, unreadMessageIds)
+                    .catch(err => console.error('Error marking messages as read:', err));
+            }, 1000);
+        }
+    };
+
+    // Handle body overflow
+    const handleBodyOverflow = (shouldHide) => {
+        document.body.style.overflow = shouldHide ? 'hidden' : 'unset';
+    };
+
+    // Reset chat state when closed
+    const resetChatState = () => {
+        setMessages([]);
+        setLoading(false);
+        setConversationId(propConversationId);
+    };
 
     // Find or create conversation and load messages
     useEffect(() => {
         setLoading(true);
-        // Early return jika modal tertutup
+
         if (!isOpen) {
-            // Reset state ketika modal ditutup
-            setMessages([]);
-            setLoading(false);
-            setConversationId(propConversationId);
+            resetChatState();
             return;
         }
 
-        // Early return jika data belum lengkap
         if (!userId || !currentUserId) {
             console.log('[ChatModal] Waiting for userId and currentUserId...', { userId, currentUserId });
             return;
         }
 
-        // Set loading IMMEDIATELY sebelum async operation
-        setMessages([]); // Clear messages dari conversation sebelumnya
-        
-        const initializeChat = async () => {
-            try {
-                console.log('[ChatModal] Initializing chat with userId:', userId);
-                
-                // Find or create private conversation
-                const conversationResponse = await findOrCreatePrivateConversation(userId);
-
-                if (conversationResponse.data) {
-                    const convId = conversationResponse.data.id_conversation;
-                    setConversationId(convId);
-                    
-                    // Update global chat context
-                    openChat(String(convId));
-
-                    // Load existing messages
-                    const messagesResponse = await getMessages(convId);
-
-                    if (messagesResponse.data) {
-                        // Handle nested response structure: { messages: [...], conversation: {...} }
-                        const messagesList = messagesResponse.data.messages || messagesResponse.data;
-                        setMessages(messagesList);
-                        
-                        // Get NIM from conversation info if available
-                        if (messagesResponse.data.conversation?.other_participant?.nim) {
-                            setDisplayNim(messagesResponse.data.conversation.other_participant.nim);
-                        }
-                    }
-
-                    // Subscribe to new messages & read events via WebSocket
-                    const echo = getEcho();
-                    if (echo) {
-                        try {
-                            console.log('[ChatModal] Subscribing to chat.' + convId);
-                            
-                            echo.private(`chat.${convId}`)
-                                .listen('.NewChatMessage', (e) => {
-                                    console.log('[ChatModal] New message received:', e);
-                                    // Only add if it's not from current user (to avoid duplicates)
-                                    if (e.message.id_user_si !== currentUserId) {
-                                        setMessages(prev => {
-                                            // Prevent duplicate by checking if message already exists
-                                            const exists = prev.some(msg => msg.id_message === e.message.id_message);
-                                            if (exists) {
-                                                console.log('[ChatModal] Message already exists, skipping');
-                                                return prev;
-                                            }
-                                            console.log('[ChatModal] Adding new message to state');
-                                            return [...prev, e.message];
-                                        });
-                                        
-                                        // Auto mark as read setelah 1 detik (simulate user seeing the message)
-                                        setTimeout(() => {
-                                            markMessagesAsRead(convId, [e.message.id_message])
-                                                .catch(err => console.error('Error auto-marking as read:', err));
-                                        }, 1000);
-                                    }
-                                })
-                                .listen('.MessageRead', (e) => {
-                                    console.log('[ChatModal] Message read event:', e);
-                                    // Update read status - IMPORTANT: This fires for SENDER when recipient reads
-                                    setMessages(prev => prev.map(msg => {
-                                        if (msg.id_message === e.message_id) {
-                                            return {
-                                                ...msg,
-                                                read_status: {
-                                                    ...msg.read_status,
-                                                    // Increment count (this makes checkmark turn white)
-                                                    read_by_count: (msg.read_status?.read_by_count || 0) + 1,
-                                                    read_by_users: [...(msg.read_status?.read_by_users || []), e.user_id],
-                                                }
-                                            };
-                                        }
-                                        return msg;
-                                    }));
-                                });
-                            
-                            console.log('[ChatModal] WebSocket subscribed successfully');
-                        } catch (wsError) {
-                            console.error('[ChatModal] WebSocket subscription error:', wsError);
-                        }
-                    } else {
-                        console.warn('[ChatModal] Echo not initialized yet');
-                    }
-                }
-            } catch (error) {
-                console.error('Error initializing chat:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
+        setMessages([]);
         initializeChat();
 
-        // Cleanup: leave channel when modal closes
         return () => {
-            if (conversationId) {
-                const echo = getEcho();
-                if (echo) {
-                    console.log('[ChatModal] Leaving channel chat.' + conversationId);
-                    echo.leave(`chat.${conversationId}`);
-                }
-                
-                closeChat();
-                
-                console.log('[ChatModal] 📤 Dispatching chatModalClosed event');
-                window.dispatchEvent(new Event('chatModalClosed'));
-            }
+            cleanupChat();
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, userId, currentUserId]);
 
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        
-        // Auto mark unread messages as read when opening chat or new messages arrive
-        if (isOpen && conversationId && messages.length > 0 && currentUserId) {
-            const unreadMessageIds = messages
-                .filter(msg => 
-                    msg.id_user_si !== currentUserId && // Bukan pesan sendiri
-                    !msg.read_status?.is_read_by_me // Belum dibaca
-                )
-                .map(msg => msg.id_message);
-            
-            if (unreadMessageIds.length > 0) {
-                // Delay sedikit biar user sempet liat message dulu
-                setTimeout(() => {
-                    markMessagesAsRead(conversationId, unreadMessageIds)
-                        .catch(err => console.error('Error marking messages as read:', err));
-                }, 1000);
-            }
-        }
+        scrollToBottom();
+        autoMarkMessagesAsRead();
     }, [messages, isOpen, conversationId, currentUserId]);
 
     useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
+        handleBodyOverflow(isOpen);
         return () => {
-            document.body.style.overflow = 'unset';
+            handleBodyOverflow(false);
         };
     }, [isOpen]);
 
@@ -259,16 +266,14 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
         setMessage(''); // Clear input immediately
 
         try {
-            // Send message via API
             const response = await sendMessage(conversationId, messageToSend);
             
-            if (response.data) {
-                // Add message to local state immediately for smooth UX
+            if (response?.status === 'success' && response.data) {
                 setMessages(prev => [...prev, response.data]);
             }
         } catch (error) {
             console.error('Error sending message:', error);
-            setMessage(messageToSend); // Restore message if failed
+            setMessage(messageToSend);
             alert('Gagal mengirim pesan. Silakan coba lagi.');
         }
     };
@@ -314,7 +319,7 @@ export default function ChatModal({ isOpen, onClose, userName, userNim = '', use
 
             {/* Modal Window: Rounded & Shadow */}
             <div
-                className="relative bg-white w-full max-w-2xl h-[650px] flex flex-col shadow-2xl overflow-hidden rounded-2xl mx-4"
+                className="relative bg-white w-full max-w-2xl h-[80vh] flex flex-col shadow-2xl overflow-hidden rounded-2xl mx-4"
                 style={{ fontFamily: 'Urbanist, sans-serif' }}
                 onClick={(e) => e.stopPropagation()}
             >
