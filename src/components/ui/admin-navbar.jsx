@@ -75,8 +75,8 @@ const router = useRouter()
 const { user, logoutLocal } = useAuth();
 const [showLogoutDialog, setShowLogoutDialog] = React.useState(false);
 const [isScrolled, setIsScrolled] = React.useState(false);
-const displayuserName = (userName || user.username || '...');
-const displayName = (Name || user.name || '...');
+const displayuserName = (userName || user.username);
+const displayName = (Name || user.name);
 const displayImage = user.image;
 
 // Handle scroll event for floating navbar
@@ -149,7 +149,7 @@ return (
                 <Avatar className="size-9 sm:size-10 transition-all duration-300">
                   <AvatarImage src={displayImage} alt={displayuserName} />
                   <AvatarFallback>
-                    {displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                    {displayName?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                   </AvatarFallback>
                 </Avatar>
               </button>
@@ -158,10 +158,10 @@ return (
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-bold" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
-                    {displayName}
+                    {displayName || '...'}
                   </p>
                   <p className="text-xs" style={{ color: '#015023', opacity: 0.6, fontFamily: 'Urbanist, sans-serif' }}>
-                    {displayuserName}
+                    {displayuserName || '...'}
                   </p>
                 </div>
               </DropdownMenuLabel>
