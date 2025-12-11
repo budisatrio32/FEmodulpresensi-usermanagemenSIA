@@ -964,7 +964,7 @@ return (
             </div>
             </FieldContent>
             {errors.profile_image && (
-            <FieldError>{errors.profile_image}</FieldError>
+            <p className="text-red-500 text-sm mt-1">{errors.profile_image}</p>
             )}
         </Field>
         <Field className="md:col-span-2">

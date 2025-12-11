@@ -121,14 +121,6 @@ function DetailKelas() {
     }, [generateSuccess]);
 
     useEffect(() => {
-        if (!generateErrors.form) return;
-        const timer = setTimeout(() => {
-            setGenerateErrors(prev => ({...prev, form: null}));
-        }, 5000);
-        return () => clearTimeout(timer);
-    }, [generateErrors.form]);
-
-    useEffect(() => {
         if (!assignSuccess) return;
         const timer = setTimeout(() => {
             setAssignSuccess({});
@@ -706,7 +698,7 @@ function DetailKelas() {
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left Column - Form Data Kelas */}
-            <div className="bg-white border-2 p-6 shadow-lg" style={{ borderColor: '#015023', borderRadius: '12px', maxHeight: '900px' }}>
+            <div className="bg-white border-2 p-6 shadow-lg" style={{ borderColor: '#015023', borderRadius: '12px', maxHeight: '1000px' }}>
                 <h2 className="text-2xl font-bold mb-6" style={{ color: '#015023', fontFamily: 'Urbanist, sans-serif' }}>
                 Informasi Kelas
                 </h2>
@@ -1369,10 +1361,10 @@ function DetailKelas() {
             </div>
 
             {/* Capacity Warning */}
-            {selectedMahasiswaIds.length > parseInt(currentMaksMahasiswa) && (
+            {(selectedMahasiswaIds.length + assignedMahasiswa.length) > parseInt(currentMaksMahasiswa) && (
                 <div className="mb-3 px-4 py-3 text-sm font-semibold flex items-center gap-2" style={{ backgroundColor: '#FEE', borderRadius: '8px', color: '#BE0414', border: '2px solid #BE0414' }}>
                 <span>⚠️</span>
-                <span>Kapasitas kelas akan terlampaui! ({selectedMahasiswaIds.length}/{currentMaksMahasiswa})</span>
+                <span>Kapasitas kelas akan terlampaui! ({selectedMahasiswaIds.length + assignedMahasiswa.length}/{currentMaksMahasiswa})</span>
                 </div>
             )}
 
@@ -1380,7 +1372,7 @@ function DetailKelas() {
             {selectedMahasiswaIds.length > 0 && (
                 <div className="mb-3 px-4 py-2 text-sm font-semibold flex items-center justify-between" style={{ backgroundColor: '#DABC4E', borderRadius: '8px', color: '#015023' }}>
                 <span>{selectedMahasiswaIds.length} mahasiswa dipilih</span>
-                <span>Kapasitas: {selectedMahasiswaIds.length}/{currentMaksMahasiswa}</span>
+                <span>Kapasitas: {selectedMahasiswaIds.length + assignedMahasiswa.length}/{currentMaksMahasiswa}</span>
                 </div>
             )}
 
